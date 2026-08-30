@@ -1,0 +1,6 @@
+# Vespera/.gitignore
+
+# Data
+vespera.db
+vespera.db-shm
+vespera.db-wal
