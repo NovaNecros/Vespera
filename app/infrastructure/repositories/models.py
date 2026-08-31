@@ -1,6 +1,8 @@
-# Vespera/app/infrastructure/models.py
+# Vespera/app/infrastructure/repositories/models.py
 
 from __future__ import annotations
+
+from typing import Any
 
 from app.core.extensions import db
 
@@ -21,7 +23,18 @@ class SourceImage(db.Model):
 
     artifacts = db.relationship("SynthesisArtifact", back_populates="source_image", lazy=True)
 
-# Turing Artifacts
+    def to_dict(self : SourceImage) -> dict[str, Any]:
+        return {
+            "id_source_image"   : self.id_source_image,
+            "sha256_hash"       : self.sha256_hash,
+            "original_filename" : self.original_filename,
+            "width"             : self.width,
+            "height"            : self.height,
+            "file_size_bytes"   : self.file_size_bytes,
+            "created_at"        : self.created_at.isoformat() if self.created_at else None
+        }
+
+# Configuración Parámetros Turing
 class ConfigTuring(db.Model):
     """
     Parámetros canónicos del modelo Gray-Scott deduplicados por hash.
@@ -41,6 +54,21 @@ class ConfigTuring(db.Model):
 
     artifacts = db.relationship("SynthesisArtifact", back_populates="turing_config", lazy=True)
 
+    def to_dict(self : ConfigTuring) -> dict[str, Any]:
+        return {
+            "id_config"     : self.id_config,
+            "config_hash"   : self.config_hash,
+            "feed_rate"     : float(self.feed_rate),
+            "kill_rate"     : float(self.kill_rate),
+            "diff_u"        : float(self.diff_u),
+            "diff_v"        : float(self.diff_v),
+            "dt"            : float(self.dt),
+            "iterations"    : self.iterations,
+            "color_palette" : self.color_palette,
+            "created_at"    : self.created_at.isoformat() if self.created_at else None
+        }
+
+# Turing Artifacts
 class SynthesisArtifact(db.Model):
     """
     Patron de Turing determinista generado por el modelo Gray-Scott.
@@ -62,6 +90,20 @@ class SynthesisArtifact(db.Model):
     turing_config   = db.relationship("ConfigTuring", foreign_keys=[id_config], back_populates="artifacts")
     parent_artifact = db.relationship("SynthesisArtifact", remote_side=[id_artifact], foreign_keys=[id_parent_artifact])
 
+    def to_dict(self : SynthesisArtifact) -> dict[str, Any]:
+        return {
+            "id_artifact"        : self.id_artifact,
+            "artifact_hash"      : self.artifact_hash,
+            "id_source_image"    : self.id_source_image,
+            "id_parent_artifact" : self.id_parent_artifact,
+            "seed"               : self.seed,
+            "execution_time_ms"  : float(self.execution_time_ms),
+            "is_favorite"        : bool(self.is_favorite),
+            "user_notes"         : self.user_notes or "",
+            "created_at"         : self.created_at.isoformat()  if self.created_at    else None,
+            "source_image"       : self.source_image.to_dict()  if self.source_image  else None,
+            "config"             : self.turing_config.to_dict() if self.turing_config else None
+        }
 
 # Enigma
 class EnigmaQuest(db.Model):
@@ -79,3 +121,15 @@ class EnigmaQuest(db.Model):
 
     solution_artifact = db.relationship("SynthesisArtifact", foreign_keys=[solution_id])
     solution_config   = db.relationship("ConfigTuring", foreign_keys=[solution_config_id])
+
+    def to_dict(self : EnigmaQuest) -> dict[str, Any]:
+        return {
+            "id_quest"           : self.id_quest,
+            "solution_id"        : self.solution_id,
+            "solution_config_id" : self.solution_config_id,
+            "hint_image_hash"    : self.hint_image_hash,
+            "is_unlocked"        : self.is_unlocked,
+            "unlocked_at"        : self.unlocked_at.isoformat()     if self.unlocked_at       else None,
+            "solution_artifact"  : self.solution_artifact.to_dict() if self.solution_artifact else None,
+            "solution_config"    : self.solution_config.to_dict()   if self.solution_config   else None
+        }

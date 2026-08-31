@@ -24,6 +24,12 @@ class DBSettings:
     DB_PATH : Path = BASE_DIR / "data" / "vespera.db"
     DB_URI  : str  = f"sqlite:///{DB_PATH}"
 
+class RNGSettings:
+    """
+    Configuración del generador de números aleatorios para asegurar determinismo.
+    """
+    SEED : int = 20043009
+
 class Directories:
     """
     Rutas del proyecto.
@@ -55,7 +61,7 @@ class Directories:
             cls.STATIC_DIR,
             cls.CSS_DIR,
             cls.JS_DIR,
-            cls.TS_DIR,
+            cls.TS_DIR
         ]:
             directory.mkdir(parents=True, exist_ok=True)
 
@@ -69,17 +75,11 @@ class TuringSettings:
     DEFAULT_DIFF_V      : float = 0.5000
     DEFAULT_DT          : float = 1.0000
     DEFAULT_ITERATIONS  : int   = 4000
+    DEFAULT_FRAMES      : int   = 12
     DEFAULT_PALETTE     : str   = "crimson_eclipse"
     DEFAULT_WIDTH       : int   = 512
     DEFAULT_HEIGHT      : int   = 512
     MAX_IMAGE_DIMENSION : int   = 1024
-
-class GameSettings:
-    """
-    Parámetros del enigma.
-    """
-    QUEST_TITLE : str = "ASL22"
-    SEED        : int = 20043009
 
 
 class Colors:
