@@ -1,5 +1,14 @@
 # Vespera/.gitignore
 
+# IDE
+.idea/
+
+# VENV
+venv/
+
+# Documentación
+vespera_structure.txt
+
 # Data
 vespera.db
 vespera.db-shm

@@ -66,11 +66,6 @@ class VaultService:
                 )
 
             total_items : int = query.count()
-            if not total_items: return {
-                "success"     : False,
-                "error"       : "No results found with the provided filters.",
-                "status_code" : 404
-            }
 
             artifacts : list[SynthesisArtifact] = (
                 query
@@ -80,10 +75,10 @@ class VaultService:
                     .all()
             )
 
-            results : list[dict[str, Any]] = [self._format_vault_item(a) for a in artifacts]
+            results : list[dict[str, Any]] = [a.to_dict() for a in artifacts]
 
             if self.verbose:
-                print(f"[OK]{Colors.GREEN} VAULT GALLERY FETCHED: {len(results)}/{total_items} ITEMS{Colors.RESET}")
+                print(f"[OK]{Colors.GREEN} Vault gallery fetched: {len(results)}/{total_items} items{Colors.RESET}")
 
             return {
                 "success"     : True,
@@ -226,14 +221,106 @@ class VaultService:
             db.session.rollback()
             raise e
 
-    def delete_artifact(self : VaultService, id_artifact : int) -> dict[str, Any]:
+    @staticmethod
+    def get_orphaned_sources() -> dict[str, Any]:
+        """
+        Recupera todas las imágenes originales sin patrones de Turing asociados para el cementerio.
+        :return : Lista de imágenes huérfanas.
+        """
+        try:
+            orphaned_sources : list[SourceImage] = (
+                db.session
+                    .query(SourceImage)
+                    .filter(~SourceImage.artifacts.any())
+                    .order_by(SourceImage.id_source_image)
+                    .all()
+            )
+
+            results : list[dict[str, Any]] = [img.to_dict() for img in orphaned_sources]
+            return {
+                "success"     : True,
+                "data"        : {
+                    "items" : results,
+                    "count" : len(results)
+                },
+                "status_code" : 200
+            }
+        except Exception as e:
+            raise e
+
+    def delete_source_image(self : VaultService, id_source_image : int) -> dict[str, Any]:
+        """
+        Elimina una imagen original que ha quedado huérfana de la DB y físicamente.
+        :param id_source_image : ID (PK) de la imagen original.
+        :return                : Estado de éxito de la operación.
+        """
+        try:
+            source : Optional[SourceImage] = (
+                db.session
+                    .query(SourceImage)
+                    .filter_by(id_source_image=id_source_image)
+                    .first()
+            )
+            if not source: return {
+                "success"     : False,
+                "error"       : f"Source image with ID #{id_source_image} not found.",
+                "status_code" : 404
+            }
+
+            active_artifacts_count : int = (
+                db.session
+                    .query(SynthesisArtifact)
+                    .filter_by(id_source_image=id_source_image)
+                    .count()
+            )
+            if active_artifacts_count > 0: return {
+                "success"     : False,
+                "error"       : f"Requested source image with ID #{id_source_image} has {active_artifacts_count} associated artifacts.",
+                "status_code" : 409
+            }
+
+            try:
+                FileRepository.delete_orphaned_source_file(source.sha256_hash)
+            except Exception as ex:
+                print(f"[!] {Colors.RED}Error deleting source file:{Colors.RESET} {ex}")
+
+            db.session.delete(source)
+            db.session.commit()
+
+            if self.verbose:
+                print(f"[OK]{Colors.GREEN} Successfully deleted source image with ID:{Colors.RESET} #{id_source_image}")
+
+            return {
+                "success"     : True,
+                "message"     : f"Source image with ID #{id_source_image} deleted successfully.",
+                "status_code" : 200
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    def delete_artifact(
+        self        : VaultService,
+        id_artifact : int,
+        params      : dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Elimina un patrón de turing de la DB y sus archivos físicos asociados.
         Si la imagen original queda huérfana, se elimina también.
         :param id_artifact : ID (PK) del patrón de Turing.
+        :param params      : Bandera para indicar si preservar o eliminar la imagen original si queda huérfana.
         :return            : Estado de éxito de la operación.
         """
         try:
+            raw_flag : Any = params.get("delete_orphaned_source", False)
+            if isinstance(raw_flag, bool):
+                delete_orphaned_source : bool = raw_flag
+            else:
+                delete_orphaned_source : bool = str(raw_flag).lower() in ("true", "yes", "1")
+
+            msg_parts : list[str] = []
+
             artifact : Optional[SynthesisArtifact] = (
                 db.session
                     .query(SynthesisArtifact)
@@ -253,44 +340,39 @@ class VaultService:
             try:
                 FileRepository.delete_artifact_files(artifact_hash)
             except Exception as ex:
-                print(f"[!] {Colors.RED}Error deleting artifact files:{Colors.RESET} {ex}")
+                print(f"[!] {Colors.RED}Error deleting artifact file:{Colors.RESET} {ex}")
+                msg_parts.append(f"Error deleting artifact file.")
 
             # Eliminar registro de la DB
             db.session.delete(artifact)
-            db.session.flush()
-
-            # Eliminar imagen original huérfana
-            remaining_count : int = (
-                db.session
-                    .query(SynthesisArtifact)
-                    .filter_by(id_source_image=source_image_id)
-                    .count()
-            )
-
-            if remaining_count == 0:
-                source_record : Optional[SourceImage] = (
-                    db.session
-                        .query(SourceImage)
-                        .filter_by(id_souce_image=source_image_id)
-                        .first()
-                )
-                if source_record:
-                    try:
-                        FileRepository.delete_orphaned_source_file(source_record.sha256_hash)
-                    except Exception as ex:
-                        print(f"[!] {Colors.RED}Error deleting orphaned source file:{Colors.RESET} {ex}")
-                    db.session.delete(source_record)
-
             db.session.commit()
 
             if self.verbose:
-                print(f"[OK]{Colors.YELLOW} ARTIFACT #{id_artifact} DELETED SUCCESSFULLY.{Colors.RESET}")
+                print(f"[OK]{Colors.YELLOW} Artifact #{id_artifact} deleted successfully.{Colors.RESET}")
+            msg_parts.append(f"Artifact #{id_artifact} deleted successfully.")
+
+            # Eliminar imagen original huérfana
+            if delete_orphaned_source:
+                try:
+                    source_res : dict[str, Any] = self.delete_source_image(source_image_id)
+                    if not source_res.get("success"):
+                        print(f"[!] {Colors.RED}Error deleting source image:{Colors.RESET} {source_res.get('error', 'Unknown error')}")
+                        msg_parts.append(f"Error deleting source image #{source_image_id}.")
+                    else:
+                        if self.verbose:
+                            print(f"[OK]{Colors.YELLOW} Source image #{source_image_id} deleted successfully.{Colors.RESET}")
+                        msg_parts.append(f"Source image #{source_image_id} deleted successfully.")
+                except Exception as ex:
+                    print(f"[!] {Colors.RED}Unexpected error deleting source image:{Colors.RESET} {ex}")
+                    msg_parts.append(f"Unexpected error deleting source image #{source_image_id}.")
 
             return {
                 "success"     : True,
-                "message"     : f"Artifact #{id_artifact} deleted successfully.",
+                "message"     : " ".join(msg_parts),
                 "status_code" : 200
             }
+
         except Exception as e:
             db.session.rollback()
             raise e
+

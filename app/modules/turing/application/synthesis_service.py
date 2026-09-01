@@ -7,9 +7,12 @@ from pathlib import Path
 from time import perf_counter
 from PIL import Image
 
+from werkzeug.datastructures import FileStorage
+
 from app.core.extensions import db
 from app.core.config import TuringSettings, RNGSettings, Colors
 from app.core.utils.cryptography_utils import compute_bytes_sha256, compute_params_hash, compute_artifact_hash
+from app.core.utils.image_utils import is_image
 from app.infrastructure.repositories.models import SourceImage, ConfigTuring, SynthesisArtifact
 from app.infrastructure.repositories.files_repo import FileRepository
 from app.modules.turing.domain.turing_engine import TuringEngine
@@ -110,34 +113,38 @@ class SynthesisService:
     def generate_synthesis(
         self               : SynthesisService,
         params             : dict[str, Any],
-        file_bytes         : Optional[bytes] = None,
+        source_image       : Optional[FileStorage] = None,
     ) -> dict[str, Any]:
         """
         Orquesta la ejecución completa de la síntesis de Gray-Scott.
-        :param params     : Diccionario con los parámetros recibidos en la petición.
-        :param file_bytes : Bytes de la imagen subida en multipart/form-data si aplica.
+        :param params       : Diccionario con los parámetros recibidos en la petición.
+        :param source_image : Archivo de la imagen original.
         :return : Artefacto generado en formato de diccionario con keyframes.
         """
         start_time        : float           = perf_counter()
         execution_time_ms : Optional[float] = None
 
         try:
+            is_image_res : dict[str, Any] = is_image(source_image)
+            file_bytes   : Optional[bytes] = source_image.read() if is_image_res.get("is_image") else None
+            filename     : str             = params.get("original_filename", source_image.filename if is_image_res.get("is_image") else "upload.png")
+
             print(f"{Colors.CYAN}{'-' * 85}{Colors.RESET}")
             if not self.verbose:
                 print(f"[*]{Colors.BLUE} INITIATING PATTERN GENERATION{Colors.RESET}")
             else:
                 print(f"[*]{Colors.BLUE} PARSING REQUEST PARAMETERS...{Colors.RESET}")
 
-            if params.get("seed") and params["seed"] != RNGSettings.SEED:
+            if params.get("seed") and int(params["seed"]) != RNGSettings.SEED:
                 print(f"[!]{Colors.YELLOW} WARNING: Se intentó ejecutar una semilla diferente al cumpleaños de la boba ({params['seed']}). Permiso denegado.{Colors.RESET}")
                 return {
                     "success"     : False,
-                    "error"       : f"Forbidden seed {params['seed']}",
+                    "error"       : f"Forbidden seed: {params['seed']}",
                     "status_code" : 403
                 }
 
             source_image_id    : Optional[int] = int(params["source_image_id"]) if params.get("source_image_id") else None
-            original_filename  : str           = str(params.get("original_filename", "upload.png"))
+            original_filename  : str           = str(filename)
             feed_rate          : float         = float(params.get("feed_rate", TuringSettings.DEFAULT_FEED_RATE))
             kill_rate          : float         = float(params.get("kill_rate", TuringSettings.DEFAULT_KILL_RATE))
             diff_u             : float         = float(params.get("diff_u", TuringSettings.DEFAULT_DIFF_U))
@@ -155,7 +162,7 @@ class SynthesisService:
             if self.verbose:
                 print(f"[*]{Colors.BLUE} PROCESSING INPUT IMAGE...{Colors.RESET}")
 
-            if file_bytes is not None:
+            if file_bytes:
                 source_record : SourceImage = self._get_or_create_source_image(file_bytes, original_filename)
             elif source_image_id is not None:
                 source_record : Optional[SourceImage] = (
@@ -172,7 +179,7 @@ class SynthesisService:
             else:
                 return {
                     "success"     : False,
-                    "error"       : "No image payload or source image ID provided.",
+                    "error"       : ("No image image ID provided. " + is_image_res.get("reason", "")).strip(),
                     "status_code" : 400
                 }
 

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from typing import Any, Optional
+
+from werkzeug.datastructures import FileStorage
+
 from app.modules.turing.application.synthesis_service import SynthesisService
 from app.modules.turing.application.vault_service     import VaultService
 
@@ -17,17 +20,17 @@ class TuringService:
 
     # --- SYNTHESIS ---
     def generate_synthesis(
-        self       : TuringService,
-        params     : dict[str, Any],
-        file_bytes : Optional[bytes] = None
+        self         : TuringService,
+        params       : dict[str, Any],
+        source_image : Optional[FileStorage]
     ) -> dict[str, Any]:
         """
         Wrapper para la síntesis y almacenamiento de patrones de Turing.
-        :param params     : Parámetros de la petición.
-        :param file_bytes : Contenido binario de la imagen.
-        :return           : Datos del patrón generado.
+        :param params       : Parámetros de la petición.
+        :param source_image : Contenido binario de la imagen.
+        :return             : Datos del patrón generado.
         """
-        return self.synthesis_service.generate_synthesis(params=params, file_bytes=file_bytes)
+        return self.synthesis_service.generate_synthesis(params=params, source_image=source_image)
 
     # --- VAULT ---
     def get_vault_gallery(self : TuringService, params : dict[str, Any]) -> dict[str, Any]:
@@ -54,8 +57,20 @@ class TuringService:
         """
         return self.vault_service.update_notes(id_artifact=id_artifact, params=params)
 
-    def delete_artifact(self : TuringService, id_artifact : int) -> dict[str, Any]:
+    def get_orphaned_sources(self : TuringService) -> dict[str, Any]:
+        """
+        Wrapper para consultar las imágenes originales huérfanas.
+        """
+        return self.vault_service.get_orphaned_sources()
+
+    def delete_source_image(self : TuringService, id_source_image : int) -> dict[str, Any]:
+        """
+        Wrapper para eliminar definitivamente una imagen original huérfana.
+        """
+        return self.vault_service.delete_source_image(id_source_image=id_source_image)
+
+    def delete_artifact(self : TuringService, id_artifact : int, params : dict[str, Any]) -> dict[str, Any]:
         """
         Wrapper para eliminar un patrón de Turing de la DB y sus archivos del almacenamiento.
         """
-        return self.vault_service.delete_artifact(id_artifact=id_artifact)
+        return self.vault_service.delete_artifact(id_artifact=id_artifact, params=params)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 import numpy as np
 
 from app.core.utils.text_utils import normalize_text
@@ -61,11 +62,22 @@ class ColorPalettes:
     _lut_cache : dict[str, np.ndarray] = {}
 
     @classmethod
-    def get_palette_names(cls : type[ColorPalettes]) -> list[str]:
+    def get_palette_names(cls : type[ColorPalettes]) -> dict[str, Any]:
         """
         Helper para obtener las paletas de colores disponibles.
         """
-        return list(cls.PALETTES_CONFIG.keys())
+        try:
+            return {
+                "success"     : True,
+                "data"        : list(cls.PALETTES_CONFIG.keys()),
+                "status_code" : 200
+            }
+        except Exception as e:
+            return {
+                "success"     : False,
+                "error"       : str(e),
+                "status_code" : 500
+            }
 
     @classmethod
     def get_lookup_table(cls : type[ColorPalettes], palette_name : str) -> np.ndarray:
@@ -75,7 +87,7 @@ class ColorPalettes:
         :return             : Arreglo NumPy 256x3 tipo uint8.
         """
         try:
-            normalized_name : str = normalize_text(palette_name)
+            normalized_name : str = normalize_text(palette_name, case="LOWER").replace(" ", "_")
             if normalized_name not in cls.PALETTES_CONFIG:
                 raise ValueError(f"Invalid palette: {palette_name or ''}")
 

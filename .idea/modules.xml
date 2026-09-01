@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/TuringEncoder.iml" filepath="$PROJECT_DIR$/.idea/TuringEncoder.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Vespera.iml" filepath="$PROJECT_DIR$/.idea/Vespera.iml" />
     </modules>
   </component>
 </project>

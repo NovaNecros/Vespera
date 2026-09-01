@@ -8,3 +8,4 @@ pillow==12.3.0
 scipy==1.18.1
 scipy-stubs==1.18.1.0
 sqlalchemy==2.0.52
+werkzeug==3.1.8

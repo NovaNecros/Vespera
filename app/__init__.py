@@ -64,12 +64,10 @@ def create_app() -> Flask:
         print(f"[*]{Colors.BLUE} DB INITIALIZED AT: {Colors.RESET}{DBSettings.DB_PATH}")
 
     try:
-        from app.presentation.routes.home_routes   import home_bp
         from app.presentation.routes.studio_routes import studio_bp
         from app.presentation.routes.enigma_routes import enigma_bp
         from app.presentation.routes.vault_routes  import vault_bp
 
-        app.register_blueprint(home_bp)
         app.register_blueprint(studio_bp)
         app.register_blueprint(enigma_bp)
         app.register_blueprint(vault_bp)
