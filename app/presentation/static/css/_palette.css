@@ -1,0 +1,55 @@
+/* Vespera/app/presentation/static/css/_palette.css */
+
+:root
+{
+    /* Shadows & Abyss */
+    --vespera-void             : #040406; /* Fondo Fondo      */
+    --vespera-obsidian         : #08090C; /* Fondo Principal  */
+    --vespera-velvet           : #0F1015; /* Tarjetas         */
+    --vespera-surface          : #1C1E2B; /* Paneles Elevados */
+    --vespera-surface-hover    : #1C1E2B; /* Paneles (hover)  */
+
+    /* Sanguine & Crimson */
+    --vespera-blood-coagulated : #1A0003;
+    --vespera-wine             : #380208;
+    --vespera-crimson-dark     : #5C000B;
+    --vespera-crimson          : #8A0303;
+    --vespera-crimson-bright   : #B80D1A;
+    --vespera-crimson-glow     : #FF1A2A;
+
+    /* Gilded Filigree & Gold */
+    --vespera-gold-shadow      : #3D2D10;
+    --vespera-gold-dark        : #7D6124;
+    --vespera-gold             : #C5A059;
+    --vespera-gold-bright      : #E8CA84;
+    --vespera-gold-glow        : #FFF0C2;
+
+    /* Nocturnal Violet & Amethyst */
+    --vespera-amethyst-dark    : #190520;
+    --vespera-amethyst         : #481157;
+    --vespera-violet-glow      : #9838B8;
+    --vespera-lilac-mist       : #D8BFD8;
+
+    /* Bone & Parchment */
+    --vespera-bone-shadow      : #4A4845; /* Sombras          */
+    --vespera-bone-silent      : #85808A; /* Texto Secundario */
+    --vespera-bone-ink         : #D6D2CC; /* Texto Principal  */
+    --vespera-bone             : #EAE6DF;
+    --vespera-parchment        : #F5EFE0;
+    --vespera-white            : #FFFFFF;
+
+    /* Glassmorphism */
+    --vespera-border-subtle    : rgba(138,   3,   3, 0.18);
+    --vespera-border-crimson   : rgba(138,   3,   3, 0.45);
+    --vespera-border-gold      : rgba(197, 160,  89, 0.40);
+    --vespera-border-glow      : rgba(184,  13,  26, 0.65);
+    --vespera-glass-bg         : rgba( 15,  16,  21, 0.78);
+    --vespera-glass-border     : rgba(197, 160,  89, 0.22);
+
+    /* --- SHADOWS --- */
+    --vespera-shadow-ambient   : 0 8px 32px 0 rgba(0, 0, 0, 0.75);
+    --vespera-glow-crimson     : 0 0 20px rgba(138, 3, 3, 0.40), 0 0 40px rgba(138, 3, 3, 0.15);
+    --vespera-glow-crimson-int : 0 0 25px rgba(230, 0, 0, 0.60), 0 0 50px rgba(138, 3, 3, 0.35);
+    --vespera-glow-gold        : 0 0 15px rgba(197, 160, 89, 0.35), 0 0 30px rgba(197, 160, 89, 0.15);
+    --vespera-glow-amethyst    : 0 0 20px rgba(152, 56, 184, 0.35);
+}

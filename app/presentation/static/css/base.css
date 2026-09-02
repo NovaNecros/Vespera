@@ -1,0 +1,494 @@
+/* Vespera/app/presentation/static/css/base.css */
+
+/* Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Fira+Code:wght@400;500;600&display=swap");
+
+/* Dimensions */
+:root
+{
+    --vespera-radius-sm        : 4px;
+    --vespera-radius           : 8px;
+    --vespera-radius-lg        : 14px;
+}
+
+/* Reset & Global Canvas */
+*,
+*::before,
+*::after
+{
+    box-sizing : border-box;
+}
+
+html
+{
+    scroll-behavior : smooth;
+}
+
+body
+{
+    margin                : 0;
+    padding               : 0;
+    background-image      :
+        radial-gradient(circle at  50%   0%, rgba(56, 2,  8, 0.35) 0%, transparent          60%),
+        radial-gradient(circle at 100% 100%, rgba(25, 5, 32, 0.25) 0%, transparent          50%),
+        radial-gradient(circle at   0% 100%, rgba(92, 0, 11, 0.20) 0%, var(--vespera-void) 100%),
+        linear-gradient(180deg, var(--vespera-obsidian) 0%, var(--vespera-void) 100%);
+    background-attachment : fixed;
+    color                 : var(--vespera-bone-ink);
+    font-family           : "Cormorant Garamond", Garamond, serif;
+    font-size             : 18px;
+    line-height           : 1.6;
+    letter-spacing        : 0.02em;
+    min-height            : 100vh;
+    overflow-x            : hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar
+{
+    width  : 8px;
+    height : 8px;
+}
+
+::-webkit-scrollbar-track
+{
+    background  : var(--vespera-obsidian);
+    border-left : 1px solid rgba(138, 3, 3, 0.15);
+}
+
+::-webkit-scrollbar-thumb
+{
+    background    : linear-gradient(180deg, var(--vespera-gold-dark) 0%, var(--vespera-crimson) 50%, var(--vespera-wine) 100%);
+    border-radius : 4px;
+    border        : 1px solid var(--vespera-gold-shadow);
+}
+
+::-webkit-scrollbar-thumb:hover
+{
+    background : linear-gradient(180deg, var(--vespera-gold) 0%, var(--vespera-crimson-bright) 50%, var(--vespera-crimson) 100%);
+    box-shadow : var(--vespera-glow-crimson);
+}
+
+/* Typography */
+.font-ornate
+{
+    font-family    : "Cinzel Decorative", serif;
+    letter-spacing : 0.08em;
+}
+
+.font-cinzel
+{
+    font-family    : "Cinzel", serif;
+    letter-spacing : 0.05em;
+}
+
+.font-serif
+{
+    font-family : "Cormorant Garamond", Georgia, serif;
+}
+
+.font-mono
+{
+    font-family    : "Fira Code", monospace;
+    letter-spacing : 0.02em;
+}
+
+/* Text Color & Accents */
+.text-crimson
+{
+    color : var(--vespera-crimson-bright) !important;
+}
+
+.text-crimson-glow
+{
+    color       : var(--vespera-crimson-bright) !important;
+    text-shadow : 0 0 10px rgba(230, 0, 0, 0.6), 0 0 20px rgba(138, 3, 3, 0.4);
+}
+
+.text-gold
+{
+    color : var(--vespera-gold) !important;
+}
+
+.text-gold-glow
+{
+    color       : var(--vespera-gold-bright) !important;
+    text-shadow : 0 0 10px rgba(197, 160, 89, 0.5), 0 0 20px rgba(197, 160, 89, 0.25);
+}
+
+.text-amethyst
+{
+    color : var(--vespera-lilac-mist) !important;
+}
+
+.text-bone
+{
+    color : var(--vespera-bone) !important;
+}
+
+.text-parchment
+{
+    color : var(--vespera-parchment) !important;
+}
+
+.text-silent
+{
+    color : var(--vespera-bone-silent) !important;
+}
+
+/* Headers */
+h1, h2, h3, h4, h5, h6
+{
+    font-family    : "Cinzel", serif;
+    font-weight    : 700;
+    color          : var(--vespera-parchment);
+    letter-spacing : 0.06em;
+    text-transform : uppercase;
+    margin-top     : 0;
+}
+
+.gothic-heading
+{
+    font-family    : "Cinzel Decorative", serif;
+    font-weight    : 700;
+    color          : var(--vespera-parchment);
+    text-shadow    : 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 15px rgba(197, 160, 89, 0.35);
+    letter-spacing : 0.1em;
+}
+
+/* Ornamental Dividers */
+.gothic-divider
+{
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    margin          : 1.5rem 0;
+    width           : 100%;
+}
+
+.gothic-divider::before,
+.gothic-divider::after
+{
+    content    : "";
+    flex       : 1;
+    height     : 1px;
+    background : linear-gradient(90deg, transparent, var(--vespera-gold-dark));
+}
+
+.gothic-divider-crimson::before,
+.gothic-divider-crimson::after
+{
+    background : linear-gradient(90deg, transparent, var(--vespera-crimson), transparent);
+}
+
+.gothic-divider-emblem
+{
+    padding     : 0 1rem;
+    color       : var(--vespera-gold);
+    font-family : "Cinzel Decorative", serif;
+    font-size   : 0.9rem;
+    text-shadow : var(--vespera-glow-gold);
+    user-select : none;
+}
+
+/* Cards & Glass Containers */
+.vespera-card
+{
+    background-color : var(--vespera-velvet);
+    border           : 1px solid var(--vespera-border-crimson);
+    border-radius    : var(--vespera-radius);
+    box-shadow       : var(--vespera-shadow-ambient);
+    position         : relative;
+    transition       : all 0.3s cubic-bezier(0.25, 0.80, 0.25, 1.00);
+}
+
+.vespera-card:hover
+{
+    border-color : var(--vespera-border-glow);
+    box-shadow   : var(--vespera-glow-crimson);
+}
+
+.vespera-glass
+{
+    background-color        : var(--vespera-glass-bg);
+    backdrop-filter         : blur(12px);
+    -webkit-backdrop-filter : blur(12px);
+    border                  : 1px solid var(--vespera-glass-border);
+    border-radius           : var(--vespera-radius);
+    box-shadow              : var(--vespera-shadow-ambient);
+}
+
+/* Ornate Filigree Corners */
+.filigree-card::before
+{
+    content    : "";
+    position   : absolute;
+    top        : 0;
+    left       : 0;
+    right      : 0;
+    height     : 2px;
+    background : linear-gradient(90deg, transparent 0%, var(--vespera-gold) 50%, transparent 100%);
+    opacity    : 0.8;
+}
+
+.filigree-card::after
+{
+    content    : "";
+    position   : absolute;
+    bottom     : 0;
+    left       : 0;
+    right      : 0;
+    height     : 1px;
+    background : linear-gradient(90deg, transparent 0%, var(--vespera-crimson) 50%, transparent 100%);
+    opacity    : 0.8;
+}
+
+.filigree-corner-tl,
+.filigree-corner-tr,
+.filigree-corner-bl,
+.filigree-corner-br
+{
+    position       : absolute;
+    width          : 12px;
+    height         : 12px;
+    border-color   : var(--vespera-gold);
+    border-style   : solid;
+    pointer-events : none;
+    opacity        : 0.75;
+    z-index        : 2;
+}
+
+.filigree-corner-tl
+{
+    top          : 4px;
+    left         : 4px;
+    border-width : 2px 0 0 2px;
+}
+
+.filigree-corner-tr
+{
+    top          : 4px;
+    right        : 4px;
+    border-width : 2px 2px 0 0;
+}
+
+.filigree-corner-bl
+{
+    bottom       : 4px;
+    left         : 4px;
+    border-width : 0 0 2px 2px;
+}
+
+.filigree-corner-br
+{
+    bottom       : 4px;
+    right        : 4px;
+    border-width : 0 2px 2px 0;
+}
+
+/* Botones */
+.vamp-btn
+{
+    display         : inline-flex;
+    align-items     : center;
+    justify-content : center;
+    padding         : 0.6rem 1.4rem;
+    font-family     : "Cinzel", serif;
+    font-weight     : 700;
+    font-size       : 0.85rem;
+    letter-spacing  : 0.08em;
+    text-transform  : uppercase;
+    text-decoration : none;
+    cursor          : pointer;
+    border-radius   : var(--vespera-radius-sm);
+    transition      : all 0.25s ease;
+    user-select     : none;
+    position        : relative;
+    overflow        : hidden;
+}
+
+.vamp-btn-crimson
+{
+    background : linear-gradient(135deg, var(--vespera-crimson-dark) 0%, var(--vespera-crimson) 50%, var(--vespera-wine) 100%);
+    color      : var(--vespera-parchment);
+    border     : 1px solid var(--vespera-crimson-bright);
+    box-shadow : 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.vamp-btn-crimson:hover
+{
+    background   : linear-gradient(135deg, var(--vespera-crimson) 0%, var(--vespera-crimson-bright) 50%, var(--vespera-crimson-dark) 100%);
+    border-color : var(--vespera-crimson-glow);
+    box-shadow   : var(--vespera-glow-crimson-int);
+    transform    : translateY(-2px);
+    color        : var(--vespera-white);
+}
+
+.vamp-btn-crimson:active
+{
+    transform  : translateY(0);
+    box-shadow : 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.vamp-btn-gold
+{
+    background : linear-gradient(135deg, var(--vespera-obsidian) 0%, var(--vespera-surface) 100%);
+    color      : var(--vespera-gold-bright);
+    border     : 1px solid var(--vespera-gold);
+    box-shadow : 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.vamp-btn-gold:hover
+{
+    background   : linear-gradient(135deg, var(--vespera-surface) 0%, var(--vespera-gold-shadow) 100%);
+    border-color : var(--vespera-gold-bright);
+    box-shadow   : var(--vespera-glow-gold);
+    color        : var(--vespera-gold-glow);
+    transform    : translateY(-2px);
+}
+
+.vamp-btn-ghost
+{
+    background : transparent;
+    color      : var(--vespera-bone-ink);
+    border     : 1px solid var(--vespera-border-crimson);
+}
+
+.vamp-btn-ghost:hover
+{
+    background   : rgba(138, 3, 3, 0.15);
+    border-color : var(--vespera-crimson);
+    color        : var(--vespera-parchment);
+    box-shadow   : 0 0 10px rgba(138, 3, 3, 0.25);
+}
+
+/* Form Controls */
+.vamp-input,
+.vamp-select,
+.vamp-textarea
+{
+    width            : 100%;
+    background-color : var(--vespera-surface);
+    border           : 1px solid rgba(138, 3, 3, 0.35);
+    border-radius    : var(--vespera-radius-sm);
+    color            : var(--vespera-parchment);
+    font-family      : "Fira Code", monospace;
+    font-size        : 0.9rem;
+    padding          : 0.55rem 0.85rem;
+    transition       : all 0.2s ease;
+    outline          : none;
+}
+
+.vamp-input:focus,
+.vamp-select:focus,
+.vamp-textarea:focus
+{
+    border-color     : var(--vespera-gold);
+    box-shadow       : 0 0 10px rgba(197, 160, 89, 0.30), inset 0 0 5px rgba(0, 0, 0, 0.5);
+    background-color : var(--vespera-surface-hover);
+}
+
+.vamp-input::placeholder
+{
+    color   : var(--vespera-bone-silent);
+    opacity : 0.6;
+}
+
+/* Sliders */
+.vamp-range
+{
+    -webkit-appearance : none;
+    appearance         : none;
+    width              : 100%;
+    height             : 6px;
+    background         : linear-gradient(90deg, var(--vespera-wine) 0%, var(--vespera-crimson) 100%);
+    border-radius      : 3px;
+    border             : 1px solid rgba(197, 160, 89, 0.3);
+    outline            : none;
+    cursor             : pointer;
+    transition         : box-shadow 0.2s ease;
+}
+
+.vamp-range:hover
+{
+    box-shadow : 0 0 8px rgba(138, 3, 3, 0.6);
+}
+
+.vamp-range::-webkit-slider-thumb
+{
+    -webkit-appearance : none;
+    appearance         : none;
+    width              : 18px;
+    height             : 18px;
+    border-radius      : 50%;
+    background         : radial-gradient(circle, var(--vespera-gold-bright) 20%, var(--vespera-gold-dark) 80%);
+    border             : 2px solid var(--vespera-obsidian);
+    box-shadow         : 0 0 8px var(--vespera-gold);
+    cursor             : pointer;
+    transition         : transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vamp-range::-webkit-slider-thumb:hover
+{
+    transform  : scale(1.2);
+    box-shadow : 0 0 14px var(--vespera-gold-bright), 0 0 6px var(--vespera-crimson-glow);
+}
+
+/* Badges & Chips */
+.vamp-badge
+{
+    display        : inline-flex;
+    align-items    : center;
+    padding        : 0.2rem 0.65rem;
+    font-family    : "Cinzel", serif;
+    font-size      : 0.72rem;
+    font-weight    : 700;
+    letter-spacing : 0.05em;
+    text-transform : uppercase;
+    border-radius  : 3px;
+    border         : 1px solid;
+}
+
+.vamp-badge-crimson
+{
+    background-color : rgba(138, 3, 3, 0.2);
+    color            : var(--vespera-crimson-bright);
+    border-color     : rgba(138, 3, 3, 0.5);
+}
+
+.vamp-badge-gold
+{
+    background-color : rgba(197, 160, 89, 0.15);
+    color            : var(--vespera-gold-bright);
+    border-color     : rgba(197, 160, 89, 0.45);
+}
+
+/* Animations */
+@keyframes candlePulse
+{
+    0%, 100%
+    {
+        opacity : 0.85;
+        filter  : drop-shadow(0 0 12px rgba(138, 3, 3, 0.4));
+    }
+    50%
+    {
+        opacity : 1.00;
+        filter  : drop-shadow(0 0 22px rgba(230, 0, 0, 0.75));
+    }
+}
+.anim-candle-pulse
+{
+    animation : candlePulse 3.5s infinite ease-in-out;
+}
+
+@keyframes goldShimmer
+{
+    0%   { border-color : rgba(197, 160,  89, 0.2); }
+    50%  { border-color : rgba(232, 202, 132, 0.6); }
+    100% { border-color : rgba(197, 160,  89, 0.2); }
+}
+.anim-shimmer
+{
+    animation : goldShimmer 4s infinite ease-in-out;
+}
