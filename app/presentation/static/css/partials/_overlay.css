@@ -1,0 +1,58 @@
+/* Vespera/app/presentation/static/css/partials/_overlay.css */
+
+.overlay-card
+{
+    background-color : var(--vespera-velvet);
+    max-width        : 520px;
+    box-shadow       : 0 0 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(138, 3, 3, 0.45);
+}
+
+.sigil-spinner
+{
+    position        : relative;
+    width           : 80px;
+    height          : 80px;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+}
+
+@keyframes spinCw
+{
+    from { transform : rotate(0deg);   }
+    to   { transform : rotate(360deg); }
+}
+.sigil-ring-outer
+{
+    position      : absolute;
+    inset         : 0;
+    border-radius : 50%;
+    border        : 2px dashed var(--vespera-gold);
+    animation     : spinCw 8s linear infinite;
+    box-shadow    : 0 0 12px rgba(197, 160, 89, 0.3);
+}
+
+@keyframes spinCcw
+{
+    from { transform : rotate(360deg); }
+    to   { transform : rotate(0deg);   }
+}
+.sigil-ring-inner
+{
+    position      : absolute;
+    inset         : 8px;
+    border-radius : 50%;
+    border        : 2px solid transparent;
+    border-top    : 2px solid var(--vespera-crimson-bright);
+    border-bottom : 2px solid var(--vespera-crimson-bright);
+    animation     : spinCcw 3s linear infinite;
+    box-shadow    : 0 0 15px rgba(230, 0, 0, 0.5);
+}
+
+.sigil-core
+{
+    font-size : 1.6rem;
+    color     : var(--vespera-gold-bright);
+    filter    : drop-shadow(0 0 8px var(--vespera-gold));
+    animation : candlePulse 2s infinite ease-in-out;
+}

@@ -1,0 +1,132 @@
+/* Vespera/app/presentation/static/css/partials/_navbar.css */
+
+.navbar-vespera
+{
+    background-color        : rgba(8, 9, 12, 0.88);
+    backdrop-filter         : blur(14px);
+    -webkit-backdrop-filter : blur(14px);
+    border-bottom           : 1px solid var(--vespera-border-crimson);
+    height                  : 64px;
+    display                 : flex;
+    align-items             : center;
+    justify-content         : space-between;
+    padding                 : 0 1.75rem;
+    position                : sticky;
+    top                     : 0;
+    z-index                 : 1000;
+    box-shadow              : 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+
+.navbar-vespera::after
+{
+    content                 : "";
+    position                : absolute;
+    bottom                  : -1px;
+    left                    : 0;
+    right                   : 0;
+    height                  : 1px;
+    background              : linear-gradient(90deg, transparent 0%, var(--vespera-gold) 50%, transparent 100%);
+    opacity                 : 0.6;
+}
+
+.brand-area
+{
+    display         : flex;
+    align-items     : center;
+    gap             : 14px;
+    text-decoration : none;
+    color           : var(--vespera-parchment);
+    transition      : transform 0.25s ease;
+}
+
+.brand-area:hover
+{
+    transform : scale(1.02);
+}
+
+.brand-sigil
+{
+    width           : 38px;
+    height          : 38px;
+    border-radius   : 50%;
+    background      : radial-gradient(circle, var(--vespera-crimson) 0%, var(--vespera-blood-coagulated) 80%);
+    border          : 1px solid var(--vespera-gold);
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    color           : var(--vespera-gold-bright);
+    font-size       : 1.1rem;
+    box-shadow      : 0 0 12px rgba(138, 3, 3, 0.6);
+}
+
+.brand-title
+{
+    font-size      : 1.25rem;
+    font-weight    : 900;
+    letter-spacing : 0.12rem;
+    color          : var(--vespera-parchment);
+    line-height    : 1;
+    text-shadow    : 0 0 10px rgba(197, 160, 89, 0.4);
+}
+
+.brand-sub
+{
+    font-size      : 0.65rem;
+    letter-spacing : 0.08em;
+    color          : var(--vespera-gold);
+    text-transform : uppercase;
+    margin-top     : 2px;
+}
+
+.modules-container
+{
+    display : flex;
+    height  : 100%;
+    gap     : 4px;
+}
+
+.module-tab
+{
+    color           : var(--vespera-bone-silent);
+    padding         : 0 1.25rem;
+    display         : flex;
+    align-items     : center;
+    text-decoration : none;
+    height          : 100%;
+    font-family     : "Cinzel", serif;
+    font-size       : 0.85rem;
+    font-weight     : 600;
+    letter-spacing  : 0.06em;
+    text-transform  : uppercase;
+    cursor          : pointer;
+    border-bottom   : 3px solid transparent;
+    transition      : all 0.25s ease;
+    position        : relative;
+}
+
+.module-tab:hover
+{
+    color            : var(--vespera-parchment);
+    background-color : rgba(138, 3, 3, 0.08);
+    text-shadow      : 0 0 8px rgba(197, 160, 89, 0.4);
+}
+
+.module-tab.active
+{
+    color            : var(--vespera-parchment);
+    border-bottom    : 3px solid var(--vespera-crimson-bright);
+    background-color : rgba(138, 3, 3, 0.14);
+    text-shadow      : 0 0 10px rgba(184, 13, 26, 0.5);
+}
+
+.module-tab.active::after
+{
+    content    : "";
+    position   : absolute;
+    bottom     : 0;
+    left       : 30%;
+    right      : 30%;
+    height     : 1px;
+    background : var(--vespera-gold);
+    box-shadow : 0 0 6px var(--vespera-gold);
+}

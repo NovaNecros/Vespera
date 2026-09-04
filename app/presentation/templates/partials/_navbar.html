@@ -1,0 +1,59 @@
+<!-- Vespera/app/presentation/templates/partials/_navbar.html -->
+
+<nav class="navbar-vespera">
+    <!-- Brand Emblem -->
+    <a class="brand-area group flex items-center gap-3.5 no-underline transition-transform duration-200 hover:scale-[1.02]"
+       href="{{ url_for('studio.studio') }}">
+        <div class="brand-sigil flex items-center justify-center">
+            <i class="fa-solid fa-ankh text-vespera-goldbright"></i>
+        </div>
+        <div class="flex flex-col">
+            <span class="brand-title font-ornate text-vespera-parchment text-xl font-bold tracking-wider leading-none">
+                Vespera
+            </span>
+            <span class="brand-sub font-cinzel text-vespera-gold text-[0.65rem] tracking-widest uppercase mt-0.5">
+                Morphogenetic Grimoire
+            </span>
+        </div>
+    </a>
+
+    <!-- Modules -->
+    <div id="vespera-navmenu"
+         class="modules-container flex h-full gap-1">
+        <a class="module-tab {% if request.path.startswith('/studio') %}active{% endif %}"
+           href="{{ url_for('studio.studio') }}"
+           data-target="studio">
+            <i class="fa-solid fa-flask-vial mr-2 text-vespera-bright"></i>
+            <span>The Studio</span>
+        </a>
+
+        <a class="module-tab {% if request.path == '/vault' or request.path == '/vault/' %}active{% endif %}"
+           href="{{ url_for('vault.vault') }}"
+           data-target="vault">
+            <i class="fa-solid fa-dungeon mr-2 text-vespera-gold"></i>
+            <span>The Vault</span>
+        </a>
+
+        <a class="module-tab {% if request.path.startswith('/vault/cript') %}active{% endif %}"
+           href="{{ url_for('vault.cript') }}"
+           data-target="cript">
+            <i class="fa-solid fa-key mr-2 text-vespera-silent"></i>
+            <span>The Crypt</span>
+        </a>
+
+        <a class="module-tab opacity-50 cursor-not-allowed"
+           href="#"
+           title="The seal remains unbroken">
+            <i class="fa-solid fa-lock mr-2 text-vespera-amethyst"></i>
+            <span>The Enigma</span>
+        </a>
+    </div>
+
+    <!-- :p -->
+    <div class="hidden md:flex items-center gap-2">
+        <span class="vamp-badge vamp-badge-crimson font-mono text-xs">
+            <i class="fa-solid fa-heart-pulse mr-1 text-vespera-bright animate-pulse"></i>
+            Version 22.3009
+        </span>
+    </div>
+</nav>

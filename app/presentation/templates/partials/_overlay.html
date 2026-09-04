@@ -1,0 +1,33 @@
+<!-- Vespera/app/presentation/templates/partials/_overlay.html -->
+
+<div id="loading-overlay"
+     class="vespera-overlay fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-vespera-void/85 backdrop-blur-md">
+    <div class="overlay-card relative w-full max-w-lg p-8 bg-vespera-velvet border border-vespera-border-crimson shadow-ambient rounded-vespera filigree-card text-center">
+        <!-- Filigree Corners -->
+        <div class="filigree-corner-tl"></div>
+        <div class="filigree-corner-tr"></div>
+        <div class="filigree-corner-bl"></div>
+        <div class="filigree-corner-br"></div>
+
+        <!-- Spinner -->
+        <div class="sigil-spinner mb-6 mx-auto">
+            <div class="sigil-ring-outer"></div>
+            <div class="sigil-ring-inner"></div>
+            <i class="fa-solid fa-ankh sigil-core"></i>
+        </div>
+
+        <h3 id="overlay-title"
+            class="font-ornate text-vespera-parchment text-xl font-bold mb-2 tracking-widest">
+            Synthesizing Morphogenesis
+        </h3>
+
+        <p id="overlay-subtitle"
+           class="text-vespera-silent font-serif text-base mb-0 leading-relaxed">
+            Integrating Gray-Scott partial differential equations across the cellular lattice...
+            <br>
+            <span class="text-vespera-bright font-mono text-xs tracking-normal mt-1 block">
+                Do not disturb the reaction.
+            </span>
+        </p>
+    </div>
+</div>

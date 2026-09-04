@@ -1,0 +1,50 @@
+<!-- Vespera/app/presentation/templates/partials/_alert_modal.html -->
+
+<div id="general-alert-modal" role="dialog" aria-labelledby="general-alert-modal-label" aria-modal="true"
+     class="fixed inset-0 z-[9998] hidden items-center justify-center p-4 bg-vespera-void/80 backdrop-blur-md transition-opacity duration-300">
+
+    <!-- Modal Dialog Card -->
+    <div class="relative w-full max-w-md p-6 bg-vespera-velvet border border-vespera-border-crimson shadow-ambient rounded-vespera filigree-card alert-modal-content text-center"
+         style="max-width : 480px;">
+            <!-- Filigree Corners -->
+        <div class="filigree-corner-tl"></div>
+        <div class="filigree-corner-tr"></div>
+        <div class="filigree-corner-bl"></div>
+        <div class="filigree-corner-br"></div>
+
+        <!-- Close Button -->
+        <button id="alert-modal-close-icon-btn" type="button" aria-label="Close"
+                class="absolute top-3 right-3 text-vespera-silent hover:text-vespera-parchment hover:rotate-90 transition-all duration-200 text-lg w-8 h-8 flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="pt-2">
+            <!-- Icon Emblem -->
+            <div id="alert-modal-icon-wrapper"
+                 class="alert-modal-icon-wrapper mb-4 mx-auto alert-type-danger">
+                <i id="alert-modal-icon" class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <!-- Modal Title -->
+            <h4 id="general-alert-modal-label"
+                class="font-cinzel text-vespera-parchment font-bold text-lg mb-2 tracking-wide">
+                <!-- TS -->
+            </h4>
+
+            <!-- Modal Message -->
+            <div id="alert-modal-message"
+                 class="text-vespera-silent font-serif text-base mb-6 leading-relaxed">
+                <!-- TS -->
+            </div>
+
+            <!-- Dismiss Button (otro xd) -->
+            <div class="flex justify-center">
+                <button id="alert-modal-dismiss-btn" type="button"
+                        class="vamp-btn vamp-btn-gold px-6 py-2 text-xs">
+                    <i class="fa-solid fa-xmark mr-2"></i>
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

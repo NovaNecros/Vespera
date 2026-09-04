@@ -1,0 +1,73 @@
+/* Vespera/app/presentation/static/css/_alert_modal.css */
+
+/* Animations */
+@keyframes  vampIconPop
+{
+    0%
+    {
+        transform : scale(0.3) rotate(-30deg);
+        opacity   : 0;
+    }
+    70%
+    {
+        transform : scale(1.15) rotate(5deg);
+        opacity   : 1;
+    }
+    100%
+    {
+        transform : scale(1) rotate(0deg);
+        opacity   : 1;
+    }
+}
+
+.alert-modal-icon-wrapper
+{
+    width           : 68px;
+    height          : 68px;
+    border-radius   : 50%;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    font-size       : 1.85rem;
+    transition      : all 0.3s ease;
+}
+
+#general-alert-modal:not(.hidden) .alert-modal-icon-wrapper,
+#general-alert-modal.flex         .alert-modal-icon-wrapper
+{
+    animation : vampIconPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* --- Variants --- */
+.alert-modal-icon-wrapper.alert-type-danger,
+.alert-modal-icon-wrapper.alert-type-error
+{
+    background-color : rgba(138, 3, 3, 0.25);
+    color            : var(--vespera-crimson-bright);
+    border           : 2px solid var(--vespera-crimson);
+    box-shadow       : 0 0 15px rgba(184, 13, 26, 0.5);
+}
+
+.alert-modal-icon-wrapper.alert-type-warning
+{
+    background-color : rgba(197, 160, 89, 0.2);
+    color            : var(--vespera-gold-bright);
+    border           : 2px solid var(--vespera-gold);
+    box-shadow       : 0 0 15px rgba(197, 160, 89, 0.4);
+}
+
+.alert-modal-icon-wrapper.alert-type-success
+{
+    background-color : rgba(21, 143, 75, 0.2);
+    color            : #28A745;
+    border           : 2px solid #28A745;
+    box-shadow       : 0 0 15px rgba(40, 167, 69, 0.4);
+}
+
+.alert-modal-icon-wrapper.alert-type-info
+{
+    background-color : rgba(72, 17, 87, 0.3);
+    color            : var(--vespera-lilac-mist);
+    border           : 2px solid var(--vespera-violet-glow);
+    box-shadow       : 0 0 15px rgba(152, 56, 184, 0.4);
+}
