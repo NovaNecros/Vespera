@@ -49,17 +49,17 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     // PARAMETERS
     const feedSlider      : HTMLInputElement  | null = document.getElementById("feed-rate-slider")         as HTMLInputElement;
-    const feedDisplay     : HTMLElement       | null = document.getElementById("feed-rate-display");
+    const feedInput       : HTMLInputElement  | null = document.getElementById("feed-rate-input")          as HTMLInputElement;
     const killSlider      : HTMLInputElement  | null = document.getElementById("kill-rate-slider")         as HTMLInputElement;
-    const killDisplay     : HTMLElement       | null = document.getElementById("kill-rate-display");
+    const killInput       : HTMLInputElement  | null = document.getElementById("kill-rate-input")          as HTMLInputElement;
     const diffUSlider     : HTMLInputElement  | null = document.getElementById("diff-u-slider")            as HTMLInputElement;
-    const diffUDisplay    : HTMLElement       | null = document.getElementById("diff-u-display");
+    const diffUInput      : HTMLInputElement  | null = document.getElementById("diff-u-input")             as HTMLInputElement;
     const diffVSlider     : HTMLInputElement  | null = document.getElementById("diff-v-slider")            as HTMLInputElement;
-    const diffVDisplay    : HTMLElement       | null = document.getElementById("diff-v-display");
+    const diffVInput      : HTMLInputElement  | null = document.getElementById("diff-v-input")             as HTMLInputElement;
     const iterSlider      : HTMLInputElement  | null = document.getElementById("iterations-slider")        as HTMLInputElement;
-    const iterDisplay     : HTMLElement       | null = document.getElementById("iterations-display");
+    const iterInput       : HTMLInputElement  | null = document.getElementById("iterations-input")         as HTMLInputElement;
     const dtSlider        : HTMLInputElement  | null = document.getElementById("dt-slider")                as HTMLInputElement;
-    const dtDisplay       : HTMLElement       | null = document.getElementById("dt-display");
+    const dtInput         : HTMLInputElement  | null = document.getElementById("dt-input")                 as HTMLInputElement;
     const paletteSelect   : HTMLSelectElement | null = document.getElementById("palette-select")           as HTMLSelectElement;
     const userNotesInput  : HTMLTextAreaElement | null = document.getElementById("user-notes-input")       as HTMLTextAreaElement;
 
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const defaultK       = "0.0620";
     const defaultDu      = "1.000";
     const defaultDv      = "0.500";
-    const defaultIter    = "4000";
+    const defaultIter    = "12000";
     const defaultDt      = "1.00";
     const defaultPalette = "crimson_eclipse";
 
@@ -115,6 +115,51 @@ document.addEventListener("DOMContentLoaded", () : void =>
         };
     }
     const state : StudioState = setDefaultState();
+
+    function syncControlPair(
+        slider     : HTMLInputElement | null,
+        numInput   : HTMLInputElement | null,
+        precision  : number
+    ) : void
+    {
+        if(!slider || !numInput) return;
+
+        // Slider -> Input
+        slider.addEventListener("input", () =>
+        {
+            numInput.value = parseFloat(slider.value).toFixed(precision);
+        });
+
+        // Input -> Slider
+        numInput.addEventListener("input", () =>
+        {
+            const parsed : number = parseFloat(numInput.value);
+            if(!isNaN(parsed))
+            {
+                const minVal  : number = parseFloat(slider.min);
+                const maxVal  : number = parseFloat(slider.max);
+                const clamped : number = Math.max(minVal, Math.min(maxVal, parsed));
+                slider.value           = clamped.toString();
+            }
+        });
+
+        numInput.addEventListener("blur", () =>
+        {
+            const parsed : number = parseFloat(numInput.value);
+            if(isNaN(parsed))
+            {
+                numInput.value = parseFloat(slider.value).toFixed(precision);
+            }
+            else
+            {
+                const minVal  : number = parseFloat(slider.min);
+                const maxVal  : number = parseFloat(slider.max);
+                const clamped : number = Math.max(minVal, Math.min(maxVal, parsed));
+                numInput.value = clamped.toFixed(precision);
+                slider.value   = clamped.toString();
+            }
+        });
+    }
 
     // PALETTES
     async function loadPaletteCatalog() : Promise<void>
@@ -148,23 +193,22 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(paletteSelect)  paletteSelect.value      = defaultPalette;
         if(userNotesInput) userNotesInput.value     = "";
 
-        if(feedDisplay)    feedDisplay.textContent  = defaultF;
-        if(killDisplay)    killDisplay.textContent  = defaultK;
-        if(diffUDisplay)   diffUDisplay.textContent = defaultDu;
-        if(diffVDisplay)   diffVDisplay.textContent = defaultDv;
-        if(iterDisplay)    iterDisplay.textContent  = defaultIter;
-        if(dtDisplay)      dtDisplay.textContent    = defaultDt;
+        if(feedInput)      feedInput.value          = defaultF;
+        if(killInput)      killInput.value          = defaultK;
+        if(diffUInput)     diffUInput.value         = defaultDu;
+        if(diffVInput)     diffVInput.value         = defaultDv;
+        if(iterInput)      iterInput.value          = defaultIter;
+        if(dtInput)        dtInput.value            = defaultDt;
     }
 
-    function bindSliderDisplays() : void
+    function bindSliderInputs() : void
     {
-        feedSlider?.addEventListener("input",  () => { if(feedDisplay) feedDisplay.textContent   = parseFloat(feedSlider.value).toFixed( 4); });
-        killSlider?.addEventListener("input",  () => { if(killDisplay) killDisplay.textContent   = parseFloat(killSlider.value).toFixed( 4); });
-        diffUSlider?.addEventListener("input", () => { if(diffUDisplay) diffUDisplay.textContent = parseFloat(diffUSlider.value).toFixed(3); });
-        diffVSlider?.addEventListener("input", () => { if(diffVDisplay) diffVDisplay.textContent = parseFloat(diffVSlider.value).toFixed(3); });
-        iterSlider?.addEventListener("input",  () => { if(iterDisplay) iterDisplay.textContent   = parseInt(iterSlider.value, 10).toString();      });
-        dtSlider?.addEventListener("input",    () => { if(dtDisplay) dtDisplay.textContent       = parseFloat(dtSlider.value).toFixed(   2); });
-
+        syncControlPair(feedSlider,  feedInput,  4);
+        syncControlPair(killSlider,  killInput,  4);
+        syncControlPair(diffUSlider, diffUInput, 3);
+        syncControlPair(diffVSlider, diffVInput, 3);
+        syncControlPair(iterSlider,  iterInput,  0);
+        syncControlPair(dtSlider,    dtInput,    2);
         resetParamsBtn?.addEventListener("click", resetFormula);
     }
 
@@ -534,7 +578,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             canvasStageWrap?.classList.remove("synthesizing");
             (window as any).showAlertModal?.({
                 title    : "Synthesis Ruptured",
-                message  : error?.message || "An unexpected alchemical disruption collapsed the morphogenesis.",
+                message  : "An unexpected alchemical disruption collapsed the morphogenesis.",
                 type     : "danger"
             });
         }
@@ -545,7 +589,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     async function initStudio()
     {
         await loadPaletteCatalog();
-        bindSliderDisplays();
+        bindSliderInputs();
         bindDropzoneListeners();
         bindCanvasControls();
     }

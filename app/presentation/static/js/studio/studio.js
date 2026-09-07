@@ -1,6 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const base_js_1 = require("../base.js");
+import { apiFetch, hideLoadingOverlay, showLoadingOverlay, truncateHash } from "../base.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("studio-main-container");
     if (!mainContainer)
@@ -21,17 +19,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const removeSourceBtn = document.getElementById("remove-source-btn");
     const sourceStatusEl = document.getElementById("source-image-status");
     const feedSlider = document.getElementById("feed-rate-slider");
-    const feedDisplay = document.getElementById("feed-rate-display");
+    const feedInput = document.getElementById("feed-rate-input");
     const killSlider = document.getElementById("kill-rate-slider");
-    const killDisplay = document.getElementById("kill-rate-display");
+    const killInput = document.getElementById("kill-rate-input");
     const diffUSlider = document.getElementById("diff-u-slider");
-    const diffUDisplay = document.getElementById("diff-u-display");
+    const diffUInput = document.getElementById("diff-u-input");
     const diffVSlider = document.getElementById("diff-v-slider");
-    const diffVDisplay = document.getElementById("diff-v-display");
+    const diffVInput = document.getElementById("diff-v-input");
     const iterSlider = document.getElementById("iterations-slider");
-    const iterDisplay = document.getElementById("iterations-display");
+    const iterInput = document.getElementById("iterations-input");
     const dtSlider = document.getElementById("dt-slider");
-    const dtDisplay = document.getElementById("dt-display");
+    const dtInput = document.getElementById("dt-input");
     const paletteSelect = document.getElementById("palette-select");
     const userNotesInput = document.getElementById("user-notes-input");
     const canvasStageWrap = document.getElementById("canvas-stage-wrapper");
@@ -57,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const defaultK = "0.0620";
     const defaultDu = "1.000";
     const defaultDv = "0.500";
-    const defaultIter = "4000";
+    const defaultIter = "12000";
     const defaultDt = "1.00";
     const defaultPalette = "crimson_eclipse";
     function setDefaultState() {
@@ -74,10 +72,39 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
     const state = setDefaultState();
+    function syncControlPair(slider, numInput, precision) {
+        if (!slider || !numInput)
+            return;
+        slider.addEventListener("input", () => {
+            numInput.value = parseFloat(slider.value).toFixed(precision);
+        });
+        numInput.addEventListener("input", () => {
+            const parsed = parseFloat(numInput.value);
+            if (!isNaN(parsed)) {
+                const minVal = parseFloat(slider.min);
+                const maxVal = parseFloat(slider.max);
+                const clamped = Math.max(minVal, Math.min(maxVal, parsed));
+                slider.value = clamped.toString();
+            }
+        });
+        numInput.addEventListener("blur", () => {
+            const parsed = parseFloat(numInput.value);
+            if (isNaN(parsed)) {
+                numInput.value = parseFloat(slider.value).toFixed(precision);
+            }
+            else {
+                const minVal = parseFloat(slider.min);
+                const maxVal = parseFloat(slider.max);
+                const clamped = Math.max(minVal, Math.min(maxVal, parsed));
+                numInput.value = clamped.toFixed(precision);
+                slider.value = clamped.toString();
+            }
+        });
+    }
     async function loadPaletteCatalog() {
         if (!paletteSelect)
             return;
-        const res = await (0, base_js_1.apiFetch)(palettesApiUrl);
+        const res = await apiFetch(palettesApiUrl);
         if (!res.success || !Array.isArray(res.data))
             return;
         paletteSelect.innerHTML = "";
@@ -107,32 +134,26 @@ document.addEventListener("DOMContentLoaded", () => {
             paletteSelect.value = defaultPalette;
         if (userNotesInput)
             userNotesInput.value = "";
-        if (feedDisplay)
-            feedDisplay.textContent = defaultF;
-        if (killDisplay)
-            killDisplay.textContent = defaultK;
-        if (diffUDisplay)
-            diffUDisplay.textContent = defaultDu;
-        if (diffVDisplay)
-            diffVDisplay.textContent = defaultDv;
-        if (iterDisplay)
-            iterDisplay.textContent = defaultIter;
-        if (dtDisplay)
-            dtDisplay.textContent = defaultDt;
+        if (feedInput)
+            feedInput.value = defaultF;
+        if (killInput)
+            killInput.value = defaultK;
+        if (diffUInput)
+            diffUInput.value = defaultDu;
+        if (diffVInput)
+            diffVInput.value = defaultDv;
+        if (iterInput)
+            iterInput.value = defaultIter;
+        if (dtInput)
+            dtInput.value = defaultDt;
     }
-    function bindSliderDisplays() {
-        feedSlider?.addEventListener("input", () => { if (feedDisplay)
-            feedDisplay.textContent = parseFloat(feedSlider.value).toFixed(4); });
-        killSlider?.addEventListener("input", () => { if (killDisplay)
-            killDisplay.textContent = parseFloat(killSlider.value).toFixed(4); });
-        diffUSlider?.addEventListener("input", () => { if (diffUDisplay)
-            diffUDisplay.textContent = parseFloat(diffUSlider.value).toFixed(3); });
-        diffVSlider?.addEventListener("input", () => { if (diffVDisplay)
-            diffVDisplay.textContent = parseFloat(diffVSlider.value).toFixed(3); });
-        iterSlider?.addEventListener("input", () => { if (iterDisplay)
-            iterDisplay.textContent = parseInt(iterSlider.value, 10).toString(); });
-        dtSlider?.addEventListener("input", () => { if (dtDisplay)
-            dtDisplay.textContent = parseFloat(dtSlider.value).toFixed(2); });
+    function bindSliderInputs() {
+        syncControlPair(feedSlider, feedInput, 4);
+        syncControlPair(killSlider, killInput, 4);
+        syncControlPair(diffUSlider, diffUInput, 3);
+        syncControlPair(diffVSlider, diffVInput, 3);
+        syncControlPair(iterSlider, iterInput, 0);
+        syncControlPair(dtSlider, dtInput, 2);
         resetParamsBtn?.addEventListener("click", resetFormula);
     }
     function handleFileSelection(file) {
@@ -265,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         const artifactId = state.currentArtifact.id_artifact;
         const apiUrl = toggleFavoriteApiUrl.replace("/artifact/0", `/artifact/${artifactId}`);
-        const res = await (0, base_js_1.apiFetch)(apiUrl, { method: "POST" });
+        const res = await apiFetch(apiUrl, { method: "POST" });
         if (res.success && res.data) {
             state.currentArtifact.is_favorite = res.data.is_favorite;
             if (favoriteBtn) {
@@ -343,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (metricTime)
             metricTime.textContent = `${artifact.execution_time_ms.toFixed(1)} ms`;
         if (metricHash) {
-            metricHash.textContent = (0, base_js_1.truncateHash)(artifact.artifact_hash, 6);
+            metricHash.textContent = truncateHash(artifact.artifact_hash, 6);
             metricHash.title = artifact.artifact_hash;
         }
         if (downloadLink) {
@@ -389,15 +410,15 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             pauseAnimation();
             canvasStageWrap?.classList.add("synthesizing");
-            (0, base_js_1.showLoadingOverlay)({
+            showLoadingOverlay({
                 title: "Integrating Reaction-Diffusion Lattice",
                 subtitle: "Evaluating 2D Laplacian field and non-linear morphogen kinetics..."
             });
-            const res = await (0, base_js_1.apiFetch)(generateApiUrl, {
+            const res = await apiFetch(generateApiUrl, {
                 method: "POST",
                 body: formData
             });
-            (0, base_js_1.hideLoadingOverlay)();
+            hideLoadingOverlay();
             canvasStageWrap?.classList.remove("synthesizing");
             if (!res.success || !res.data)
                 return;
@@ -411,11 +432,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         catch (error) {
-            (0, base_js_1.hideLoadingOverlay)();
+            hideLoadingOverlay();
             canvasStageWrap?.classList.remove("synthesizing");
             window.showAlertModal?.({
                 title: "Synthesis Ruptured",
-                message: error?.message || "An unexpected alchemical disruption collapsed the morphogenesis.",
+                message: "An unexpected alchemical disruption collapsed the morphogenesis.",
                 type: "danger"
             });
         }
@@ -423,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
     synthesizeBtn?.addEventListener("click", executeSynthesis);
     async function initStudio() {
         await loadPaletteCatalog();
-        bindSliderDisplays();
+        bindSliderInputs();
         bindDropzoneListeners();
         bindCanvasControls();
     }

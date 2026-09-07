@@ -65,13 +65,13 @@ def create_app() -> Flask:
 
     try:
         from app.presentation.routes.studio_routes import studio_bp
-        from app.presentation.routes.enigma_routes import enigma_bp
         from app.presentation.routes.vault_routes  import vault_bp
+        #from app.presentation.routes.enigma_routes import enigma_bp
 
         app.register_blueprint(studio_bp)
-        app.register_blueprint(enigma_bp)
         app.register_blueprint(vault_bp)
-    except ImportError:
-        pass
+        #app.register_blueprint(enigma_bp)
+    except ImportError as e:
+        print(f"[!]{Colors.YELLOW} WARNING - COULD NOT IMPORT ROUTES: {Colors.RESET}{e}")
 
     return app

@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 (function () {
     function initNavbar() {
         const currentPath = window.location.pathname;

@@ -7,6 +7,7 @@ import base64
 import numpy as np
 from scipy.ndimage import convolve
 from PIL import Image
+from tqdm import tqdm
 
 from app.core.config import TuringSettings, RNGSettings
 from app.infrastructure.palettes import ColorPalettes
@@ -23,7 +24,7 @@ class TuringEngine:
         [0.05,  0.20, 0.05],
         [0.20, -1.00, 0.20],
         [0.05,  0.20, 0.05]
-    ], dtype=np.float64)
+    ], dtype=np.float32)
 
     def __init__(
         self          : TuringEngine,
@@ -57,14 +58,14 @@ class TuringEngine:
     ) -> np.ndarray:
         """
         Convierte una imagen de un objeto PIL a un mapa de luminancia 2D normalizado [0.0, 1.0].
-        :return : Matriz de NumPy tipo float64.
+        :return : Matriz de NumPy tipo float32.
         """
         try:
-            grayscale : Image.Image = image.convert("L").resize(
+            grayscale  : Image.Image = image.convert("L").resize(
                 (target_width, target_height),
                 Image.Resampling.LANCZOS
             )
-            lum_array : np.ndarray = np.asarray(grayscale, dtype=np.float64) / 255.0
+            lum_array : np.ndarray = np.asarray(grayscale, dtype=np.float32) / 255.0
             return lum_array
         except Exception as e:
             raise ValueError(f"Error al preprocesar la imagen: {e}")
@@ -72,10 +73,10 @@ class TuringEngine:
     def _render_frame_base64(
         self     : TuringEngine,
         v_matrix : np.ndarray,
-        size     : int = 256
+        size     : int = 512
     ) -> str:
         """
-        Renderiza una matriz de concentración V a una imagen miniatura base64 JPEG/WebP.
+        Renderiza una matriz de concentración V a una imagen 512x512 miniatura base64 JPEG/WebP.
         """
         try:
             rgb_array : np.ndarray = ColorPalettes.apply_palette(v_matrix, self.color_palette)
@@ -104,24 +105,23 @@ class TuringEngine:
             height, width = luminance_field.shape
 
             # Estado base: U saturado, V en reposo
-            u : np.ndarray = np.ones((height, width), dtype=np.float64)
-            v : np.ndarray = np.zeros((height, width), dtype=np.float64)
+            u : np.ndarray = np.ones((height, width), dtype=np.float32)
+            v : np.ndarray = np.zeros((height, width), dtype=np.float32)
 
             # Generador pseudoaleatorio determinista usando una semilla fija
             rng : np.random.Generator = np.random.default_rng(seed=self.seed)
 
             # Inyección controlada de ruido
-            noise : np.ndarray = rng.uniform(0.0, 0.05, size=(height, width))
+            noise : np.ndarray = rng.uniform(0.0, 0.08, size=(height, width)).astype(np.float32)
 
             # Modulación de V a partir de los contrastes de la imagen original
-            mask : np.ndarray = (luminance_field > 0.15)
-            v[mask] = luminance_field[mask] + noise[mask]
-            u[mask] = 1.0 - (luminance_field[mask] * 0.50)
+            v = (luminance_field*0.35 + noise).astype(np.float32)
+            u = 1.0 - (luminance_field * 0.30).astype(np.float32)
 
-            center_x, center_y = width // 2, height // 2
-            radius : int       = max(4, min(int(height), int(width)) // 32)
-            v[center_y - radius : center_y + radius, center_x - radius : center_x + radius] += 0.40
-            u[center_y - radius : center_y + radius, center_x - radius : center_x + radius] -= 0.20
+            # center_x, center_y = width // 2, height // 2
+            # radius : int       = max(6, min(int(height), int(width)) // 24)
+            # v[center_y - radius : center_y + radius, center_x - radius : center_x + radius] += 0.35
+            # u[center_y - radius : center_y + radius, center_x - radius : center_x + radius] -= 0.20
 
             return np.clip(u, 0.0, 1.0), np.clip(v, 0.0, 1.0)
         except Exception as e:
@@ -147,7 +147,7 @@ class TuringEngine:
             u, v             = self.seed_concentrations(lum)
 
             # Variación espacial suave del feed rate F modulado por la luminancia.
-            spatial_f : np.ndarray = self.feed_rate * (0.90 + (lum*0.20))
+            spatial_f : np.ndarray = self.feed_rate * (0.95 + (lum*0.10)).astype(np.float32)
             spatial_k : float      = self.kill_rate
 
             kernel : np.ndarray = self.LAPLACIAN_KERNEL
@@ -164,7 +164,7 @@ class TuringEngine:
                 capture_steps : set[int]   = {int(s*(self.iterations-1)) for s in raw_steps}
 
             # Integración determinista usando Euler explicito con condiciones de frontera periódicas wrap.
-            for step in range(self.iterations):
+            for step in tqdm(range(self.iterations), desc="Integrating..."):
                 if capture_timeline and step in capture_steps:
                     keyframes.append(self._render_frame_base64(v))
 

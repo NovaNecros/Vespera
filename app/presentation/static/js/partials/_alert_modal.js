@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 (function () {
     const modalEl = document.getElementById("general-alert-modal");
     const titleEl = document.getElementById("general-alert-modal-label");
@@ -65,3 +63,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
     window.showAlertModal = showAlertModal;
     window.hideAlertModal = hideAlertModal;
 })();
+export {};

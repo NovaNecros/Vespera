@@ -5,7 +5,7 @@
 {% block title %}Vespera - The Studio{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/studio.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/studio/studio.css') }}">
 {% endblock %}
 
 {% block scripts %}
@@ -133,67 +133,71 @@
                     <!-- Feed & Kill Rates -->
                     <div class="flex flex-col gap-1.5">
                         <div class="flex items-center justify-between font-mono text-xs">
-                            <label for="feed-rate-slider"
+                            <label for="feed-rate-input"
                                    class="text-vespera-parchment font-cinzel">
                                 Feed Rate (F)
                             </label>
-                            <span id="feed-rate-display"
-                                  class="text-vespera-goldbright font-bold">
-                                0.0545
-                            </span>
+                            <input id="feed-rate-input" type="number"
+                                   min="0.0100" max="0.0900" step="0.0005" value="0.0545"
+                                   class="vamp-num-input">
                         </div>
-                        <input id="feed-rate-slider" type="range" name="feed_rate"
-                               min="0.0100" max="0.0900" step="0.0005" value="0.0545"
-                               class="vamp-range">
+                        <label>
+                            <input id="feed-rate-slider" type="range" name="feed_rate"
+                                   min="0.0100" max="0.0900" step="0.0005" value="0.0545"
+                                   class="vamp-range">
+                        </label>
                     </div>
 
                     <div class="flex flex-col gap-1.5">
                         <div class="flex items-center justify-between font-mono text-xs">
-                            <label for="kill-rate-slider"
+                            <label for="kill-rate-input"
                                    class="text-vespera-parchment font-cinzel">
                                 Kill Rate (K)
                             </label>
-                            <span id="kill-rate-display"
-                                  class="text-vespera-goldbright font-bold">
-                                0.0620
-                            </span>
+                            <input id="kill-rate-input" type="number"
+                                   min="0.0300" max="0.0700" step="0.0005" value="0.0620"
+                                   class="vamp-num-input">
                         </div>
-                        <input id="kill-rate-slider" type="range" name="kill_rate"
-                               min="0.0300" max="0.0700" step="0.0005" value="0.0620"
-                               class="vamp-range">
+                        <label>
+                            <input id="kill-rate-slider" type="range" name="kill_rate"
+                                   min="0.0300" max="0.0700" step="0.0005" value="0.0620"
+                                   class="vamp-range">
+                        </label>
                     </div>
 
                     <!-- Diffusion Coefficients -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <div class="flex items-center justify-between font-mono text-xs">
-                                <label for="diff-u-slider"
+                                <label for="diff-u-input"
                                        class="text-vespera-parchment font-cinzel">
                                     Diff U
                                 </label>
-                                <span id="diff-u-display"
-                                      class="text-vespera-gold">
-                                    1.000
-                                </span>
+                                <input id="diff-u-input" type="number"
+                                       min="0.200" max="1.500" step="0.050" value="1.000"
+                                       class="vamp-num-input">
                             </div>
-                            <input id="diff-u-slider" type="range" name="diff_u"
-                                   min="0.200" max="1.500" step="0.050" value="1.000"
-                                   class="vamp-range">
+                            <label>
+                                <input id="diff-u-slider" type="range" name="diff_u"
+                                       min="0.200" max="1.500" step="0.050" value="1.000"
+                                       class="vamp-range">
+                            </label>
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <div class="flex items-center justify-between font-mono text-xs">
-                                <label for="diff-v-slider"
+                                <label for="diff-v-input"
                                        class="text-vespera-parchment font-cinzel">
                                     Diff V
                                 </label>
-                                <span id="diff-v-display"
-                                      class="text-vespera-gold">
-                                    0.500
-                                </span>
+                                <input id="diff-v-input" type="number"
+                                       min="0.100" max="1.000" step="0.025" value="0.500"
+                                       class="vamp-num-input">
                             </div>
-                            <input id="diff-v-slider" type="range" name="diff_v"
-                                   min="0.100" max="1.000" step="0.025" value="0.500"
-                                   class="vamp-range">
+                            <label>
+                                <input id="diff-v-slider" type="range" name="diff_v"
+                                       min="0.100" max="1.000" step="0.025" value="0.500"
+                                       class="vamp-range">
+                            </label>
                         </div>
                     </div>
 
@@ -201,33 +205,35 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1.5">
                             <div class="flex items-center justify-between font-mono text-xs">
-                                <label for="iterations-slider"
+                                <label for="iterations-input"
                                        class="text-vespera-parchment font-cinzel">
                                     Iterations
                                 </label>
-                                <span id="iterations-display"
-                                      class="text-vespera-gold">
-                                    4000
-                                </span>
+                                <input id="iterations-input" type="number"
+                                       min="8000" max="20000" step="500" value="12000"
+                                       class="vamp-num-input">
                             </div>
-                            <input id="iterations-slider" type="range" name="iterations"
-                                   min="1000" max="8000" step="250" value="4000"
-                                   class="vamp-range">
+                            <label>
+                                <input id="iterations-slider" type="range" name="iterations"
+                                       min="8000" max="20000" step="500" value="12000"
+                                       class="vamp-range">
+                            </label>
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <div class="flex items-center justify-between font-mono text-xs">
-                                <label for="dt-slider"
+                                <label for="dt-input"
                                        class="text-vespera-parchment font-cinzel">
                                     Time Step (dt)
                                 </label>
-                                <span id="dt-display"
-                                      class="text-vespera-gold">
-                                    1.00
-                                </span>
+                                <input id="dt-input"
+                                       min="0.2" max="1.5" step="0.1" value="1.0"
+                                       class="vamp-num-input">
                             </div>
-                            <input id="dt-slider" type="range" name="dt"
-                                   min="0.2" max="1.5" step="0.1" value="1.0"
-                                   class="vamp-range">
+                            <label>
+                                <input id="dt-slider" type="range" name="dt"
+                                       min="0.2" max="1.5" step="0.1" value="1.0"
+                                       class="vamp-range">
+                            </label>
                         </div>
                     </div>
 
@@ -292,10 +298,10 @@
                 </div>
 
                 <div id="canvas-stage-wrapper"
-                     class="canvas-stage-wrapper relative w-full aspect-square max-w-[512px] bg-vespera-obsidian
-                            border border-vespera-border-crimson rounded overflow-hidden flex items-center
-                            justify-center shadow-inner">
-                    <canvas id="synthesis-canvas" width="512" height="512"
+                     class="canvas-stage-wrapper relative w-full aspect-square max-w-[512px] 2xl:max-w-[620px]
+                            bg-vespera-obsidian border border-vespera-border-crimson rounded overflow-hidden
+                            flex items-center justify-center shadow-inner">
+                    <canvas id="synthesis-canvas" width="1024" height="1024"
                             class="w-full h-full object-contain">
                         <!-- TS -->
                     </canvas>

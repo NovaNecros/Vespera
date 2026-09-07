@@ -74,12 +74,12 @@ class TuringSettings:
     DEFAULT_DIFF_U      : float = 1.0000
     DEFAULT_DIFF_V      : float = 0.5000
     DEFAULT_DT          : float = 1.0000
-    DEFAULT_ITERATIONS  : int   = 4000
-    DEFAULT_FRAMES      : int   = 12
+    DEFAULT_ITERATIONS  : int   = 12000
+    DEFAULT_FRAMES      : int   = 60
     DEFAULT_PALETTE     : str   = "crimson_eclipse"
-    DEFAULT_WIDTH       : int   = 512
-    DEFAULT_HEIGHT      : int   = 512
-    MAX_IMAGE_DIMENSION : int   = 1024
+    DEFAULT_WIDTH       : int   = 1024
+    DEFAULT_HEIGHT      : int   = 1024
+    MAX_IMAGE_DIMENSION : int   = 2048
 
 
 class Colors:

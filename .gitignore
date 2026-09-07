@@ -11,6 +11,9 @@ venv/
 vespera_structure.txt
 
 # Data
+data/
+inputs/
+outputs/
 vespera.db
 vespera.db-shm
 vespera.db-wal

@@ -304,6 +304,37 @@ body
     opacity : 0.6;
 }
 
+.vamp-num-input
+{
+    width            : 84px;
+    background-color : var(--vespera-surface);
+    border           : 1px solid rgba(197, 160, 89, 0.35);
+    border-radius    : var(--vespera-radius-sm);
+    color            : var(--vespera-gold-bright);
+    font-family      : "Fira Code", monospace;
+    font-size        : 0.75rem;
+    font-weight      : 500;
+    text-align       : right;
+    padding          : 0.2rem 0.5rem;
+    outline          : none;
+    transition       : border 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    -moz-appearance  : textfield;
+}
+
+.vamp-num-input:focus
+{
+    border-color     : var(--vespera-gold);
+    box-shadow       : 0 0 8px rgba(197, 160, 89, 0.40);
+    background-color : var(--vespera-surface-hover);
+}
+
+.vamp-num-input::-webkit-outer-spin-button,
+.vamp-num-input::-webkit-inner-spin-button
+{
+    -webkit-appearance : none;
+    margin             : 0;
+}
+
 /* Sliders */
 .vamp-range
 {

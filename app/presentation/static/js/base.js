@@ -1,12 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getVesperaPalette = getVesperaPalette;
-exports.showLoadingOverlay = showLoadingOverlay;
-exports.hideLoadingOverlay = hideLoadingOverlay;
-exports.apiFetch = apiFetch;
-exports.formatBytes = formatBytes;
-exports.truncateHash = truncateHash;
-function getVesperaPalette() {
+export function getVesperaPalette() {
     const style = getComputedStyle(document.documentElement);
     return {
         void: style.getPropertyValue("--vespera-void").trim() || "#040406",
@@ -48,7 +40,7 @@ function getVesperaPalette() {
         glowAmethyst: style.getPropertyValue("--vespera-glow-amethyst").trim() || "0 0 20px rgba(152, 56, 184, 0.35)"
     };
 }
-function showLoadingOverlay(options) {
+export function showLoadingOverlay(options) {
     const overlay = document.getElementById("loading-overlay");
     const titleEl = document.getElementById("overlay-title");
     const subEl = document.getElementById("overlay-subtitle");
@@ -61,14 +53,14 @@ function showLoadingOverlay(options) {
     overlay.classList.remove("hidden");
     overlay.classList.add("flex");
 }
-function hideLoadingOverlay() {
+export function hideLoadingOverlay() {
     const overlay = document.getElementById("loading-overlay");
     if (!overlay)
         return;
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
 }
-async function apiFetch(url, options) {
+export async function apiFetch(url, options) {
     try {
         const response = await fetch(url, options);
         const result = await response.json();
@@ -96,7 +88,7 @@ async function apiFetch(url, options) {
         };
     }
 }
-function formatBytes(bytes) {
+export function formatBytes(bytes) {
     if (bytes === 0)
         return "0 Bytes";
     const k = 1024;
@@ -104,7 +96,7 @@ function formatBytes(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
-function truncateHash(hash, chars = 8) {
+export function truncateHash(hash, chars = 8) {
     if (!hash || hash.length <= chars * 2)
         return hash;
     return `${hash.substring(0, chars)}...${hash.substring(hash.length - chars)}`;

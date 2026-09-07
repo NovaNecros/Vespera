@@ -13,7 +13,7 @@
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="{{ url_for('static', filename='js/tailwind.config.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/tailwind.config.js') }}"></script>
 
     <!-- FontAwesome 7 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
@@ -30,7 +30,7 @@
 <body class="bg-vespera-void text-vespera-ink font-serif min-h-screen flex flex-col justify-between selection:bg-vespera-crimson selection:text-vespera-bone">
     {% include "partials/_navbar.html" %}
 
-    <main class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
+    <main class="w-full max-w-[1820px] mx-auto px-4 sm:px-8 lg:px-12 py-6 flex-grow">
         {% block content %}{% endblock %}
     </main>
 
@@ -39,9 +39,9 @@
     {% include "partials/_overlay.html" %}
 
     <!-- Vespera -->
-    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/partials/_navbar.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/partials/_alert_modal.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/partials/_navbar.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/partials/_alert_modal.js') }}"></script>
 
     {% block scripts %}{% endblock %}
 </body>
