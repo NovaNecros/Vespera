@@ -24,7 +24,7 @@ function getVesperaPalette() {
         goldDark: style.getPropertyValue("--vespera-gold-dark").trim() || "#7D6124",
         gold: style.getPropertyValue("--vespera-gold").trim() || "#C5A059",
         goldBright: style.getPropertyValue("--vespera-gold-bright").trim() || "#E8CA84",
-        goldGlow: style.getPropertyValue("--vespera-gold-glow").trim() || "#FF1A2A",
+        goldGlow: style.getPropertyValue("--vespera-gold-glow").trim() || "#FFF0C2",
         amethystDark: style.getPropertyValue("--vespera-amethyst-dark").trim() || "#190520",
         amethyst: style.getPropertyValue("--vespera-amethyst").trim() || "#481157",
         violetGlow: style.getPropertyValue("--vespera-violet-glow").trim() || "#9838B8",
@@ -58,6 +58,8 @@ function showLoadingOverlay(options) {
         titleEl.textContent = options.title;
     if (subEl && options?.subtitle)
         subEl.innerHTML = options.subtitle;
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
 }
 function hideLoadingOverlay() {
     const overlay = document.getElementById("loading-overlay");

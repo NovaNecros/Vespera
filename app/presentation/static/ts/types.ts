@@ -107,7 +107,7 @@ export interface VesperaPalette
     goldDark        : string;
     gold            : string;
     goldBright      : string;
-    goldGlow        : string
+    goldGlow        : string;
 
     amethystDark    : string;
     amethyst        : string;

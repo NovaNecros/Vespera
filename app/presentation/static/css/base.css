@@ -324,6 +324,11 @@ body
     box-shadow : 0 0 8px rgba(138, 3, 3, 0.6);
 }
 
+.vamp-range:focus
+{
+    outline : none;
+}
+
 .vamp-range::-webkit-slider-thumb
 {
     -webkit-appearance : none;
@@ -371,6 +376,22 @@ body
     background-color : rgba(197, 160, 89, 0.15);
     color            : var(--vespera-gold-bright);
     border-color     : rgba(197, 160, 89, 0.45);
+}
+
+/* Dropzones */
+.vamp-dropzone
+{
+    background-color : rgba(29, 30, 44, 0.40);
+    border-color     : var(--vespera-border-crimson);
+    transition       : all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.vamp-dropzone:hover,
+.vamp-dropzone.drag-over
+{
+    background-color : rgba(138, 3, 3, 0.12);
+    border-color     : var(--vespera-crimson-bright);
+    box-shadow       : var(--vespera-glow-crimson);
 }
 
 /* Animations */

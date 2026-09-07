@@ -1,0 +1,408 @@
+<!-- Vespera/app/presentation/templates/studio/studio.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Vespera - The Studio{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/studio.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/studio/studio.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div id="studio-main-container"
+     class="w-full flex flex-col gap-6"
+     data-generate-api-url="{{ url_for('studio.api_generate_pattern') }}"
+     data-palettes-api-url="{{ url_for('studio.api_get_palettes') }}"
+     data-render-static-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
+     data-toggle-favorite-api-url="{{ url_for('vault.api_toggle_favorite', id_artifact=0) }}"
+     data-download-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}">
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b
+                   border-vespera-border-crimson pb-4">
+        <div>
+            <h3 class="font-ornate text-2xl md:text-3xl text-vespera-parchment font-bold tracking-wider mb-1">
+                The Studio
+            </h3>
+            <p class="font-serif text-vespera-silent text-sm md:text-base mb-0">
+                Alchemical Morphogenesis via Gray-Scott Reaction-Diffusion
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="reset-params-btn" type="button"
+                    class="vamp-btn vamp-btn-ghost text-xs py-2 px-3.5">
+                <i class="fa-solid fa-arrow-rotate-left mr-1.5 text-vespera-gold"></i>
+                Reset Formula
+            </button>
+            <a href="{{ url_for('vault.vault') }}"
+               class="vamp-btn vamp-btn-gold text-xs py-2 px-3.5 no-underline">
+                <i class="fa-solid fa-dungeon mr-1.5"></i>
+                Open Vault
+            </a>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Control Panel -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            <form id="synthesis-form" class="flex flex-col gap-6">
+                <!-- Upload zone -->
+                <div class="filigree-card p-5 bg-vespera-velvet border border-vespera-border-crimson
+                            rounded-vespera shadow-ambient">
+                    <div class="filigree-corner-tl"></div>
+                    <div class="filigree-corner-tr"></div>
+                    <div class="filigree-corner-bl"></div>
+                    <div class="filigree-corner-br"></div>
+
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="font-cinzel text-xs font-bold text-vespera-gold uppercase tracking-wider">
+                            <i class="fa-solid fa-image mr-1.5"></i>
+                            Source Pictogram
+                        </span>
+                        <span id="source-image-status"
+                              class="font-mono text-[0.7rem] text-vespera-silent">
+                            No Pictogram Seeded
+                        </span>
+                    </div>
+
+                    <!-- Dropzone-->
+                    <div id="dropzone-container"
+                         class="vamp-dropzone relative flex flex-col items-center justify-center p-6 border-2 border-dashed
+                                border-vespera-border-crimson rounded-sm bg-vespera-surface/50 hover:bg-vespera-surface
+                                transition-all duration-300 cursor-pointer text-center group">
+                        <input id="source-file-input" type="file" name="file"
+                               accept="image/png, image/jpeg, image/webp" class="hidden">
+                        <input id="source-image-id-input" type="hidden"
+                               name="source_image_id" value="">
+                        <input id="parent-artifact-id-input" type="hidden"
+                               name="parent_artifact_id" value="">
+
+                        <!-- Initial load view -->
+                        <div id="dropzone-prompt"
+                             class="flex flex-col items-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-vespera-crimson/20 border border-vespera-crimson
+                                        flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-cloud-arrow-up text-vespera-bright text-lg"></i>
+                            </div>
+                            <span class="font-cinzel text-sm text-vespera-parchment font-bold mt-1">
+                                Ingest Catalyst Pictogram
+                            </span>
+                        </div>
+
+                        <!-- Preview -->
+                        <div id="dropzone-preview-container"
+                             class="hidden flex-col items-center gap-3 w-full">
+                            <div class="relative w-full max-h-48 overflow-hidden rounded
+                                        border border-vespera-border-gold shadow-md">
+                                <img id="source-preview-img" src="" alt="Catalyst Preview"
+                                     class="w-full h-auto object-contain max-h-48 mx-auto">
+                            </div>
+                            <div class="flex items-center justify-between w-full px-1">
+                                <span id="source-filename-label"
+                                      class="font-mono text-xs text-vespera-gold truncate max-w-[200px]">
+                                    filename.png
+                                </span>
+                                <button id="remove-source-btn" type="button"
+                                        class="text-xs text-vespera-bright hover:text-vespera-crimson font-cinzel
+                                               uppercase transition-colors">
+                                    <i class="fa-solid fa-trash-can mr-1"></i>
+                                    Purge
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parameter Settings -->
+                <div class="filigree-card p-5 bg-vespera-velvet border border-vespera-border-crimson
+                            rounded-vespera shadow-ambient flex flex-col gap-4">
+                    <div class="filigree-corner-tl"></div>
+                    <div class="filigree-corner-tr"></div>
+                    <div class="filigree-corner-bl"></div>
+                    <div class="filigree-corner-br"></div>
+
+                    <div class="flex items-center justify-between border-b border-vespera-border-crimson/40 pb-2">
+                        <span class="font-cinzel text-xs font-bold text-vespera-gold uppercase tracking-wider">
+                            <i class="fa-solid fa-sliders mr-1.5"></i>
+                            Reaction Coefficients
+                        </span>
+                    </div>
+
+                    <!-- Feed & Kill Rates -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between font-mono text-xs">
+                            <label for="feed-rate-slider"
+                                   class="text-vespera-parchment font-cinzel">
+                                Feed Rate (F)
+                            </label>
+                            <span id="feed-rate-display"
+                                  class="text-vespera-goldbright font-bold">
+                                0.0545
+                            </span>
+                        </div>
+                        <input id="feed-rate-slider" type="range" name="feed_rate"
+                               min="0.0100" max="0.0900" step="0.0005" value="0.0545"
+                               class="vamp-range">
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between font-mono text-xs">
+                            <label for="kill-rate-slider"
+                                   class="text-vespera-parchment font-cinzel">
+                                Kill Rate (K)
+                            </label>
+                            <span id="kill-rate-display"
+                                  class="text-vespera-goldbright font-bold">
+                                0.0620
+                            </span>
+                        </div>
+                        <input id="kill-rate-slider" type="range" name="kill_rate"
+                               min="0.0300" max="0.0700" step="0.0005" value="0.0620"
+                               class="vamp-range">
+                    </div>
+
+                    <!-- Diffusion Coefficients -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between font-mono text-xs">
+                                <label for="diff-u-slider"
+                                       class="text-vespera-parchment font-cinzel">
+                                    Diff U
+                                </label>
+                                <span id="diff-u-display"
+                                      class="text-vespera-gold">
+                                    1.000
+                                </span>
+                            </div>
+                            <input id="diff-u-slider" type="range" name="diff_u"
+                                   min="0.200" max="1.500" step="0.050" value="1.000"
+                                   class="vamp-range">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between font-mono text-xs">
+                                <label for="diff-v-slider"
+                                       class="text-vespera-parchment font-cinzel">
+                                    Diff V
+                                </label>
+                                <span id="diff-v-display"
+                                      class="text-vespera-gold">
+                                    0.500
+                                </span>
+                            </div>
+                            <input id="diff-v-slider" type="range" name="diff_v"
+                                   min="0.100" max="1.000" step="0.025" value="0.500"
+                                   class="vamp-range">
+                        </div>
+                    </div>
+
+                    <!-- Integration Algorithm (Euler) Hyperparameters -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between font-mono text-xs">
+                                <label for="iterations-slider"
+                                       class="text-vespera-parchment font-cinzel">
+                                    Iterations
+                                </label>
+                                <span id="iterations-display"
+                                      class="text-vespera-gold">
+                                    4000
+                                </span>
+                            </div>
+                            <input id="iterations-slider" type="range" name="iterations"
+                                   min="1000" max="8000" step="250" value="4000"
+                                   class="vamp-range">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between font-mono text-xs">
+                                <label for="dt-slider"
+                                       class="text-vespera-parchment font-cinzel">
+                                    Time Step (dt)
+                                </label>
+                                <span id="dt-display"
+                                      class="text-vespera-gold">
+                                    1.00
+                                </span>
+                            </div>
+                            <input id="dt-slider" type="range" name="dt"
+                                   min="0.2" max="1.5" step="0.1" value="1.0"
+                                   class="vamp-range">
+                        </div>
+                    </div>
+
+                    <!-- Palette -->
+                    <div class="flex flex-col gap-1.5 mt-1">
+                        <label for="palette-select"
+                               class="font-cinzel text-xs text-vespera-parchment">
+                            Chromatic Spectrum
+                        </label>
+                        <select id="palette-select" name="color_palette" class="vamp-select text-xs">
+                            <!-- TS -->
+                        </select>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="flex flex-col gap-1.5 mt-1">
+                        <label for="user-notes-input"
+                               class="font-cinzel text-xs text-vespera-parchment">
+                            Grimoire Inscription
+                        </label>
+                        <textarea id="user-notes-input" name="user_notes" rows="2"
+                                  placeholder="Observations, incantation variants or remarks..."
+                                  class="vamp-textarea text-xs resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Synthesis Button -->
+                <button id="synthesize-btn" type="button"
+                        class="vamp-btn vamp-btn-crimson w-full py-3 text-sm font-bold
+                               tracking-widest anim-candle-pulse">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2 text-vespera-goldbright"></i>
+                    Invoke Morphogenesis
+                </button>
+            </form>
+        </div>
+
+        <!-- Canvas -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+            <div class="filigree-card p-6 bg-vespera-velvet border border-vespera-border-crimson rounded-vespera
+                        shadow-ambient flex flex-col items-center">
+                <div class="filigree-corner-tl"></div>
+                <div class="filigree-corner-tr"></div>
+                <div class="filigree-corner-bl"></div>
+                <div class="filigree-corner-br"></div>
+
+                <div class="w-full flex items-center justify-between border-b
+                            border-vespera-border-crimson/40 pb-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="brand-sigil w-7 h-7 text-xs">
+                            <i class="fa-solid fa-eye"></i>
+                        </span>
+                        <span class="font-ornate text-sm text-vespera-parchment font-bold tracking-wider">
+                            The Scrying Mirror
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 font-mono text-xs">
+                        <span id="canvas-mode-badge"
+                              class="vamp-badge vamp-badge-crimson">
+                            Idle
+                        </span>
+                    </div>
+                </div>
+
+                <div id="canvas-stage-wrapper"
+                     class="canvas-stage-wrapper relative w-full aspect-square max-w-[512px] bg-vespera-obsidian
+                            border border-vespera-border-crimson rounded overflow-hidden flex items-center
+                            justify-center shadow-inner">
+                    <canvas id="synthesis-canvas" width="512" height="512"
+                            class="w-full h-full object-contain">
+                        <!-- TS -->
+                    </canvas>
+
+                    <!-- Empty State -->
+                    <div id="canvas-empty-state"
+                         class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-3">
+                        <div class="w-16 h-16 rounded-full border border-dashed border-vespera-gold/40 flex
+                                    items-center justify-center text-vespera-gold/60">
+                            <i class="fa-solid fa-biohazard text-2xl"></i>
+                        </div>
+                        <span class="font-cinzel text-base text-vespera-parchment font-semibold">
+                            Canvas in Equilibrium
+                        </span>
+                        <p class="font-serif text-xs text-vespera-silent max-w-xs mb-0">
+                            Seed a catalyst image and initiate the reaction to visualize morphogenetic formation.
+                        </p>
+                    </div>
+
+                    <!-- Animation Overlay -->
+                    <div id="canvas-playback-badge"
+                         class="hidden absolute top-3 left-3 bg-vespera-void/80 border border-vespera-gold/50
+                                px-2.5 py-1 rounded text-xs font-mono text-vespera-goldbright backdrop-blur-sm">
+                        <i class="fa-solid fa-play mr-1 text-[0.65rem] animate-pulse"></i>
+                        <span id="playback-frame-label"><!-- TS --></span>
+                    </div>
+                </div>
+
+                <!-- Animation Controls -->
+                <div id="playback-controls-panel"
+                     class="w-full flex flex-col gap-2 mt-4 pt-3 border-t border-vespera-border-crimson/30
+                            opacity-40 pointer-events-none transition-opacity duration-300">
+                    <div class="flex items-center justify-between gap-3">
+                        <button id="play-pause-btn" type="button"
+                                class="vamp-btn vamp-btn-gold text-xs py-1.5 px-3">
+                            <i id="play-pause-icon" class="fa-solid fa-play mr-1"></i>
+                            Morph
+                        </button>
+
+                        <div class="flex-grow flex items-center gap-2">
+                            <label>
+                                <input id="timeline-scrubber" type="range"
+                                       min="0" max="11" step="1" value="0"
+                                       class="vamp-range flex-grow">
+                            </label>
+                        </div>
+
+                        <button id="toggle-view-original-btn" type="button"
+                                class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-3">
+                            <i class="fa-solid fa-code-compare mr-1"></i>
+                            Compare
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Artifact Metadata -->
+                <div id="artifact-metrics-bar"
+                     class="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-3 border-t
+                            border-vespera-border-crimson/20 font-mono text-[0.7rem] text-vespera-silent">
+                    <div class="flex flex-col">
+                        <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
+                            Artifact ID
+                        </span>
+                        <span id="metric-id"
+                              class="text-vespera-parchment font-bold">
+                            <!-- TS -->
+                        </span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
+                            Morph Time
+                        </span>
+                        <span id="metric-time"
+                              class="text-vespera-gold">
+                            <!-- TS -->
+                        </span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
+                            Cipher Rune
+                        </span>
+                        <span id="metric-hash"
+                              class="text-vespera-parchment truncate"
+                              title="None">
+                            <!-- TS -->
+                        </span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
+                            Actions
+                        </span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <button id="save-favorite-btn" type="button"
+                                    class="text-vespera-gold hover:text-vespera-goldbright transition-colors"
+                                    title="Toggle Favorite">
+                                <i class="fa-regular fa-star"></i>
+                            </button>
+                            <a id="download-artifact-link" href="#" download
+                               class="text-vespera-bright hover:text-vespera-crimson transition-colors no-underline"
+                               title="Download Artifact">
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

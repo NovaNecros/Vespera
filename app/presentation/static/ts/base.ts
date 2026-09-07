@@ -23,7 +23,7 @@ export function getVesperaPalette() : VesperaPalette
         goldDark        : style.getPropertyValue("--vespera-gold-dark").trim()        || "#7D6124",
         gold            : style.getPropertyValue("--vespera-gold").trim()             || "#C5A059",
         goldBright      : style.getPropertyValue("--vespera-gold-bright").trim()      || "#E8CA84",
-        goldGlow        : style.getPropertyValue("--vespera-gold-glow").trim()        || "#FF1A2A",
+        goldGlow        : style.getPropertyValue("--vespera-gold-glow").trim()        || "#FFF0C2",
 
         amethystDark    : style.getPropertyValue("--vespera-amethyst-dark").trim()    || "#190520",
         amethyst        : style.getPropertyValue("--vespera-amethyst").trim()         || "#481157",
@@ -63,6 +63,9 @@ export function showLoadingOverlay(options? : LoadingOverlayOptions) : void
 
     if(titleEl && options?.title)    titleEl.textContent = options.title;
     if(subEl   && options?.subtitle) subEl.innerHTML     = options.subtitle;
+
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
 }
 
 export function hideLoadingOverlay() : void
