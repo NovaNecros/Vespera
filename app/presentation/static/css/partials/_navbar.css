@@ -118,15 +118,3 @@
     background-color : rgba(138, 3, 3, 0.14);
     text-shadow      : 0 0 10px rgba(184, 13, 26, 0.5);
 }
-
-.module-tab.active::after
-{
-    content    : "";
-    position   : absolute;
-    bottom     : 0;
-    left       : 30%;
-    right      : 30%;
-    height     : 1px;
-    background : var(--vespera-gold);
-    box-shadow : 0 0 6px var(--vespera-gold);
-}

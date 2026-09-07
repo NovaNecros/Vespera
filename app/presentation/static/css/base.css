@@ -20,11 +20,7 @@ body
     margin                : 0;
     padding               : 0;
     background-color      : var(--vespera-void);
-    background-image      :
-        radial-gradient(circle at  50%   0%, rgba(56, 2,  8, 0.35) 0%, transparent          60%),
-        radial-gradient(circle at 100% 100%, rgba(25, 5, 32, 0.25) 0%, transparent          50%),
-        radial-gradient(circle at   0% 100%, rgba(92, 0, 11, 0.20) 0%, var(--vespera-void) 100%),
-        linear-gradient(180deg, var(--vespera-obsidian) 0%, var(--vespera-void) 100%);
+    background-image      : radial-gradient(circle at 50% 45%, var(--vespera-void) 0%, var(--vespera-void-border) 100%);
     background-attachment : fixed;
     color                 : var(--vespera-bone-ink);
     font-family           : "Cormorant Garamond", Garamond, serif;
@@ -33,6 +29,19 @@ body
     letter-spacing        : 0.02em;
     min-height            : 100vh;
     overflow-x            : hidden;
+    position              : relative;
+}
+
+#vespera-smoke-canvas
+{
+    position       : fixed;
+    top            : 0;
+    left           : 0;
+    width          : 100vw;
+    height         : 100vh;
+    pointer-events : none;
+    z-index        : -10;
+    opacity        : 0.95;
 }
 
 /* Scrollbar */
@@ -261,7 +270,7 @@ body
 {
     background : transparent;
     color      : var(--vespera-bone-ink);
-    border     : 1px solid var(--vespera-border-crimson);
+    border     : 2px solid var(--vespera-border-crimson);
 }
 
 .vamp-btn-ghost:hover
@@ -270,6 +279,8 @@ body
     border-color : var(--vespera-crimson);
     color        : var(--vespera-parchment);
     box-shadow   : 0 0 10px rgba(138, 3, 3, 0.25);
+    transform    : translateY(-2px);
+
 }
 
 /* Form Controls */

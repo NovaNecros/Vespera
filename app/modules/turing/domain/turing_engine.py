@@ -104,10 +104,6 @@ class TuringEngine:
         try:
             height, width = luminance_field.shape
 
-            # Estado base: U saturado, V en reposo
-            u : np.ndarray = np.ones((height, width), dtype=np.float32)
-            v : np.ndarray = np.zeros((height, width), dtype=np.float32)
-
             # Generador pseudoaleatorio determinista usando una semilla fija
             rng : np.random.Generator = np.random.default_rng(seed=self.seed)
 
@@ -117,11 +113,6 @@ class TuringEngine:
             # Modulación de V a partir de los contrastes de la imagen original
             v = (luminance_field*0.35 + noise).astype(np.float32)
             u = 1.0 - (luminance_field * 0.30).astype(np.float32)
-
-            # center_x, center_y = width // 2, height // 2
-            # radius : int       = max(6, min(int(height), int(width)) // 24)
-            # v[center_y - radius : center_y + radius, center_x - radius : center_x + radius] += 0.35
-            # u[center_y - radius : center_y + radius, center_x - radius : center_x + radius] -= 0.20
 
             return np.clip(u, 0.0, 1.0), np.clip(v, 0.0, 1.0)
         except Exception as e:

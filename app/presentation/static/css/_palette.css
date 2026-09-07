@@ -3,11 +3,12 @@
 :root
 {
     /* Shadows & Abyss */
-    --vespera-void             : #040406; /* Fondo Fondo      */
-    --vespera-obsidian         : #08090C; /* Fondo Principal  */
-    --vespera-velvet           : #0F1015; /* Tarjetas         */
-    --vespera-surface          : #1C1E2B; /* Paneles Elevados */
-    --vespera-surface-hover    : #1C1E2B; /* Paneles (hover)  */
+    --vespera-void             : #6c7077;  /* True Background   */
+    --vespera-void-border      : #383a44;  /* Background Border */
+    --vespera-obsidian         : #191B24;  /* Main Background   */
+    --vespera-velvet           : #1E202B;  /* Cards             */
+    --vespera-surface          : #262936;  /* Elevated Panels   */
+    --vespera-surface-hover    : #2E3242;  /* Panels (Hover)    */
 
     /* Sanguine & Crimson */
     --vespera-blood-coagulated : #1A0003;
@@ -31,9 +32,9 @@
     --vespera-lilac-mist       : #D8BFD8;
 
     /* Bone & Parchment */
-    --vespera-bone-shadow      : #4A4845; /* Sombras          */
-    --vespera-bone-silent      : #85808A; /* Texto Secundario */
-    --vespera-bone-ink         : #D6D2CC; /* Texto Principal  */
+    --vespera-bone-shadow      : #4A4845; /* Shadows        */
+    --vespera-bone-silent      : #85808A; /* Secondary Text */
+    --vespera-bone-ink         : #D6D2CC; /* Main Text      */
     --vespera-bone             : #EAE6DF;
     --vespera-parchment        : #F5EFE0;
     --vespera-white            : #FFFFFF;
