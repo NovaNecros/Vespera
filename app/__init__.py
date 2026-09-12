@@ -57,11 +57,14 @@ def create_app() -> Flask:
 
     with app.app_context():
         from app.infrastructure.repositories.models import (
-            SourceImage,       ConfigTuring,
-            SynthesisArtifact, EnigmaQuest
+            SourceImage, SynthesisFrame, SynthesisArtifact,
+            ConfigTuring, ColorPalette, PaletteStop,
+            EnigmaQuest
         )
+        from app.infrastructure.repositories.seed import seed_db
         db.create_all()
-        print(f"[*]{Colors.BLUE} DB INITIALIZED AT: {Colors.RESET}{DBSettings.DB_PATH}")
+        seed_db()
+        print(f"[*]{Colors.BLUE} DB INITIALIZED AND SEEDED AT: {Colors.RESET}{DBSettings.DB_PATH}")
 
     try:
         from app.presentation.routes.studio_routes import studio_bp

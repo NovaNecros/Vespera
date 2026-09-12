@@ -35,13 +35,13 @@ def compute_file_sha256(file_path : Path, chunk_size : int = 65536) -> str:
         raise e
 
 def compute_params_hash(
-    feed_rate     : float,
-    kill_rate     : float,
-    diff_u        : float,
-    diff_v        : float,
-    dt            : float,
-    iterations    : int,
-    color_palette : str
+    feed_rate  : float,
+    kill_rate  : float,
+    diff_u     : float,
+    diff_v     : float,
+    dt         : float,
+    iterations : int,
+    id_palette : int
 ) -> str:
     """
     Genera el hash canónico único para una combinación de parámetros de la simulación.
@@ -55,7 +55,7 @@ def compute_params_hash(
             f"Dv:{diff_v:.6f}|"
             f"dt:{dt:.6f}|"
             f"iter:{iterations}|"
-            f"pal:{color_palette}"
+            f"pal:{id_palette}"
         )
         return compute_bytes_sha256(signature.encode("utf-8"))
     except Exception as e:

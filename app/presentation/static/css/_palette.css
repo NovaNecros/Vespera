@@ -3,8 +3,8 @@
 :root
 {
     /* Shadows & Abyss */
-    --vespera-void             : #6c7077;  /* True Background   */
-    --vespera-void-border      : #383a44;  /* Background Border */
+    --vespera-void             : #b9bdc4;  /* True Background   */
+    --vespera-void-border      : #999ba4;  /* Background Border */
     --vespera-obsidian         : #191B24;  /* Main Background   */
     --vespera-velvet           : #1E202B;  /* Cards             */
     --vespera-surface          : #262936;  /* Elevated Panels   */

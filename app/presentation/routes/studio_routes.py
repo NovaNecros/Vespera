@@ -30,14 +30,23 @@ def api_get_palettes() -> dict[str, Any]:
     Endpoint para recuperar la lista de paletas disponibles.
     :return : Lista de paletas disponibles.
     """
-    return palettes.get_palette_names()
+    return service.get_palettes()
 
 @studio_bp.route("/api/generate", methods=["POST"])
 @api_standard_endpoint
 def api_generate_pattern() -> dict[str, Any]:
     """
-    Endpoint para generar un patrón de Turing a partir de una imagen.
+    Endpoint para generar un patrón de Turing en escala de grises a partir de una imagen.
     :return : Patrón de Turing generado y keyframes para la animación.
     """
     return service.generate_synthesis(request.get_json(silent=True) or request.form.to_dict() or {}, request.files.get("file"))
 
+@studio_bp.route("/api/commit", methods=["POST"])
+@api_standard_endpoint
+def api_commit_pattern() -> dict[str, Any]:
+    """
+    Endpoint para guardar un patrón de Turing generado en la bóveda.
+    :return : Estado de éxito de la operación.
+    """
+    payload : dict[str, Any] = request.get_json(silent=True) or request.form.to_dict() or {}
+    return service.commit_artifact(payload)

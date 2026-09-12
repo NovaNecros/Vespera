@@ -4,7 +4,6 @@
   "compilerOptions" : {
     "target"           : "ES2022",
     "module"           : "ES2022",
-    "moduleResolution" : "node",
     "outDir"           : "./app/presentation/static/js",
     "rootDir"          : "./app/presentation/static/ts",
     "strict"           : true,

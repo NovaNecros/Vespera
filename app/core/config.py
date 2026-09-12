@@ -40,6 +40,7 @@ class Directories:
     ENIGMAS_DIR    : Path = INPUTS_DIR   / "enigmas"
     OUTPUTS_DIR    : Path = DATA_DIR     / "outputs"
     THUMBNAILS_DIR : Path = OUTPUTS_DIR  / "thumbnails"
+    FRAMES_DIR     : Path = OUTPUTS_DIR  / "frames"
     TEMPLATES_DIR  : Path = BASE_DIR     / "app" / "presentation" / "templates"
     STATIC_DIR     : Path = BASE_DIR     / "app" / "presentation" / "static"
     CSS_DIR        : Path = STATIC_DIR   / "css"
@@ -57,6 +58,7 @@ class Directories:
             cls.ENIGMAS_DIR,
             cls.OUTPUTS_DIR,
             cls.THUMBNAILS_DIR,
+            cls.FRAMES_DIR,
             cls.TEMPLATES_DIR,
             cls.STATIC_DIR,
             cls.CSS_DIR,
@@ -69,18 +71,18 @@ class TuringSettings:
     """
     Parámetros por defecto para las simulaciones Gray-Scott.
     """
-    DEFAULT_FEED_RATE   : float = 0.0545
-    DEFAULT_KILL_RATE   : float = 0.0620
-    DEFAULT_DIFF_U      : float = 1.0000
-    DEFAULT_DIFF_V      : float = 0.5000
-    DEFAULT_DT          : float = 1.0000
-    DEFAULT_ITERATIONS  : int   = 12000
-    DEFAULT_FRAMES      : int   = 60
-    DEFAULT_PALETTE     : str   = "crimson_eclipse"
-    DEFAULT_WIDTH       : int   = 1024
-    DEFAULT_HEIGHT      : int   = 1024
-    MAX_IMAGE_DIMENSION : int   = 2048
-
+    DEFAULT_FEED_RATE         : float = 0.0545
+    DEFAULT_KILL_RATE         : float = 0.0620
+    DEFAULT_DIFF_U            : float = 1.0000
+    DEFAULT_DIFF_V            : float = 0.5000
+    DEFAULT_DT                : float = 1.0000
+    DEFAULT_ITERATIONS        : int   = 12000
+    DEFAULT_FRAMES            : int   = 60
+    DEFAULT_FRAME_DENSITY_EXP : float = 3.2
+    DEFAULT_PALETTE           : str   = "crimson_eclipse"
+    DEFAULT_WIDTH             : int   = 1024
+    DEFAULT_HEIGHT            : int   = 1024
+    MAX_IMAGE_DIMENSION       : int   = 2048
 
 class Colors:
     """

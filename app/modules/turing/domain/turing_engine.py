@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from io import BytesIO
+from typing import Union
 import base64
 import numpy as np
 from scipy.ndimage import convolve
-from PIL import Image
+from PIL import Image, ImageOps
 from tqdm import tqdm
 
 from app.core.config import TuringSettings, RNGSettings
-from app.infrastructure.palettes import ColorPalettes
-
 
 class TuringEngine:
     """
@@ -27,28 +26,30 @@ class TuringEngine:
     ], dtype=np.float32)
 
     def __init__(
-        self          : TuringEngine,
-        feed_rate     : float = TuringSettings.DEFAULT_FEED_RATE,
-        kill_rate     : float = TuringSettings.DEFAULT_KILL_RATE,
-        diff_u        : float = TuringSettings.DEFAULT_DIFF_U,
-        diff_v        : float = TuringSettings.DEFAULT_DIFF_V,
-        dt            : float = TuringSettings.DEFAULT_DT,
-        iterations    : int   = TuringSettings.DEFAULT_ITERATIONS,
-        frame_count   : int   = TuringSettings.DEFAULT_FRAMES,
-        color_palette : str   = TuringSettings.DEFAULT_PALETTE,
-        seed          : int   = RNGSettings.SEED,
-        verbose       : bool  = False
+        self           : TuringEngine,
+        feed_rate      : float = TuringSettings.DEFAULT_FEED_RATE,
+        kill_rate      : float = TuringSettings.DEFAULT_KILL_RATE,
+        diff_u         : float = TuringSettings.DEFAULT_DIFF_U,
+        diff_v         : float = TuringSettings.DEFAULT_DIFF_V,
+        dt             : float = TuringSettings.DEFAULT_DT,
+        iterations     : int   = TuringSettings.DEFAULT_ITERATIONS,
+        frame_count    : int   = TuringSettings.DEFAULT_FRAMES,
+        frame_dist_exp : float = TuringSettings.DEFAULT_FRAME_DENSITY_EXP,
+        color_palette  : str   = TuringSettings.DEFAULT_PALETTE,
+        seed           : int   = RNGSettings.SEED,
+        verbose        : bool  = False
     ) -> None:
-        self.feed_rate     : float = float(feed_rate)
-        self.kill_rate     : float = float(kill_rate)
-        self.diff_u        : float = float(diff_u)
-        self.diff_v        : float = float(diff_v)
-        self.dt            : float = float(dt)
-        self.iterations    : int   = int(iterations)
-        self.frame_count   : int   = int(frame_count)
-        self.color_palette : str   = color_palette
-        self.seed          : int   = int(seed)
-        self.verbose       : bool  = verbose
+        self.feed_rate      : float = float(feed_rate)
+        self.kill_rate      : float = float(kill_rate)
+        self.diff_u         : float = float(diff_u)
+        self.diff_v         : float = float(diff_v)
+        self.dt             : float = float(dt)
+        self.iterations     : int   = int(iterations)
+        self.frame_count    : int   = int(frame_count)
+        self.frame_dist_exp : float = float(frame_dist_exp)
+        self.color_palette  : str   = color_palette
+        self.seed           : int   = int(seed)
+        self.verbose        : bool  = verbose
 
     @staticmethod
     def _preprocess_luminance(
@@ -61,7 +62,10 @@ class TuringEngine:
         :return : Matriz de NumPy tipo float32.
         """
         try:
-            grayscale  : Image.Image = image.convert("L").resize(
+            oriented_image : Image.Image = ImageOps.exif_transpose(image)
+
+
+            grayscale  : Image.Image = oriented_image.convert("L").resize(
                 (target_width, target_height),
                 Image.Resampling.LANCZOS
             )
@@ -70,31 +74,37 @@ class TuringEngine:
         except Exception as e:
             raise ValueError(f"Error al preprocesar la imagen: {e}")
 
-    def _render_frame_base64(
-        self     : TuringEngine,
+    @staticmethod
+    def _render_frame(
         v_matrix : np.ndarray,
         size     : int = 512
-    ) -> str:
+    ) -> tuple[Image.Image, str]:
         """
-        Renderiza una matriz de concentración V a una imagen 512x512 miniatura base64 JPEG/WebP.
+        Renderiza una matriz de concentración V a una imagen 512x512 en escala de grises y genera
+        su cadena base64.
+        :return : Tupla con la imagen PIL (modo L) y la cadena URL base64.
         """
         try:
-            rgb_array : np.ndarray = ColorPalettes.apply_palette(v_matrix, self.color_palette)
-            frame_img : Image.Image = Image.fromarray(rgb_array, mode="RGB")
+            clamped_v  : np.ndarray  = np.clip(v_matrix, 0.0, 1.0)
+            gray_array : np.ndarray  = (clamped_v*255.0).astype(np.uint8)
+            frame_img  : Image.Image = Image.fromarray(gray_array, mode="L")
 
             if frame_img.size != (size, size):
                 frame_img : Image.Image = frame_img.resize((size, size), Image.Resampling.BILINEAR)
 
             buffer : BytesIO = BytesIO()
-            frame_img.save(buffer, format="JPEG", quality=80)
+            frame_img.save(buffer, format="JPEG", quality=85)
             encoded : str = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-            return f"data:image/jpeg;base64,{encoded}"
+            return frame_img, f"data:image/jpeg;base64,{encoded}"
 
         except Exception as e:
             raise e
 
-    def seed_concentrations(self : TuringEngine, luminance_field : np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def seed_concentrations(
+        self            : TuringEngine,
+        luminance_field : np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Inicializa las matrices de concentración U y V.
         Inyecta la topología de la imagen en la concentración inicial de V.
@@ -124,14 +134,19 @@ class TuringEngine:
         width            : int = TuringSettings.DEFAULT_WIDTH,
         height           : int = TuringSettings.DEFAULT_HEIGHT,
         capture_timeline : bool = False
-    ) -> tuple[np.ndarray, Image.Image, list[str]]:
+    ) -> tuple[np.ndarray, Image.Image, list[Image.Image], list[str], list[int]]:
         """
         Ejecuta la integración del sistema de ecuaciones diferenciales parciales paso a paso.
         :param source_image     : Objeto PIL con la imagen original.
         :param width            : Ancho de la cuadrícula de la simulación.
         :param height           : Alto de la cuadrícula de la simulación.
         :param capture_timeline : Indica si se deben capturar keyframes para animar el proceso.
-        :return                 : Tupla con la matriz final V, la imagen RGB renderizada (PIL) y los frames de la animación.
+        :return                 : Tupla con:
+            - La matriz final V
+            - La imagen final renderizada (PIL) modo L
+            - Objetos PIL para los frames de la animación
+            - Lista de strings base64 para los frames de la animación
+            - Lista de iteraciones en las que se capturaron los frames
         """
         try:
             lum : np.ndarray = self._preprocess_luminance(source_image, width, height)
@@ -146,18 +161,25 @@ class TuringEngine:
             du     : float      = self.diff_u
             dv     : float      = self.diff_v
 
-            keyframes     : list[str] = []
-            capture_steps : set[int]  = set()
+            frame_images   : list[Image.Image] = []
+            keyframes_b64  : list[str]         = []
+            captured_iters : list[int]         = []
+            capture_steps  : set[int]          = set()
 
-            # Ley de potencias con parámetro 1.8 > 1 para capturar más frames al inicio donde se nota más el cambio
+            # Ley de potencias con parámetro > 1 para capturar más frames al inicio donde se nota más el cambio
             if capture_timeline and self.frame_count > 1:
-                raw_steps     : np.ndarray = np.linspace(0.0, 1.0, self.frame_count) ** 1.8
+                raw_steps     : np.ndarray = np.linspace(0.0, 1.0, self.frame_count) ** self.frame_dist_exp
                 capture_steps : set[int]   = {int(s*(self.iterations-1)) for s in raw_steps}
+                capture_steps.add(0)
+                capture_steps.add(self.iterations-1)
 
             # Integración determinista usando Euler explicito con condiciones de frontera periódicas wrap.
-            for step in tqdm(range(self.iterations), desc="Integrating..."):
+            for step in tqdm(range(self.iterations), desc="Integrating Gray-Scott Equations"):
                 if capture_timeline and step in capture_steps:
-                    keyframes.append(self._render_frame_base64(v))
+                    frame_pil, frame_b64 = self._render_frame(v)
+                    frame_images.append(frame_pil)
+                    keyframes_b64.append(frame_b64)
+                    captured_iters.append(step)
 
                 # Evaluar Laplaciano usando convolución discreta
                 lap_u : np.ndarray = convolve(u, kernel, mode="wrap")
@@ -174,10 +196,10 @@ class TuringEngine:
                 np.clip(v, 0.0, 1.0, out=v)
 
             # Renderización usando la paleta de colores seleccionada
-            rgb_array      : np.ndarray  = ColorPalettes.apply_palette(v, self.color_palette)
-            rendered_image : Image.Image = Image.fromarray(rgb_array, mode="RGB")
+            final_array : np.ndarray  = (np.clip(v, 0.0, 1.0)*255.0).astype(np.uint8)
+            final_image : Image.Image = Image.fromarray(final_array, mode="L").convert("RGB")
 
-            return v, rendered_image, keyframes
+            return v, final_image, frame_images, keyframes_b64, captured_iters
 
         except Exception as e:
             raise e

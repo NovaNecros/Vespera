@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 
-from app.core.config import Directories
+from app.core.config import Directories, Colors
 
 class FileRepository:
     """
     Gestiona el almacenamiento físico de imágenes originales y patrones generados
-    sin duplicados.
+    y frames sin duplicados.
     """
 
     @staticmethod
@@ -35,6 +35,13 @@ class FileRepository:
         """
         return Directories.THUMBNAILS_DIR / f"thumb_{sha256_hash}.png"
 
+    @staticmethod
+    def get_frame_path(artifact_hash : str, frame_index : int) -> Path:
+        """
+        Construye la ruta en disco de un frame de animación para un patrón.
+        """
+        return Directories.FRAMES_DIR / f"frame_{artifact_hash}_{frame_index}.webp"
+
     @classmethod
     def save_source_image(
         cls        : type[FileRepository],
@@ -51,6 +58,7 @@ class FileRepository:
             target_path : Path = cls.get_source_path(sha256)
             if not target_path.exists():
                 image : Image.Image = Image.open(BytesIO(image_data))
+                image : Image.Image = ImageOps.exif_transpose(image)
                 if image.mode != "RGB":
                     image : Image.Image = image.convert("RGB")
                 image.save(target_path, format="PNG", optimize=True)
@@ -64,6 +72,23 @@ class FileRepository:
         except Exception as e:
             raise e
 
+    @classmethod
+    def save_animation_frame(
+        cls           : type[FileRepository],
+        frame_img     : Image.Image,
+        artifact_hash : str,
+        frame_index   : int
+    ) -> Path:
+        """
+        Guarda un frame en formato WebP (optimizado para display).
+        """
+        try:
+            frame_path : Path = cls.get_frame_path(artifact_hash, frame_index)
+            if not frame_path.exists():
+                frame_img.save(frame_path, format="WEBP", quality=85)
+            return frame_path
+        except Exception as e:
+            raise e
 
     @classmethod
     def save_artifact_bundle(
@@ -110,6 +135,13 @@ class FileRepository:
             if thumb_path.exists():
                 success : bool = True
                 thumb_path.unlink()
+
+            pattern_prefix : str = f"frame_{sha256_hash}_"
+            for frame_file in Directories.FRAMES_DIR.glob(f"{pattern_prefix}*.webp"):
+                try:
+                    frame_file.unlink()
+                except Exception as ex:
+                    print(f"[!]{Colors.YELLOW} WARNING - COULD NOT DELETE FRAME {frame_file}. {Colors.RESET}{ex}")
 
             return success
 

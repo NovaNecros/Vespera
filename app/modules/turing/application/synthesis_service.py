@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from typing import Any, Optional
 from pathlib import Path
+import traceback
 from time import perf_counter
+
+import numpy as np
 from PIL import Image
 
 from werkzeug.datastructures import FileStorage
@@ -13,8 +17,12 @@ from app.core.extensions import db
 from app.core.config import TuringSettings, RNGSettings, Colors
 from app.core.utils.cryptography_utils import compute_bytes_sha256, compute_params_hash, compute_artifact_hash
 from app.core.utils.image_utils import is_image
-from app.infrastructure.repositories.models import SourceImage, ConfigTuring, SynthesisArtifact
+from app.infrastructure.repositories.models import (
+    SourceImage,  SynthesisFrame, SynthesisArtifact,
+    ConfigTuring, ColorPalette
+)
 from app.infrastructure.repositories.files_repo import FileRepository
+from app.infrastructure.palettes import ColorPalettes as Palettes
 from app.modules.turing.domain.turing_engine import TuringEngine
 
 class SynthesisService:
@@ -22,31 +30,34 @@ class SynthesisService:
     Servicio para la generación, deduplicación y almacenamiento de patrones de Turing.
     """
 
+    # Caché para sostener las imágenes generadas para preview antes de guardarlas
+    _ephemeral_cache : dict[str, dict[str, Any]] = {}
+
     def __init__(self : SynthesisService, verbose : bool = False) -> None:
         self.verbose : bool = verbose
 
     @staticmethod
     def _get_or_create_config(
-        feed_rate     : float,
-        kill_rate     : float,
-        diff_u        : float,
-        diff_v        : float,
-        dt            : float,
-        iterations    : int,
-        color_palette : str
+        feed_rate  : float,
+        kill_rate  : float,
+        diff_u     : float,
+        diff_v     : float,
+        dt         : float,
+        iterations : int,
+        id_palette : int
     ) -> ConfigTuring:
         """
         Busca un conjunto de parámetros de configuración. Si no lo encuentra, lo crea y lo guarda.
         """
         try:
             config_hash : str = compute_params_hash(
-                feed_rate,
-                kill_rate,
-                diff_u,
-                diff_v,
-                dt,
-                iterations,
-                color_palette
+                feed_rate  = feed_rate,
+                kill_rate  = kill_rate,
+                diff_u     = diff_u,
+                diff_v     = diff_v,
+                dt         = dt,
+                iterations = iterations,
+                id_palette = id_palette
             )
 
             existing_config : Optional[ConfigTuring] = (
@@ -66,7 +77,7 @@ class SynthesisService:
                 diff_v        = diff_v,
                 dt            = dt,
                 iterations    = iterations,
-                color_palette = color_palette
+                id_palette    = id_palette
             )
             db.session.add(new_config)
             db.session.flush()
@@ -121,30 +132,45 @@ class SynthesisService:
         :param source_image : Archivo de la imagen original.
         :return : Artefacto generado en formato de diccionario con keyframes.
         """
-        start_time        : float           = perf_counter()
-        execution_time_ms : Optional[float] = None
+        start_time     : float           = perf_counter()
+        execution_time : Optional[float] = None
 
         try:
+            print(f"{Colors.CYAN}{'-' * 85}{Colors.RESET}")
+            print(f"[*]{Colors.BLUE} INITIATING PATTERN GENERATION{Colors.RESET}")
+
+            seed : int = int(params.get("seed", RNGSettings.SEED))
+            if seed and seed != RNGSettings.SEED:
+                print(f"[!]{Colors.YELLOW} WARNING: Se intentó ejecutar una semilla diferente al cumpleaños de la boba ({params['seed']}). Permiso denegado.{Colors.RESET}")
+                return {
+                    "success"     : False,
+                    "error"       : f"Forbidden seed: {seed}",
+                    "status_code" : 403
+                }
+
             is_image_res : dict[str, Any] = is_image(source_image)
             file_bytes   : Optional[bytes] = source_image.read() if is_image_res.get("is_image") else None
             filename     : str             = params.get("original_filename", source_image.filename if is_image_res.get("is_image") else "upload.png")
 
-            print(f"{Colors.CYAN}{'-' * 85}{Colors.RESET}")
-            if not self.verbose:
-                print(f"[*]{Colors.BLUE} INITIATING PATTERN GENERATION{Colors.RESET}")
-            else:
-                print(f"[*]{Colors.BLUE} PARSING REQUEST PARAMETERS...{Colors.RESET}")
-
-            if params.get("seed") and int(params["seed"]) != RNGSettings.SEED:
-                print(f"[!]{Colors.YELLOW} WARNING: Se intentó ejecutar una semilla diferente al cumpleaños de la boba ({params['seed']}). Permiso denegado.{Colors.RESET}")
-                return {
-                    "success"     : False,
-                    "error"       : f"Forbidden seed: {params['seed']}",
-                    "status_code" : 403
-                }
-
             source_image_id    : Optional[int] = int(params["source_image_id"]) if params.get("source_image_id") else None
-            original_filename  : str           = str(filename)
+            if not file_bytes and source_image_id:
+                src_rec : Optional[SourceImage] = (
+                    db.session
+                        .query(SourceImage)
+                        .filter_by(id_source_image=source_image_id)
+                        .first()
+                )
+                if src_rec:
+                    source_path : Path = FileRepository.get_source_path(src_rec.sha256_hash)
+                    if source_path.exists():
+                        file_bytes : Optional[bytes] = source_path.read_bytes()
+
+            if not file_bytes: return {
+                "success"     : False,
+                "error"       : "No catalyst provided.",
+                "status_code" : 400
+            }
+
             feed_rate          : float         = float(params.get("feed_rate", TuringSettings.DEFAULT_FEED_RATE))
             kill_rate          : float         = float(params.get("kill_rate", TuringSettings.DEFAULT_KILL_RATE))
             diff_u             : float         = float(params.get("diff_u", TuringSettings.DEFAULT_DIFF_U))
@@ -152,146 +178,214 @@ class SynthesisService:
             dt                 : float         = float(params.get("dt", TuringSettings.DEFAULT_DT))
             iterations         : int           = int(params.get("iterations", TuringSettings.DEFAULT_ITERATIONS))
             frame_count        : int           = int(params.get("frame_count", TuringSettings.DEFAULT_FRAMES))
-            color_palette      : str           = str(params.get("color_palette", TuringSettings.DEFAULT_PALETTE))
-            seed               : int           = RNGSettings.SEED
-            parent_artifact_id : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
-            user_notes         : Optional[str] = str(params["user_notes"]) if params.get("user_notes") else None
-            capture_timeline   : bool          = bool(params.get("capture_timeline", True))
+            frame_dist_exp     : float         = float(params.get("frame_dist_exp", TuringSettings.DEFAULT_FRAME_DENSITY_EXP))
+            id_palette         : int           = int(params.get("id_palette", 1))
 
-
-            if self.verbose:
-                print(f"[*]{Colors.BLUE} PROCESSING INPUT IMAGE...{Colors.RESET}")
-
-            if file_bytes:
-                source_record : SourceImage = self._get_or_create_source_image(file_bytes, original_filename)
-            elif source_image_id is not None:
-                source_record : Optional[SourceImage] = (
-                    db.session
-                        .query(SourceImage)
-                        .filter_by(id_source_image = source_image_id)
-                        .first()
-                )
-                if not source_record: return {
-                    "success"     : False,
-                    "error"       : f"Source image #{source_image_id} not found in DB.",
-                    "status_code" : 404
-                }
-            else:
-                return {
-                    "success"     : False,
-                    "error"       : ("No image image ID provided. " + is_image_res.get("reason", "")).strip(),
-                    "status_code" : 400
-                }
-
-            if self.verbose:
-                print(f"[*]{Colors.BLUE} PROCESSING PARAMETER SETTINGS...{Colors.RESET}")
-
-            config_record : ConfigTuring = self._get_or_create_config(
-                feed_rate     = feed_rate,
-                kill_rate     = kill_rate,
-                diff_u        = diff_u,
-                diff_v        = diff_v,
-                dt            = dt,
-                iterations    = iterations,
-                color_palette = color_palette
+            src_hash    : str = compute_bytes_sha256(file_bytes)
+            params_hash : str = compute_params_hash(
+                feed_rate  = feed_rate,
+                kill_rate  = kill_rate,
+                diff_u     = diff_u,
+                diff_v     = diff_v,
+                dt         = dt,
+                iterations = iterations,
+                id_palette = id_palette
             )
-
-            if self.verbose:
-                print(f"[*]{Colors.BLUE} CHECKING DB FOR EXISTENCE...{Colors.RESET}")
-
-            artifact_hash : str = compute_artifact_hash(
-                image_hash  = source_record.sha256_hash,
-                params_hash = config_record.config_hash,
-                seed        = seed
-            )
-
-            existing_artifact : Optional[SynthesisArtifact] = (
-                db.session
-                    .query(SynthesisArtifact)
-                    .filter_by(artifact_hash = artifact_hash)
-                    .first()
-            )
-
-            if existing_artifact:
-                if self.verbose:
-                    print(f"[OK]{Colors.YELLOW} PATTERN CACHE HIT FOR HASH: {Colors.RESET}{artifact_hash}")
-                return {
-                    "success"     : True,
-                    "message"     : "Pattern already exists in DB.",
-                    "data"        : existing_artifact.to_dict(),
-                    "status_code" : 200
-                }
-
-            if self.verbose:
-                print(f"[*]{Colors.BLUE} GENERATING PATTERN...{Colors.RESET}")
-
-            source_file_path : Path = FileRepository.get_source_path(source_record.sha256_hash)
-            with Image.open(source_file_path) as raw_img:
-                pil_source : Image.Image = raw_img.convert("RGB")
+            artifact_hash : str = compute_artifact_hash(src_hash, params_hash, RNGSettings.SEED)
 
             engine : TuringEngine = TuringEngine(
-                feed_rate     = feed_rate,
-                kill_rate     = kill_rate,
-                diff_u        = diff_u,
-                diff_v        = diff_v,
-                dt            = dt,
-                iterations    = iterations,
-                frame_count   = frame_count,
-                color_palette = color_palette,
-                seed          = seed
+                feed_rate      = feed_rate,
+                kill_rate      = kill_rate,
+                diff_u         = diff_u,
+                diff_v         = diff_v,
+                dt             = dt,
+                iterations     = iterations,
+                frame_count    = frame_count,
+                frame_dist_exp = frame_dist_exp,
+                seed           = seed,
+                verbose        = self.verbose
             )
 
-            _, rendered_img, keyframes = engine.simulate(
-                source_image     = pil_source,
-                width            = TuringSettings.DEFAULT_WIDTH,
-                height           = TuringSettings.DEFAULT_HEIGHT,
-                capture_timeline = capture_timeline
-            )
+            src_path : Path = Path(FileRepository.get_source_path(src_hash))
+            width  : int = params.get("width", TuringSettings.DEFAULT_WIDTH)
+            height : int = params.get("height", TuringSettings.DEFAULT_HEIGHT)
+            with Image.open(src_path) if src_path.exists() else BytesIO(file_bytes) as raw_pil:
+                v_matrix, final_img, frame_pils, keyframes_b64, captured_iters = engine.simulate(
+                    source_image     = raw_pil,
+                    width            = width,
+                    height           = height,
+                    capture_timeline = True
+                )
 
-            if self.verbose:
-                print(f"[*]{Colors.BLUE} SAVING PATTERN...{Colors.RESET}")
+            execution_time : float = round(perf_counter() - start_time, 6)
 
-            FileRepository.save_artifact_bundle(rendered_img, artifact_hash)
-
-            execution_time_ms : float = (perf_counter() - start_time) * 1000.0
-
-            artifact : SynthesisArtifact = SynthesisArtifact(
-                id_source_image    = source_record.id_source_image,
-                id_config          = config_record.id_config,
-                id_parent_artifact = parent_artifact_id,
-                artifact_hash      = artifact_hash,
-                seed               = seed,
-                execution_time_ms  = execution_time_ms,
-                is_favorite        = False,
-                user_notes         = user_notes
-            )
-
-            db.session.add(artifact)
-            db.session.commit()
-
-            if self.verbose:
-                print(f"[OK]{Colors.GREEN} PATTERN GENERATED AND SAVED TO DB WITH:{Colors.RESET}")
-                print(f" > ID   : #{artifact.id_artifact}")
-                print(f" > HASH : {artifact_hash}")
-
-            artifact_data : dict[str, Any] = artifact.to_dict()
-            artifact_data["keyframes"]     = keyframes
+            self._ephemeral_cache[artifact_hash] = {
+                "file_bytes"        : file_bytes,
+                "original_filename" : filename,
+                "src_hash"          : src_hash,
+                "artifact_hash"     : artifact_hash,
+                "final_img"         : final_img,
+                "frame_pils"        : frame_pils,
+                "captured_iters"    : captured_iters,
+                "execution_time"    : execution_time,
+                "params"            : {
+                    "feed_rate"  : feed_rate,
+                    "kill_rate"  : kill_rate,
+                    "diff_u"     : diff_u,
+                    "diff_v"     : diff_v,
+                    "dt"         : dt,
+                    "iterations" : iterations,
+                    "id_palette" : id_palette,
+                    "seed"       : seed
+                }
+            }
 
             return {
                 "success"     : True,
-                "message"     : f"New pattern generated successfully in {execution_time_ms:.4f} ms",
-                "data"        : artifact_data,
-                "status_code" : 201
+                "message"     : f"New pattern generated successfully in {execution_time:.6f} s",
+                "data"        : {
+                    "artifact_hash"  : artifact_hash,
+                    "execution_time" : execution_time,
+                    "keyframes"      : keyframes_b64,
+                    "frame_count"    : len(keyframes_b64),
+                    "is_committed"   : False
+                },
+                "status_code" : 200
             }
 
         except Exception as e:
             db.session.rollback()
-            raise e
+            print(f"[!]{Colors.RED} UNEXPECTED ERROR GENERATING ARTIFACT:{Colors.RESET} {e}")
+            if self.verbose: traceback.print_exc()
+            return {
+                "success"     : False,
+                "error"       : str(e),
+                "status_code" : 500
+            }
 
         finally:
-            if execution_time_ms is None:
-                execution_time_ms : float = (perf_counter() - start_time) * 1000.0
-                print(f"[!] {Colors.RED}TIME ELAPSED BEFORE ERROR:{Colors.RESET} {execution_time_ms:.4f} ms")
+            if execution_time is None:
+                execution_time : float = round((perf_counter() - start_time), 2)
+                print(f"[!] {Colors.RED}TIME ELAPSED BEFORE ERROR:{Colors.RESET} {execution_time:.6f} s")
             else:
-                print(f"[*] {Colors.BLUE}TIME ELAPSED:{Colors.RESET} {execution_time_ms:.4f} ms")
+                print(f"[*] {Colors.BLUE}TIME ELAPSED:{Colors.RESET} {execution_time:.6f} s")
             print(f"{Colors.CYAN}{'-' * 85}{Colors.RESET}")
+
+    def commit_artifact(
+        self   : SynthesisService,
+        params : dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Guarda el patrón en la DB una vez que la boba lo acepte :b
+        :param params : Hash del patrón.
+        :return       : Estado de éxito de la operación.
+        """
+        try:
+            artifact_hash : str = str(params.get("artifact_hash", "")).strip()
+            if not artifact_hash or artifact_hash not in self._ephemeral_cache:
+                existing_artifact : Optional[SynthesisArtifact] = (
+                    db.session
+                        .query(SynthesisArtifact)
+                        .filter_by(artifact_hash=artifact_hash)
+                        .first()
+                )
+                if existing_artifact: return {
+                    "success"     : True,
+                    "message"     : "Artifact had already been sealed in the vault.",
+                    "data"        : existing_artifact.to_dict(),
+                    "status_code" : 200
+                }
+                return {
+                    "success"     : False,
+                    "error"       : f"No uncommited artifact found with rune {artifact_hash}. Please invoke a reaction first.",
+                    "status_code" : 404
+                }
+            cached : dict[str, Any] = self._ephemeral_cache[artifact_hash]
+
+            id_palette : int           = int(params.get("id_palette", cached["params"]["id_palette"]))
+            user_notes : Optional[str] = str(params["user_notes"]).strip() if params.get("user_notes") else None
+            parent_id  : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
+
+            source_rec : SourceImage = self._get_or_create_source_image(
+                cached["file_bytes"],
+                cached["original_filename"]
+            )
+
+            p : dict[str, Any] = cached["params"]
+            config_rec : ConfigTuring = self._get_or_create_config(
+                feed_rate  = p["feed_rate"],
+                kill_rate  = p["kill_rate"],
+                diff_u     = p["diff_u"],
+                diff_v     = p["diff_v"],
+                dt         = p["dt"],
+                iterations = p["iterations"],
+                id_palette = id_palette
+            )
+
+            palette_obj : Optional[ColorPalette] = (
+                db.session
+                    .query(ColorPalette)
+                    .filter_by(id_palette=id_palette)
+                    .first()
+            )
+
+            palette_name : str = palette_obj.name if palette_obj else TuringSettings.DEFAULT_PALETTE
+
+            final_rgb_array : np.ndarray = Palettes.apply_palette(
+                np.asarray(cached["final_img"].convert("L"), dtype=np.float32) / 255.0,
+                palette_name
+            )
+            final_colored_img : Image.Image = Image.fromarray(final_rgb_array, mode="RGB")
+            FileRepository.save_artifact_bundle(final_colored_img, artifact_hash)
+
+            raw_fav : Any = params.get("is_favorite", False)
+            is_favorite : bool = raw_fav if isinstance(raw_fav, bool) else str(raw_fav).strip().lower() in ("true", "1", "yes")
+
+            artifact : SynthesisArtifact = SynthesisArtifact(
+                id_source_image    = source_rec.id_source_image,
+                id_config          = config_rec.id_config,
+                id_parent_artifact = parent_id,
+                artifact_hash      = artifact_hash,
+                seed               = p.get("seed", RNGSettings.SEED),
+                execution_time     = cached["execution_time"],
+                is_favorite        = is_favorite,
+                user_notes         = user_notes
+            )
+            db.session.add(artifact)
+            db.session.flush()
+
+            for idx, (frame_img, iter_num) in enumerate(zip(cached["frame_pils"], cached["captured_iters"])):
+                FileRepository.save_animation_frame(frame_img, artifact_hash, idx)
+                frame_hash : str = compute_bytes_sha256(f"{artifact_hash}_{idx:03d}_{iter_num}".encode("utf-8"))
+
+                frame_record : SynthesisFrame = SynthesisFrame(
+                    id_artifact = artifact.id_artifact,
+                    frame_index = idx,
+                    iteration   = iter_num,
+                    frame_hash  = frame_hash
+                )
+                db.session.add(frame_record)
+
+            db.session.commit()
+
+            # Limpiar Caché
+            del self._ephemeral_cache[artifact_hash]
+
+            if self.verbose:
+                print(f"[OK]{Colors.GREEN} ARTIFACT #{artifact.id_artifact} SEALED IN VAULT WITH {len(cached['frame_pils'])} FRAMES.{Colors.RESET}")
+
+            return {
+                "success"     : True,
+                "message"     : f"Artifact #{artifact.id_artifact} successfully sealed into The Vault.",
+                "data"        : artifact.to_dict(),
+                "status_code" : 201
+            }
+        except Exception as e:
+            db.session.rollback()
+            print(f"[!]{Colors.RED} UNEXPECTED ERROR SAVING ARTIFACT TO VAULT:{Colors.RESET} {e}")
+            if self.verbose: traceback.print_exc()
+            return {
+                "success"     : False,
+                "error"       : str(e),
+                "status_code" : 500
+            }
