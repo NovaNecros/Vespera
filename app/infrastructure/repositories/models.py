@@ -30,7 +30,7 @@ class ColorPalette(db.Model):
             "is_system"    : self.is_system,
             "is_favorite"  : self.is_favorite,
             "stops"        : [stop.to_dict() for stop in self.stops],
-            "created_at"   : self.created_at
+            "created_at"   : self.created_at.isoformat() if self.created_at else None
         }
 
 class PaletteStop(db.Model):

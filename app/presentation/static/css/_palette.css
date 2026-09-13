@@ -2,55 +2,62 @@
 
 :root
 {
+    /* Mist & Smoke */
+    --vespera-smoke-center     : #DFE1EA;  /* Main BG Center    */
+    --vespera-smoke-inner      : #BBBEC4;  /* Main BG Inner     */
+    --vespera-smoke-outer      : #66686C;  /* Main BG Outer     */
+
     /* Shadows & Abyss */
-    --vespera-void             : #b9bdc4;  /* True Background   */
-    --vespera-void-border      : #999ba4;  /* Background Border */
-    --vespera-obsidian         : #191B24;  /* Main Background   */
-    --vespera-velvet           : #1E202B;  /* Cards             */
-    --vespera-surface          : #262936;  /* Elevated Panels   */
-    --vespera-surface-hover    : #2E3242;  /* Panels (Hover)    */
+    --vespera-void             : #060608;  /* Navbar            */
+    --vespera-void-border      : #14151B;  /* Card/Panel Border */
+    --vespera-obsidian         : #0B0C11;  /* Sec. Background   */
+    --vespera-charcoal         : #111319;  /* Cards             */
+    --vespera-surface          : #181A22;  /* Control Surfaces  */
+    --vespera-surface-hover    : #2E3242;  /* Active Controls   */
 
     /* Sanguine & Crimson */
     --vespera-blood-coagulated : #1A0003;
-    --vespera-wine             : #380208;
-    --vespera-crimson-dark     : #5C000B;
-    --vespera-crimson          : #8A0303;
-    --vespera-crimson-bright   : #B80D1A;
+    --vespera-wine             : #2E0207;
+    --vespera-crimson-dark     : #4D0008;
+    --vespera-crimson          : #800008;
+    --vespera-crimson-bright   : #B80A18;
     --vespera-crimson-glow     : #FF1A2A;
 
     /* Gilded Filigree & Gold */
-    --vespera-gold-shadow      : #3D2D10;
-    --vespera-gold-dark        : #7D6124;
-    --vespera-gold             : #C5A059;
-    --vespera-gold-bright      : #E8CA84;
-    --vespera-gold-glow        : #FFF0C2;
+    --vespera-iron-black       : #050508;
+    --vespera-iron-dark        : #151720;
+    --vespera-iron             : #262936;
+    --vespera-pewter           : #585E70;
+    --vespera-silver           : #9FA5B5;
+    --vespera-silver-bright    : #D8DCe6;
+    --vespera-silver-glow      : #F0F3FA;
 
     /* Nocturnal Violet & Amethyst */
-    --vespera-amethyst-dark    : #190520;
-    --vespera-amethyst         : #481157;
-    --vespera-violet-glow      : #9838B8;
-    --vespera-lilac-mist       : #D8BFD8;
+    --vespera-amethyst-dark    : #16041C;
+    --vespera-amethyst         : #380C42;
+    --vespera-violet-glow      : #7E2699;
+    --vespera-lilac-mist       : #C3A5C3;
 
     /* Bone & Parchment */
-    --vespera-bone-shadow      : #4A4845; /* Shadows        */
-    --vespera-bone-silent      : #85808A; /* Secondary Text */
-    --vespera-bone-ink         : #D6D2CC; /* Main Text      */
-    --vespera-bone             : #EAE6DF;
-    --vespera-parchment        : #F5EFE0;
+    --vespera-bone-shadow      : #3C3E44; /* Shadows        */
+    --vespera-bone-silent      : #727682; /* Secondary Text */
+    --vespera-bone-ink         : #C5C9D3; /* Main Text      */
+    --vespera-bone             : #E2DFD8;
+    --vespera-parchment        : #ECEAE4;
     --vespera-white            : #FFFFFF;
 
-    /* Glassmorphism */
-    --vespera-border-subtle    : rgba(138,   3,   3, 0.18);
-    --vespera-border-crimson   : rgba(138,   3,   3, 0.45);
-    --vespera-border-gold      : rgba(197, 160,  89, 0.40);
-    --vespera-border-glow      : rgba(184,  13,  26, 0.65);
-    --vespera-glass-bg         : rgba( 15,  16,  21, 0.78);
-    --vespera-glass-border     : rgba(197, 160,  89, 0.22);
+    /* Glassmorphism & Borders */
+    --vespera-glass-bg         : rgba( 12,  14,  20, 0.52);
+    --vespera-border-black     : rgba(  5,   5,   8, 0.90);
+    --vespera-border-iron      : rgba( 38,  41,  54, 0.60);
+    --vespera-border-silver    : rgba(159, 165, 181, 0.25);
+    --vespera-border-crimson   : rgba(128,   0,   8, 0.45);
+    --vespera-border-glow      : rgba(184,  10,  24, 0.65);
 
     /* --- SHADOWS --- */
-    --vespera-shadow-ambient   : 0 8px 32px 0 rgba(0, 0, 0, 0.75);
-    --vespera-glow-crimson     : 0 0 20px rgba(138, 3, 3, 0.40), 0 0 40px rgba(138, 3, 3, 0.15);
-    --vespera-glow-crimson-int : 0 0 25px rgba(230, 0, 0, 0.60), 0 0 50px rgba(138, 3, 3, 0.35);
-    --vespera-glow-gold        : 0 0 15px rgba(197, 160, 89, 0.35), 0 0 30px rgba(197, 160, 89, 0.15);
-    --vespera-glow-amethyst    : 0 0 20px rgba(152, 56, 184, 0.35);
+    --vespera-shadow-ambient   : 0 8px 32px 0 rgba(0, 0, 0, 0.85);
+    --vespera-glow-crimson     : 0 0 20px rgba(128,   0,   8, 0.40), 0 0 40px rgba(128,   0,   8, 0.15);
+    --vespera-glow-crimson-int : 0 0 25px rgba(230,   0,   0, 0.55), 0 0 50px rgba(128,   0,   8, 0.35);
+    --vespera-glow-silver      : 0 0 15px rgba(159, 165, 181, 0.25), 0 0 30px rgba(159, 165, 181, 0.10);
+    --vespera-glow-amethyst    : 0 0 20px rgba(126,  38, 153, 0.30);
 }

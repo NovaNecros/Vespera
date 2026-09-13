@@ -1,6 +1,11 @@
 // Vespera/app/presentation/static/ts/studio/studio.ts
 
-import { APIResponse, SynthesisArtifact } from "../types.js";
+import {
+    APIResponse,
+    SynthesisArtifact,
+    ColorPalette,
+    PaletteStop
+} from "../types.js";
 import {
     apiFetch,
     hideLoadingOverlay,
@@ -11,15 +16,19 @@ import {
 // Interfaces
 interface StudioState
 {
-    currentArtifact    : SynthesisArtifact | null;
-    sourceImageFile    : File              | null;
-    sourceImageDataUrl : string            | null;
-    sourceImageElement : HTMLImageElement  | null;
-    keyframes          : HTMLImageElement[];
-    currentFrameIndex  : number;
-    isPlaying          : boolean;
-    animationTimer     : number            | null;
-    isComparing        : boolean;
+    currentArtifactHash  : string            | null;
+    currentExecutionTime : number;
+    sourceImageFile      : File              | null;
+    sourceImageDataUrl   : string            | null;
+    sourceImageElement   : HTMLImageElement  | null;
+    grayScaleFrames      : HTMLImageElement[];
+    rawKeyframeBuffers   : ImageData[];
+    currentFrameIndex    : number;
+    isPlaying            : boolean;
+    animationTimer       : number            | null;
+    isComparing          : boolean;
+    paletteCatalog       : ColorPalette[];
+    activeLut            : Uint8ClampedArray | null;
 }
 
 document.addEventListener("DOMContentLoaded", () : void =>
@@ -30,9 +39,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     // URLs
     const generateApiUrl       : string = mainContainer.dataset.generateApiUrl       || "";
+    const commitApiUrl         : string = mainContainer.dataset.commitApiUrl         || "";
     const palettesApiUrl       : string = mainContainer.dataset.palettesApiUrl       || "";
-    const renderStaticApiUrl   : string = mainContainer.dataset.renderStaticApiUrl   || "";
-    const toggleFavoriteApiUrl : string = mainContainer.dataset.toggleFavoriteApiUrl || "";
     const downloadApiUrl       : string = mainContainer.dataset.downloadApiUrl       || "";
 
     // FORM
@@ -84,9 +92,14 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     // ACTIONS
     const synthesizeBtn   : HTMLButtonElement | null = document.getElementById("synthesize-btn")           as HTMLButtonElement;
+    const commitContainer : HTMLElement       | null = document.getElementById("commit-container");
+    const commitBtn       : HTMLButtonElement | null = document.getElementById("commit-btn")               as HTMLButtonElement;
     const resetParamsBtn  : HTMLButtonElement | null = document.getElementById("reset-params-btn")         as HTMLButtonElement;
-    const favoriteBtn     : HTMLButtonElement | null = document.getElementById("save-favorite-btn")        as HTMLButtonElement;
     const downloadLink    : HTMLAnchorElement | null = document.getElementById("download-artifact-link")   as HTMLAnchorElement;
+
+    // HIDDEN CANVAS FOR PALETTE SWITCHING
+    const offscreenCanvas : HTMLCanvasElement = document.createElement("canvas");
+    const offscreenCtx    : CanvasRenderingContext2D | null = offscreenCanvas.getContext("2d", { willReadFrequently : true});
 
     // DEFAULT PARAMETERS
     const defaultF       = "0.0545";
@@ -103,15 +116,19 @@ document.addEventListener("DOMContentLoaded", () : void =>
     function setDefaultState() : StudioState
     {
         return {
-            currentArtifact    : null,
-            sourceImageFile    : null,
-            sourceImageDataUrl : null,
-            sourceImageElement : null,
-            keyframes          : [],
-            currentFrameIndex  : 0,
-            isPlaying          : false,
-            animationTimer     : null,
-            isComparing        : false
+            currentArtifactHash  : null,
+            currentExecutionTime : 0,
+            sourceImageFile      : null,
+            sourceImageDataUrl   : null,
+            sourceImageElement   : null,
+            grayScaleFrames      : [],
+            rawKeyframeBuffers   : [],
+            currentFrameIndex    : 0,
+            isPlaying            : false,
+            animationTimer       : null,
+            isComparing          : false,
+            paletteCatalog       : [],
+            activeLut            : null,
         };
     }
     const state : StudioState = setDefaultState();
@@ -161,27 +178,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         });
     }
 
-    // PALETTES
-    async function loadPaletteCatalog() : Promise<void>
-    {
-        if(!paletteSelect) return;
-
-        const res : APIResponse<string[]> = await apiFetch<string[]>(palettesApiUrl);
-        if(!res.success || !Array.isArray(res.data)) return;
-
-        paletteSelect.innerHTML = "";
-
-        res.data.forEach((palName : string) =>
-        {
-            const opt : HTMLOptionElement = document.createElement("option");
-            opt.value       = palName;
-            opt.textContent = palName.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-            if(palName === "crimson_eclipse") opt.selected = true;
-            paletteSelect.appendChild(opt);
-        });
-    }
-
-    // SLIDERS & DISPLAYS
     function resetFormula() : void
     {
         if(feedSlider)     feedSlider.value         = defaultF;
@@ -201,18 +197,176 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(dtInput)        dtInput.value            = defaultDt;
     }
 
-    function bindSliderInputs() : void
+    // PALETTES
+    function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
     {
-        syncControlPair(feedSlider,  feedInput,  4);
-        syncControlPair(killSlider,  killInput,  4);
-        syncControlPair(diffUSlider, diffUInput, 3);
-        syncControlPair(diffVSlider, diffVInput, 3);
-        syncControlPair(iterSlider,  iterInput,  0);
-        syncControlPair(dtSlider,    dtInput,    2);
-        resetParamsBtn?.addEventListener("click", resetFormula);
+        const lut : Uint8ClampedArray = new Uint8ClampedArray(256 * 3);
+        const sortedStops : PaletteStop[] = [...stops].sort((a, b) => a.stop_position - b.stop_position);
+
+        for(let i : number = 0; i < 256; ++i)
+        {
+            const t : number = i / 255.0;
+            let lower : PaletteStop = sortedStops[0];
+            let upper : PaletteStop = sortedStops[sortedStops.length - 1];
+
+            for(let s : number = 0; s < sortedStops.length - 1; ++s)
+            {
+                if(t >= sortedStops[s].stop_position && t <= sortedStops[s + 1].stop_position)
+                {
+                    lower = sortedStops[s];
+                    upper = sortedStops[s + 1];
+                    break;
+                }
+            }
+
+            const range  : number = upper.stop_position - lower.stop_position;
+            const factor : number = range === 0 ? 0 : (t - lower.stop_position) / range;
+
+            lut[i * 3]     = Math.round(lower.r + (upper.r - lower.r) * factor);
+            lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
+            lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+        }
+
+        return lut;
     }
 
-    // DROPZONES
+    function applyShaderToFrame(index : number) : void
+    {
+        if(!canvas || !canvasContext || !offscreenCtx || state.grayScaleFrames.length === 0) return;
+        if(index < 0 || index >= state.grayScaleFrames.length) return;
+
+        const img : HTMLImageElement = state.grayScaleFrames[index];
+
+        if(offscreenCanvas.width !== canvas.width || offscreenCanvas.height !== canvas.height)
+        {
+            offscreenCanvas.width  = canvas.width;
+            offscreenCanvas.height = canvas.height;
+        }
+
+        if(!state.activeLut)
+        {
+            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+            canvasContext.drawImage(img, 0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        offscreenCtx.clearRect(0, 0, canvas.width, canvas.height);
+        offscreenCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const imgData : ImageData = offscreenCtx.getImageData(0, 0, canvas.width, canvas.height);
+        const data    : Uint8ClampedArray = imgData.data;
+        const lut     : Uint8ClampedArray = state.activeLut;
+
+        for(let p : number = 0; p < data.length; p += 4)
+        {
+            const gray : number = data[p];
+            data[p]     = lut[gray*3];
+            data[p + 1] = lut[gray*3 + 1];
+            data[p + 2] = lut[gray*3 + 2];
+        }
+
+        canvasContext.putImageData(imgData, 0, 0);
+        state.currentFrameIndex = index;
+        if(scrubber) scrubber.value = index.toString();
+        if(frameLabel) frameLabel.textContent = `Frame ${index + 1} / ${state.grayScaleFrames.length}`;
+    }
+
+    async function loadPaletteCatalog() : Promise<void>
+    {
+        if(!paletteSelect) return;
+
+        const res : APIResponse<ColorPalette[]> = await apiFetch<ColorPalette[]>(palettesApiUrl);
+        if(!res.success || !Array.isArray(res.data)) return;
+
+        state.paletteCatalog    = res.data;
+        paletteSelect.innerHTML = "";
+
+        res.data.forEach((pal : ColorPalette) =>
+        {
+            const opt : HTMLOptionElement = document.createElement("option");
+            opt.value       = pal.id_palette.toString();
+            opt.textContent = pal.display_name;
+            if(pal.name === "crimson_eclipse")
+            {
+                opt.selected    = true;
+                state.activeLut = buildPaletteLut(pal.stops);
+            }
+            paletteSelect.appendChild(opt);
+        });
+
+        paletteSelect.addEventListener("change", () : void =>
+        {
+            const selectedId : number = parseInt(paletteSelect.value);
+            const pal : ColorPalette | undefined = state.paletteCatalog.find(p => p.id_palette === selectedId);
+            if(pal)
+            {
+                state.activeLut = buildPaletteLut(pal.stops);
+                if(state.grayScaleFrames.length > 0 && !state.isComparing)
+                {
+                    applyShaderToFrame(state.currentFrameIndex);
+                }
+            }
+        });
+    }
+
+    // SYNTHESIS & VISUALIZATION
+    function pauseAnimation() : void
+    {
+        state.isPlaying = false;
+        if(state.animationTimer !== null)
+        {
+            clearInterval(state.animationTimer);
+            state.animationTimer = null;
+        }
+        if(playPauseIcon) playPauseIcon.className = "fa-solid fa-play mr-1";
+    }
+
+    function playAnimation() : void
+    {
+        if(state.grayScaleFrames.length <= 1) return;
+        state.isPlaying = true;
+
+        if(playPauseIcon) playPauseIcon.className = "fa-solid fa-pause mr-1 text-vespera-silverBright";
+
+        if(state.currentFrameIndex >= state.grayScaleFrames.length - 1) applyShaderToFrame(0);
+
+        state.animationTimer = window.setInterval(() =>
+        {
+           const nextIdx : number = state.currentFrameIndex + 1;
+           if(nextIdx >= state.grayScaleFrames.length) pauseAnimation();
+           else applyShaderToFrame(nextIdx);
+        }, 120);
+    }
+
+    function togglePlayPause() : void
+    {
+        if(state.isPlaying) pauseAnimation();
+        else                playAnimation();
+    }
+
+    function toggleComparison() : void
+    {
+        if(!canvasContext || !canvas) return;
+        state.isComparing = !state.isComparing;
+
+        if(state.isComparing)
+        {
+            pauseAnimation();
+            if(state.sourceImageElement)
+            {
+                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+                canvasContext.drawImage(state.sourceImageElement, 0, 0, canvas.width, canvas.height);
+                if(compareBtn) compareBtn.classList.add("bg-vespera-crimson", "text-vespera-parchment");
+            }
+        }
+        else
+        {
+            applyShaderToFrame(state.currentFrameIndex);
+            if(compareBtn) compareBtn.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
+        }
+    }
+
+    // INPUT FILE
     function handleFileSelection(file : File) : void
     {
         if(!file.type.match(/image\/(png|jpeg|webp)$/))
@@ -247,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(sourceStatusEl)
             {
                 sourceStatusEl.textContent = "Catalyst Seeded";
-                sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-goldbright";
+                sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-silverBright";
             }
         };
 
@@ -275,241 +429,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         }
     }
 
-    function bindDropzoneListeners() : void
-    {
-        if(!dropzoneEl || !fileInput) return;
-
-        dropzoneEl.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", (event : Event) =>
-        {
-            const target : HTMLInputElement = event.target as HTMLInputElement;
-            if(target.files && target.files.length > 0) handleFileSelection(target.files[0]);
-        });
-
-        dropzoneEl.addEventListener("dragover", (event : DragEvent) =>
-        {
-            event.preventDefault();
-            dropzoneEl.classList.add("drag-over");
-        });
-
-        dropzoneEl.addEventListener("dragleave", () => dropzoneEl.classList.remove("drag-over"));
-
-        dropzoneEl.addEventListener("drop", (event : DragEvent) =>
-        {
-           event.preventDefault();
-           dropzoneEl.classList.remove("drag-over");
-           if(event.dataTransfer?.files && event.dataTransfer.files.length > 0)
-           {
-               handleFileSelection(event.dataTransfer.files[0]);
-           }
-        });
-
-        removeSourceBtn?.addEventListener("click", (event : MouseEvent) =>
-        {
-            event.stopPropagation();
-            purgeSourceImage();
-        });
-    }
-
-    // SYNTHESIS & VISUALIZATION
-    function pauseAnimation() : void
-    {
-        state.isPlaying = false;
-        if(state.animationTimer !== null)
-        {
-            clearInterval(state.animationTimer);
-            state.animationTimer = null;
-        }
-        if(playPauseIcon) playPauseIcon.className = "fa-solid fa-play mr-1";
-    }
-
-    function playAnimation() : void
-    {
-        if(state.keyframes.length <= 1) return;
-        state.isPlaying = true;
-
-        if(playPauseIcon) playPauseIcon.className = "fa-solid fa-pause mr-1 text-vespera-goldbright";
-
-        if(state.currentFrameIndex >= state.keyframes.length - 1) renderCanvasFrame(0);
-
-        state.animationTimer = window.setInterval(() =>
-        {
-           const nextIdx : number = state.currentFrameIndex + 1;
-           if(nextIdx >= state.keyframes.length) pauseAnimation();
-           else renderCanvasFrame(nextIdx);
-        }, 120);
-    }
-
-    function togglePlayPause() : void
-    {
-        if(state.isPlaying) pauseAnimation();
-        else                playAnimation();
-    }
-
-    function toggleComparison() : void
-    {
-        if(!canvasContext || !canvas) return;
-        state.isComparing = !state.isComparing;
-
-        if(state.isComparing)
-        {
-            pauseAnimation();
-            if(state.sourceImageElement)
-            {
-                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-                canvasContext.drawImage(state.sourceImageElement, 0, 0, canvas.width, canvas.height);
-                if(compareBtn) compareBtn.classList.add("bg-vespera-crimson", "text-vespera-parchment");
-            }
-        }
-        else
-        {
-            renderCanvasFrame(state.currentFrameIndex);
-            if(compareBtn) compareBtn.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
-        }
-    }
-
-    async function toggleFavoriteStatus() : Promise<void>
-    {
-        if(!state.currentArtifact) return;
-
-        const artifactId : number     = state.currentArtifact.id_artifact;
-        const apiUrl     : string     = toggleFavoriteApiUrl.replace(
-            "/artifact/0",
-            `/artifact/${artifactId}`
-        );
-        const res        : APIResponse = await apiFetch(apiUrl, { method : "POST" });
-
-        if(res.success && res.data)
-        {
-            state.currentArtifact.is_favorite = res.data.is_favorite;
-            if(favoriteBtn)
-            {
-                const starIcon : HTMLElement | null = favoriteBtn.querySelector("i");
-                if(starIcon)
-                {
-                    starIcon.className = (
-                        res.data.is_favorite                       ?
-                        "fa-solid fa-star text-vespera-goldbright" :
-                        "fa-regular fa-star"
-                    );
-                }
-            }
-        }
-    }
-
-    function bindCanvasControls() : void
-    {
-        playPauseButton?.addEventListener("click", togglePlayPause);
-
-        scrubber?.addEventListener("input", () =>
-        {
-            pauseAnimation();
-            const frameIdx : number = parseInt(scrubber.value);
-            renderCanvasFrame(frameIdx);
-        });
-
-        compareBtn?.addEventListener("click", toggleComparison);
-        favoriteBtn?.addEventListener("click", toggleFavoriteStatus);
-    }
-
-    function renderCanvasFrame(index : number) : void
-    {
-        if(!canvas || !canvasContext || state.keyframes.length === 0) return;
-        if(index < 0 || index >= state.keyframes.length)              return;
-
-        const frameImg : HTMLImageElement = state.keyframes[index];
-        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-        canvasContext.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-
-        state.currentFrameIndex = index;
-        if(scrubber) scrubber.value = index.toString();
-        if(frameLabel) frameLabel.textContent = `Frame ${index + 1} / ${state.keyframes.length}`;
-    }
-
-    async function prepareKeyframePlayback(keyframesBase64 : string[]) : Promise<void>
-    {
-        emptyState?.classList.add("hidden");
-
-        if(modeBadge)
-        {
-            modeBadge.textContent = "Synthesized";
-            modeBadge.className   = "vamp-badge vamp-badge-gold";
-        }
-
-        const loadedFrames : HTMLImageElement[] = await Promise.all(
-            keyframesBase64.map((src : string)=>
-            {
-                return new Promise <HTMLImageElement>((resolve) =>
-                {
-                    const img : HTMLImageElement = new Image();
-                    img.onload                   = () => resolve(img);
-                    img.src                      = src;
-                });
-            }));
-
-        state.keyframes         = loadedFrames;
-        state.currentFrameIndex = 0;
-
-        if(scrubber)
-        {
-            scrubber.max   = (loadedFrames.length - 1).toString();
-            scrubber.value = "0";
-        }
-
-        playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
-        playbackBadge?.classList.remove("hidden");
-
-        // Autoplay
-        renderCanvasFrame(0);
-        playAnimation();
-    }
-
-    async function renderStaticArtifact(artifactHash : string) : Promise<void>
-    {
-        emptyState?.classList.add("hidden");
-        const img : HTMLImageElement = new Image();
-        img.onload = () =>
-        {
-            if(!canvas || !canvasContext) return;
-            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-            canvasContext.drawImage(img, 0, 0, canvas.width, canvas.height);
-        };
-        img.src = renderStaticApiUrl.replace("/hash/PLACEHOLDER", `/hash/${artifactHash}`);
-    }
-
-    function updateArtifactMetrics(artifact : SynthesisArtifact) : void
-    {
-        if(metricId)   metricId.textContent   = `#${artifact.id_artifact}`;
-        if(metricTime) metricTime.textContent = `${artifact.execution_time_ms.toFixed(1)} ms`;
-        if(metricHash)
-        {
-            metricHash.textContent = truncateHash(artifact.artifact_hash, 6);
-            metricHash.title       = artifact.artifact_hash;
-        }
-
-        if(downloadLink)
-        {
-            downloadLink.href    = downloadApiUrl.replace(
-                "/hash/PLACEHOLDER",
-                `/hash/${artifact.artifact_hash}`
-            );
-            downloadLink.download = `turing_pattern_${artifact.artifact_hash.substring(0,8)}.png`;
-        }
-
-        if(favoriteBtn)
-        {
-            const starIcon : HTMLElement | null = favoriteBtn.querySelector("i");
-            if(starIcon)
-            {
-                starIcon.className = (
-                    artifact.is_favorite                       ?
-                    "fa-solid fa-star text-vespera-goldbright" :
-                    "fa-regular fa-star"
-                );
-            }
-        }
-    }
-
     async function executeSynthesis() : Promise<void>
     {
         const hasFile : boolean = !!state.sourceImageFile;
@@ -530,14 +449,14 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(sourceIdInput?.value)  formData.append("source_image_id",    sourceIdInput.value);
         if(parentIdInput?.value)  formData.append("parent_artifact_id", parentIdInput.value);
 
-        formData.append("feed_rate",               feedSlider?.value     ||       defaultF);
-        formData.append("kill_rate",               killSlider?.value     ||       defaultK);
-        formData.append("diff_u",                  diffUSlider?.value    ||      defaultDu);
-        formData.append("diff_v",                  diffVSlider?.value    ||      defaultDv);
-        formData.append("iterations",              iterSlider?.value     ||    defaultIter);
-        formData.append("dt",                      dtSlider?.value       ||      defaultDt);
-        formData.append("color_palette",           paletteSelect?.value  || defaultPalette);
-        formData.append("user_notes",              userNotesInput?.value ||             "");
+        formData.append("feed_rate",   feedSlider?.value     ||    defaultF);
+        formData.append("kill_rate",   killSlider?.value     ||    defaultK);
+        formData.append("diff_u",      diffUSlider?.value    ||   defaultDu);
+        formData.append("diff_v",      diffVSlider?.value    ||   defaultDv);
+        formData.append("iterations",  iterSlider?.value     || defaultIter);
+        formData.append("dt",          dtSlider?.value       ||   defaultDt);
+        formData.append("id_palette",  paletteSelect?.value  ||         "1");
+        formData.append("user_notes",  userNotesInput?.value ||          "");
         formData.append("capture_timeline", "true");
 
         try
@@ -549,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 subtitle  : "Evaluating 2D Laplacian field and non-linear morphogen kinetics..."
             });
 
-            const res : APIResponse<SynthesisArtifact> = await apiFetch<SynthesisArtifact>(generateApiUrl,
+            const res : APIResponse = await apiFetch(generateApiUrl,
             {
                 method : "POST",
                 body   : formData
@@ -560,16 +479,49 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             if(!res.success || !res.data) return;
 
-            state.currentArtifact = res.data;
-            updateArtifactMetrics(res.data);
+            state.currentArtifactHash  = res.data.artifact_hash;
+            state.currentExecutionTime = res.data.execution_time;
+
+            if(metricTime) metricTime.textContent = `${res.data.execution_time.toFixed(6)} s`;
+            if(metricHash)
+            {
+                metricHash.textContent = truncateHash(res.data.artifact_hash, 6);
+                metricHash.title       = res.data.artifact_hash;
+            }
 
             if(res.data.keyframes && res.data.keyframes.length > 0)
             {
-                await prepareKeyframePlayback(res.data.keyframes);
-            }
-            else
-            {
-                await renderStaticArtifact(res.data.artifact_hash);
+                emptyState?.classList.add("hidden");
+                if(modeBadge)
+                {
+                    modeBadge.textContent = "Simulated";
+                    modeBadge.className   = "vamp-badge vamp-badge-silver";
+                }
+
+                state.grayScaleFrames = await Promise.all(
+                    res.data.keyframes.map((b64 : string) : Promise<HTMLImageElement> =>
+                    {
+                        return new Promise((resolve) : void =>
+                        {
+                            const img : HTMLImageElement = new Image();
+                            img.onload = () : void => resolve(img);
+                            img.src    = b64;
+                        });
+                    })
+                );
+
+                if(scrubber)
+                {
+                    scrubber.max   = (state.grayScaleFrames.length - 1).toString();
+                    scrubber.value = "0";
+                }
+
+                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
+                playbackBadge?.classList.remove("hidden");
+                commitContainer?.classList.remove("hidden");
+
+                applyShaderToFrame(0);
+                playAnimation();
             }
         }
         catch(error : any)
@@ -585,13 +537,121 @@ document.addEventListener("DOMContentLoaded", () : void =>
     }
     synthesizeBtn?.addEventListener("click", executeSynthesis);
 
+    async function commitArtifact() : Promise<void>
+    {
+        if(!state.currentArtifactHash) return;
+
+        showLoadingOverlay({
+            title    : "Sealing Pattern into The Vault",
+            subtitle : "Persisting morphogentic artifact, parameters and animation frames..."
+        });
+
+        const payload = {
+            artifact_hash : state.currentArtifactHash,
+            id_palette    : paletteSelect?.value ? parseInt(paletteSelect.value) : 1,
+            user_notes    : userNotesInput?.value || ""
+        };
+
+        const res : APIResponse<SynthesisArtifact> = await apiFetch<SynthesisArtifact>(commitApiUrl, {
+            method  : "POST",
+            headers : { "Content-Type" : "application/json" },
+            body    : JSON.stringify(payload)
+        });
+
+        hideLoadingOverlay();
+
+        if(!res.success || !res.data)
+        {
+            (window as any).showAlertModal?.({
+                title    : "Commit Failed",
+                message  : "An unexpected alchemical disruption prevented the pattern from being sealed.",
+                type     : "danger"
+            });
+            return;
+        }
+
+        if(metricId) metricId.textContent = `#${res.data.id_artifact}`;
+        if(modeBadge)
+        {
+            modeBadge.textContent = "Sealed";
+            modeBadge.className   = "vamp-badge vamp-badge-crimson";
+        }
+
+        if(downloadLink)
+        {
+            downloadLink.href     = downloadApiUrl.replace("/hash/PLACEHOLDER", `/hash/${res.data.artifact_hash}`);
+            downloadLink.download = `vespera_artifact_${res.data.artifact_hash.substring(0, 8)}.png`;
+        }
+
+        commitContainer?.classList.add("hidden");
+
+        (window as any).showAlertModal?.({
+            title    : "Artifact Bound",
+            message  : `The pattern has been sealed into The Vault under Rune #${res.data.id_artifact}.`,
+            type     : "success"
+        });
+    }
+
+    // LISTENERS
+    function bindEvents() : void
+    {
+        // Parameters
+        syncControlPair(feedSlider,   feedInput,  4);
+        syncControlPair(killSlider,   killInput,  4);
+        syncControlPair(diffUSlider,  diffUInput, 3);
+        syncControlPair(diffVSlider,  diffVInput, 3);
+        syncControlPair(iterSlider,   iterInput,  0);
+        syncControlPair(dtSlider,     dtInput,    2);
+        resetParamsBtn?.addEventListener("click", resetFormula);
+
+        // Input Image
+        dropzoneEl?.addEventListener("click", () : void => fileInput?.click());
+        fileInput?.addEventListener("change", (event : Event) : void =>
+        {
+            const target : HTMLInputElement = event.target as HTMLInputElement;
+            if(target.files && target.files.length > 0) handleFileSelection(target.files[0]);
+        });
+
+        dropzoneEl?.addEventListener("dragover", (event : DragEvent) : void =>
+        {
+            event.preventDefault();
+            dropzoneEl.classList.add("drag-over");
+        });
+        dropzoneEl?.addEventListener("dragleave", () : void => dropzoneEl.classList.remove("drag-over"));
+        dropzoneEl?.addEventListener("drop", (event : DragEvent) : void =>
+        {
+            event.preventDefault();
+            dropzoneEl.classList.remove("drag-over");
+            if(event.dataTransfer?.files && event.dataTransfer.files.length > 0)
+            {
+                handleFileSelection(event.dataTransfer.files[0]);
+            }
+        });
+
+        removeSourceBtn?.addEventListener("click", (event : MouseEvent) : void =>
+        {
+            event.stopPropagation();
+            purgeSourceImage();
+        });
+
+        // Canvas Controls
+        playPauseButton?.addEventListener("click", togglePlayPause);
+        scrubber?.addEventListener("input", () : void =>
+        {
+            pauseAnimation();
+            applyShaderToFrame(parseInt(scrubber.value));
+        });
+        compareBtn?.addEventListener("click", toggleComparison);
+
+        // Synthesis
+        synthesizeBtn?.addEventListener("click", executeSynthesis);
+        commitBtn?.addEventListener("click", commitArtifact);
+    }
 
     async function initStudio()
     {
         await loadPaletteCatalog();
-        bindSliderInputs();
-        bindDropzoneListeners();
-        bindCanvasControls();
+        bindEvents();
     }
 
     // --- INITIALIZATION ---

@@ -10,7 +10,29 @@ export interface APIResponse<T = any>
     status_code : number;
 }
 
-// --- DOMAIN MODELS ---
+// --- DB MODELS ---
+export interface PaletteStop
+{
+    id_stop       : number;
+    id_palette    : number;
+    stop_position : number;
+    r             : number;
+    g             : number;
+    b             : number;
+    hex           : string;
+}
+
+export interface ColorPalette
+{
+    id_palette   : number;
+    name         : string;
+    display_name : string;
+    is_system    : boolean;
+    is_favorite  : boolean;
+    stops        : PaletteStop[];
+    created_at   : string | null;
+}
+
 export interface SourceImage
 {
     id_source_image   : number;
@@ -24,16 +46,27 @@ export interface SourceImage
 
 export interface ConfigTuring
 {
-    id_config     : number;
-    config_hash   : string;
-    feed_rate     : number;
-    kill_rate     : number;
-    diff_u        : number;
-    diff_v        : number;
-    dt            : number;
-    iterations    : number;
-    color_palette : string;
-    created_at    : string | null;
+    id_config   : number;
+    config_hash : string;
+    feed_rate   : number;
+    kill_rate   : number;
+    diff_u      : number;
+    diff_v      : number;
+    dt          : number;
+    iterations  : number;
+    id_palette  : number;
+    palette     : string;
+    created_at  : string | null;
+}
+
+export interface SynthesisFrame
+{
+    id_frame    : number;
+    id_artifact : number;
+    frame_index : number;
+    iteration   : number;
+    frame_hash  : string;
+    created_at  : string | null;
 }
 
 export interface SynthesisArtifact
@@ -41,15 +74,15 @@ export interface SynthesisArtifact
     id_artifact        : number;
     artifact_hash      : string;
     id_source_image    : number;
-    id_parent_artifact : number | null;
+    id_parent_artifact : number       | null;
     seed               : number;
-    execution_time_ms  : number;
+    execution_time     : number;
     is_favorite        : boolean;
     user_notes         : string;
-    created_at         : string | null;
+    created_at         : string       | null;
     keyframes?         : string[];
     children?          : SynthesisArtifact[];
-    source_image       : SourceImage | null;
+    source_image       : SourceImage  | null;
     config             : ConfigTuring | null;
 }
 
@@ -90,9 +123,14 @@ export interface LoadingOverlayOptions
 // --- PALETTE ---
 export interface VesperaPalette
 {
+    smokeCenter     : string;
+    smokeInner      : string;
+    smokerOuter     : string;
+
     void            : string;
+    voidBorder      : string;
     obsidian        : string;
-    velvet          : string;
+    charcoal        : string;
     surface         : string;
     surfaceHover    : string;
 
@@ -103,11 +141,13 @@ export interface VesperaPalette
     crimsonBright   : string;
     crimsonGlow     : string;
 
-    goldShadow      : string;
-    goldDark        : string;
-    gold            : string;
-    goldBright      : string;
-    goldGlow        : string;
+    ironBlack       : string;
+    ironDark        : string;
+    iron            : string;
+    pewter          : string;
+    silver          : string;
+    silverBright    : string;
+    silverGlow      : string;
 
     amethystDark    : string;
     amethyst        : string;
@@ -121,12 +161,12 @@ export interface VesperaPalette
     parchment       : string;
     white           : string;
 
-    borderSubtle    : string;
-    borderCrimson   : string;
-    borderGold      : string;
-    borderGlow      : string;
     glassBg         : string;
-    glassBorder     : string;
+    borderBlack     : string;
+    borderIron      : string;
+    borderSilver    : string;
+    borderCrimson   : string;
+    borderGlow      : string;
 
     shadowAmbient   : string;
     glowCrimson     : string;

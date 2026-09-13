@@ -1,22 +1,28 @@
 // Vespera/app/presentation/static/ts/partials/_smoke.ts
 
-interface SmokePuff
+// I fell in love with the way you twirl the wisps when you smoke, por eso se me ocurrió esto
+interface SmokeWisp
 {
     x          : number;
     y          : number;
-    radius     : number;
+    radiusX    : number;
+    radiusY    : number;
+    rotation   : number;
+    rotSpeed   : number;
     vx         : number;
     vy         : number;
+    curlFreq   : number;
+    curlAmp    : number;
+    phase      : number;
     alpha      : number;
     baseAlpha  : number;
-    pulseSpeed : number;
-    phase      : number;
+    fadeFactor : number;
 }
 
 (function() : void
 {
     // --- VARIABLES ---
-    const canvas : HTMLCanvasElement = document.getElementById("vespera-smoke-canvas") as HTMLCanvasElement;
+    const canvas : HTMLCanvasElement | null = document.getElementById("vespera-smoke-canvas") as HTMLCanvasElement;
     if(!canvas) return;
 
     const ctx : CanvasRenderingContext2D | null = canvas.getContext("2d", { alpha : true });
@@ -24,43 +30,57 @@ interface SmokePuff
 
     let width  : number      = 0;
     let height : number      = 0;
-    let puffs  : SmokePuff[] = [];
+    let wisps  : SmokeWisp[] = [];
 
-    const PUFF_COUNT : number = 28;
+    const WISP_COUNT : number = 28;
 
-    const SOOT_COLOR = { r : 6, g : 7, b : 9 };
+    const SOOT_RGB = { r : 4, g : 5, b : 8 };
 
     // --- FUNCTIONS ---
-    function initPuffs() : void
+    function createWisp(initialY? : number) : SmokeWisp
     {
-        puffs = [];
-        for(let i : number = 0; i < PUFF_COUNT; ++i)
+        const rY : number = Math.random() * 170 + 100;
+        const spawnY : number = (
+            initialY !== undefined ? initialY :
+            height + rY * 1.6 + Math.random() * 260
+        );
+
+        const bAlpha : number = Math.random() * 0.35 + 0.18;
+        return {
+                x          :   Math.random() * width,
+                y          :   spawnY,
+                radiusX    :   Math.random() * 45      + 25,
+                radiusY    :   Math.random() * 180     + 100,
+                rotation   :  (Math.random() - 0.50)   * 0.15,
+                rotSpeed   :  (Math.random() - 0.50)   * 0.006,
+                vx         :  (Math.random() - 0.50)   * 0.05,
+                vy         : -(Math.random() * 0.15    + 0.30),
+                curlFreq   :   Math.random() * 0.014   + 0.004,
+                curlAmp    :   Math.random() * 35      + 15,
+                phase      :   Math.random() * Math.PI * 2,
+                alpha      :   initialY === undefined ? bAlpha : 0,
+                baseAlpha  :   bAlpha,
+                fadeFactor :   Math.random() * 0.0025 + 0.0012
+        }
+    }
+
+    function initWisps() : void
+    {
+        wisps = [];
+        for(let i : number = 0; i < WISP_COUNT; ++i)
         {
-            puffs.push({
-                x          : Math.random() * width,
-                y          : Math.random() * height,
-                radius     : Math.random() * 260 + 220,
-                vx         : (Math.random() - 0.5) * 0.18,
-                vy         : (Math.random() - 0.5) * 0.14 - 0.04,
-                alpha      : Math.random() * 0.12 + 0.06,
-                baseAlpha  : Math.random() * 0.12 + 0.06,
-                pulseSpeed : Math.random() * 0.007 + 0.003,
-                phase      : Math.random() * Math.PI * 2
-            });
+            wisps.push(createWisp(Math.random() * (height + 250) - 50));
         }
     }
 
     function resizeCanvas() : void
     {
         if(!canvas) return;
-
-        width  = Math.ceil(window.innerWidth  * 0.65);
-        height = Math.ceil(window.innerHeight * 0.65);
-
+        width  = window.innerWidth;
+        height = window.innerHeight;
         canvas.width  = width;
         canvas.height = height;
-
-        initPuffs();
+        initWisps();
     }
 
     function renderSmoke() : void
@@ -69,43 +89,64 @@ interface SmokePuff
         ctx.clearRect(0, 0, width, height);
         ctx.globalCompositeOperation = "source-over";
 
-        const r : number = SOOT_COLOR.r;
-        const g : number = SOOT_COLOR.g;
-        const b : number = SOOT_COLOR.b;
+        const r : number = SOOT_RGB.r;
+        const g : number = SOOT_RGB.g;
+        const b : number = SOOT_RGB.b;
 
-        for(let i : number = 0; i < puffs.length; ++i)
+        for(let i : number = 0; i < wisps.length; ++i)
         {
-            const p : SmokePuff = puffs[i];
+            const w : SmokeWisp = wisps[i];
 
-            // Slow Drift
-            p.x     += p.vx;
-            p.y     += p.vy;
-            p.phase += p.pulseSpeed;
+            // Upward Flow + Curls
+            w.phase    += w.curlFreq;
+            w.rotation += w.rotSpeed;
+            w.y        += w.vy;
 
-            // Periodic Breathing
-            p.alpha  = p.baseAlpha + Math.sin(p.phase) * (p.baseAlpha * 0.40);
+            // Smooth fade window
+            const bottomFadeDistance : number = height * 0.28;
+            const bottomFade         : number = Math.max(0, Math.min(1, (height + 40 - w.y) / bottomFadeDistance));
+            const topFadeDistance    : number = height * 0.35;
+            const topFade            : number = Math.max(0, Math.min(1, (w.y - w.radiusY) / topFadeDistance));
 
-            // Toroidal Topology
-            const margin : number = p.radius * 1.3;
-            if(p.x < -margin)              p.x = width + margin;
-            else if(p.x > width + margin)  p.x = -margin;
-            if(p.y < -margin)              p.y = height + margin;
-            else if(p.y > height + margin) p.y = -margin;
+            // Hermite S-Curve
+            const smoothFade : number = (
+                (bottomFade * bottomFade * (3 - 2 * bottomFade)) *
+                (topFade    * topFade    * (3 - 2 * topFade))
+            );
 
-            const grad : CanvasGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+            const activeAlpha : number = w.baseAlpha * smoothFade;
 
-            grad.addColorStop(0.00, `rgba(${r}, ${g}, ${b}, ${p.alpha*1.40})`);
-            grad.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, ${p.alpha*0.85})`);
-            grad.addColorStop(0.65, `rgba(${r}, ${g}, ${b}, ${p.alpha*0.35})`);
+            if(w.y < -w.radiusY * 2)
+            {
+                wisps[i] = createWisp();
+                continue;
+            }
+
+            if(activeAlpha <= 0.002) continue;
+
+            // Elliptical Gradients for Wisp Density
+            const curlX : number = w.x + Math.sin(w.phase) * w.curlAmp + Math.cos(w.phase * 0.5) * w.curlFreq * 0.35;
+            if(curlX < -w.radiusX * 2)             w.x = width + w.radiusX;
+            else if(curlX > width + w.radiusX * 2) w.x = -w.radiusX;
+
+            const grad  : CanvasGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, w.radiusY);
+            grad.addColorStop(0.00, `rgba(${r}, ${g}, ${b}, ${activeAlpha*1.35})`);
+            grad.addColorStop(0.25, `rgba(${r}, ${g}, ${b}, ${activeAlpha*0.95})`);
+            grad.addColorStop(0.55, `rgba(${r}, ${g}, ${b}, ${activeAlpha*0.45})`);
+            grad.addColorStop(0.85, `rgba(${r}, ${g}, ${b}, ${activeAlpha*0.10})`);
             grad.addColorStop(1.00, `rgba(${r}, ${g}, ${b}, 0)`);
 
+            ctx.save();
+            ctx.translate(curlX, w.y);
+            ctx.rotate(w.rotation);
+            ctx.scale(w.radiusX / w.radiusY, 1.45);
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.arc(0, 0, w.radiusY, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
         }
 
-        ctx.globalCompositeOperation = "source-over";
         requestAnimationFrame(renderSmoke);
     }
 

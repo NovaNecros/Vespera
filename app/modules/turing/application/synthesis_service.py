@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from pathlib import Path
 import traceback
 from time import perf_counter
@@ -209,7 +209,9 @@ class SynthesisService:
             src_path : Path = Path(FileRepository.get_source_path(src_hash))
             width  : int = params.get("width", TuringSettings.DEFAULT_WIDTH)
             height : int = params.get("height", TuringSettings.DEFAULT_HEIGHT)
-            with Image.open(src_path) if src_path.exists() else BytesIO(file_bytes) as raw_pil:
+
+            source_target : Union[Path, BytesIO] = src_path if src_path.exists() else BytesIO(file_bytes)
+            with Image.open(source_target) as raw_pil:
                 v_matrix, final_img, frame_pils, keyframes_b64, captured_iters = engine.simulate(
                     source_image     = raw_pil,
                     width            = width,

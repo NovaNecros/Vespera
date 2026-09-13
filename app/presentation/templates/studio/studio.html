@@ -16,27 +16,26 @@
 <div id="studio-main-container"
      class="w-full flex flex-col gap-3"
      data-generate-api-url="{{ url_for('studio.api_generate_pattern') }}"
+     data-commit-api-url="{{ url_for('studio.api_commit_pattern') }}"
      data-palettes-api-url="{{ url_for('studio.api_get_palettes') }}"
-     data-render-static-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
-     data-toggle-favorite-api-url="{{ url_for('vault.api_toggle_favorite', id_artifact=0) }}"
      data-download-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}">
-    <header class="flex items-center justify-between gap-3 border-b border-vespera-gold pb-2 mb-2">
+    <header class="flex items-center justify-between gap-3 border-b border-vespera-obsidian pb-2 mb-2">
         <div class="flex flex-col items-start justify-between gap-0">
-            <h3 class="font-ornate text-2xl md:text-2xl text-vespera-parchment font-bold tracking-wider mb-0">
+            <h3 class="font-ornate text-2xl md:text-2xl text-vespera-crimsonDark font-bold tracking-wider mb-0">
                 The Studio
             </h3>
-            <p class="font-serif text-vespera-bone-silent text-sm md:text-base mb-0">
+            <p class="font-serif text-vespera-iron text-sm md:text-base mb-0">
                 Alchemical Morphogenesis via Gray-Scott Reaction-Diffusion
             </p>
         </div>
         <div class="flex items-center gap-2">
             <button id="reset-params-btn" type="button"
                     class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-3">
-                <i class="fa-solid fa-arrow-rotate-left mr-1.5 text-vespera-gold"></i>
+                <i class="fa-solid fa-arrow-rotate-left mr-1.5 text-vespera-silver"></i>
                 Reset Formula
             </button>
             <a href="{{ url_for('vault.vault') }}"
-               class="vamp-btn vamp-btn-gold text-xs py-1.5 px-3 no-underline">
+               class="vamp-btn vamp-btn-silver text-xs py-1.5 px-3 no-underline">
                 <i class="fa-solid fa-dungeon mr-1.5"></i>
                 Open Vault
             </a>
@@ -49,7 +48,7 @@
             <form id="synthesis-form"
                   class="flex flex-col gap-3.5 h-full">
                 <!-- Upload zone -->
-                <div class="filigree-card p-4 bg-vespera-velvet border border-vespera-gold
+                <div class="filigree-card p-4 bg-vespera-charcoal border border-vespera-obsidian
                             rounded-vespera shadow-ambient flex-grow flex flex-col">
                     <div class="filigree-corner-tl"></div>
                     <div class="filigree-corner-tr"></div>
@@ -57,7 +56,7 @@
                     <div class="filigree-corner-br"></div>
 
                     <div class="flex items-center justify-between mb-2.5">
-                        <span class="font-cinzel text-xs font-bold text-vespera-gold uppercase tracking-wider">
+                        <span class="font-cinzel text-xs font-bold text-vespera-silver uppercase tracking-wider">
                             <i class="fa-solid fa-image mr-1.5"></i>
                             Source Pictogram
                         </span>
@@ -70,9 +69,9 @@
                     <!-- Dropzone-->
                     <div id="dropzone-container"
                          class="vamp-dropzone relative flex-grow flex flex-col items-center justify-center
-                                p-4 border-2 border-dashed
-                                border-vespera-crimson rounded-sm bg-vespera-surface hover:bg-vespera-surface
-                                transition-all duration-300 cursor-pointer text-center group min-h-[140px]">
+                                p-4 border-2 border-dashed border-vespera-obsidian/50 rounded-sm
+                                hover:border-vespera-obsidianBright transition-all duration-300 cursor-pointer
+                                text-center group min-h-[140px]">
                         <input id="source-file-input" type="file" name="file"
                                accept="image/png, image/jpeg, image/webp" class="hidden">
                         <input id="source-image-id-input" type="hidden"
@@ -83,9 +82,9 @@
                         <!-- Initial load view -->
                         <div id="dropzone-prompt"
                              class="flex flex-col items-center gap-1.5">
-                            <div class="w-10 h-10 rounded-full border border-vespera-crimson
+                            <div class="w-10 h-10 rounded-full border border-vespera-obsidian
                                         flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-cloud-arrow-up text-vespera-bright text-lg"></i>
+                                <i class="fa-solid fa-cloud-arrow-up text-vespera-crimsonBright text-lg"></i>
                             </div>
                             <span class="font-cinzel text-sm text-vespera-parchment font-bold mt-1">
                                 Ingest Catalyst Pictogram
@@ -96,18 +95,18 @@
                         <div id="dropzone-preview-container"
                              class="hidden flex-col items-center justify-between gap-2 w-full h-full flex-grow">
                             <div class="relative w-full flex-grow rounded
-                                        border border-vespera-crimson shadow-md">
+                                        border border-vespera-obsidian shadow-md">
                                 <img id="source-preview-img" src="" alt="Catalyst Preview"
                                      class="w-full h-full object-contain mx-auto">
                             </div>
                             <div class="flex items-center justify-between w-full px-1">
                                 <span id="source-filename-label"
-                                      class="font-mono text-xs text-vespera-gold truncate max-w-[140px]">
+                                      class="font-mono text-xs text-vespera-silver truncate max-w-[140px]">
                                     filename.png
                                 </span>
                                 <button id="remove-source-btn" type="button"
-                                        class="text-xs text-vespera-bright hover:text-vespera-crimson font-cinzel
-                                               uppercase transition-colors">
+                                        class="text-xs text-vespera-crimsonBright hover:text-vespera-crimson
+                                               font-cinzel uppercase transition-colors">
                                     <i class="fa-solid fa-trash-can mr-1"></i>
                                     Purge
                                 </button>
@@ -120,7 +119,7 @@
                 <button id="synthesize-btn" type="button"
                         class="vamp-btn vamp-btn-crimson w-full py-2.5 text-sm font-bold
                                tracking-widest anim-candle-pulse">
-                    <i class="fa-solid fa-wand-magic-sparkles mr-2 text-vespera-goldbright"></i>
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2 text-vespera-silverBright"></i>
                     Invoke Morphogenesis
                 </button>
             </form>
@@ -128,14 +127,14 @@
 
         <!-- Canvas -->
         <div class="lg:col-span-5 flex flex-col gap-3 h-full">
-            <div class="filigree-card p-4 bg-vespera-velvet border border-vespera-gold rounded-vespera
+            <div class="filigree-card p-4 border border-vespera-obsidian rounded-vespera
                         shadow-ambient flex flex-col items-center justify-between h-full">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
-                <div class="w-full flex items-center justify-between border-b border-vespera-gold pb-2 mb-3">
+                <div class="w-full flex items-center justify-between border-b border-vespera-obsidian pb-2 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="brand-sigil w-6 h-6 text-xs">
                             <i class="fa-solid fa-eye"></i>
@@ -154,7 +153,7 @@
 
                 <div id="canvas-stage-wrapper"
                      class="canvas-stage-wrapper relative w-full aspect-square max-w-[440px] xl:max-w-[480px]
-                            2xl:max-w-[520px] bg-vespera-obsidian border border-vespera-crimson rounded overflow-hidden
+                            2xl:max-w-[520px] border rounded overflow-hidden
                             flex items-center justify-center shadow-inner">
                     <canvas id="synthesis-canvas" width="1024" height="1024"
                             class="w-full h-full object-contain">
@@ -164,7 +163,7 @@
                     <!-- Empty State -->
                     <div id="canvas-empty-state"
                          class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
-                        <div class="w-12 h-12 rounded-full border border-dashed border-vespera-crimson flex
+                        <div class="w-12 h-12 rounded-full border border-dashed border-vespera-obsidian flex
                                     items-center justify-center text-vespera-crimson">
                             <i class="fa-solid fa-biohazard text-2xl"></i>
                         </div>
@@ -178,8 +177,8 @@
 
                     <!-- Animation Overlay -->
                     <div id="canvas-playback-badge"
-                         class="hidden absolute top-2 left-2 bg-vespera-obsidian border border-vespera-gold
-                                px-2 py-0.5 rounded text-xs font-mono text-vespera-goldbright backdrop-blur-sm">
+                         class="hidden absolute top-2 left-2 bg-vespera-obsidian border border-vespera-obsidian
+                                px-2 py-0.5 rounded text-xs font-mono text-vespera-silverBright backdrop-blur-sm">
                         <i class="fa-solid fa-play mr-1 text-[0.65rem] animate-pulse"></i>
                         <span id="playback-frame-label"><!-- TS --></span>
                     </div>
@@ -187,11 +186,11 @@
 
                 <!-- Animation Controls -->
                 <div id="playback-controls-panel"
-                     class="w-full flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-vespera-gold
+                     class="w-full flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-vespera-obsidian
                             opacity-40 pointer-events-none transition-opacity duration-300">
                     <div class="flex items-center justify-between gap-3">
                         <button id="play-pause-btn" type="button"
-                                class="vamp-btn vamp-btn-gold text-xs py-1 px-2.5">
+                                class="vamp-btn vamp-btn-silver text-xs py-1 px-2.5">
                             <i id="play-pause-icon" class="fa-solid fa-play mr-1"></i>
                             Morph
                         </button>
@@ -215,7 +214,7 @@
                 <!-- Artifact Metadata -->
                 <div id="artifact-metrics-bar"
                      class="w-full grid grid-cols-4 gap-2 mt-3 pt-2.5 border-t
-                            border-vespera-gold font-mono text-[0.7rem] text-vespera-bone-silent">
+                            border-vespera-obsidian font-mono text-[0.7rem] text-vespera-bone-silent">
                     <div class="flex flex-col">
                         <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
                             Artifact ID
@@ -230,7 +229,7 @@
                             Morph Time
                         </span>
                         <span id="metric-time"
-                              class="text-vespera-gold">
+                              class="text-vespera-silver">
                             <!-- TS -->
                         </span>
                     </div>
@@ -250,32 +249,41 @@
                         </span>
                         <div class="flex items-center gap-2 mt-0.5">
                             <button id="save-favorite-btn" type="button"
-                                    class="text-vespera-gold hover:text-vespera-goldbright transition-colors"
+                                    class="text-vespera-silver hover:text-vespera-silverBright transition-colors"
                                     title="Toggle Favorite">
                                 <i class="fa-regular fa-star"></i>
                             </button>
                             <a id="download-artifact-link" href="#" download
-                               class="text-vespera-bright hover:text-vespera-crimson transition-colors no-underline"
+                               class="text-vespera-crimsonBright hover:text-vespera-crimson transition-colors no-underline"
                                title="Download Artifact">
                                 <i class="fa-solid fa-download"></i>
                             </a>
                         </div>
                     </div>
                 </div>
+
+                <div id="commit-container"
+                     class="w-full mt-3 hidden">
+                    <button id="commit-btn" type="button"
+                            class="vamp-btn vamp-btn-silver w-full py-2 text-xs font-bold tracking-widest border border-vespera-silver hover:border-vespera-crimsonBright">
+                        <i class="fa-solid fa-feather mr-2 text-vespera-crimsonBright"></i>
+                        Seal into The Vault
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Settings -->
         <div class="lg:col-span-3 flex flex-col gap-3 h-full">
-            <div class="filigree-card p-4 bg-vespera-velvet border border-vespera-gold
+            <div class="filigree-card p-4 bg-vespera-charcoal border border-vespera-obsidian
                     rounded-vespera shadow-ambient flex flex-col gap-2">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
-                <div class="flex items-center justify-between border-b border-vespera-gold pb-2">
-                    <span class="font-cinzel text-xs font-bold text-vespera-gold uppercase tracking-wider">
+                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2">
+                    <span class="font-cinzel text-xs font-bold text-vespera-silver uppercase tracking-wider">
                         <i class="fa-solid fa-sliders mr-1.5"></i>
                         Reaction Coefficients
                     </span>
@@ -400,7 +408,7 @@
             </div>
 
             <!-- Notes -->
-            <div class="filigree-card p-4 bg-vespera-velvet border border-vespera-gold rounded-vespera
+            <div class="filigree-card p-4 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
                         shadow-ambient flex-grow flex flex-col gap-2">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>

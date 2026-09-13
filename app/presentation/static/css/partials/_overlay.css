@@ -2,9 +2,11 @@
 
 .overlay-card
 {
-    background-color : var(--vespera-velvet);
-    max-width        : 520px;
-    box-shadow       : 0 0 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(138, 3, 3, 0.45);
+    background-color        : rgba(11, 12, 17, 0.65) !important;
+    backdrop-filter         : blur(18px);
+    -webkit-backdrop-filter : blur(18px);
+    max-width               : 70%;
+    box-shadow              : 0 0 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(128, 0, 8, 0.45);
 }
 
 .sigil-spinner
@@ -27,9 +29,9 @@
     position      : absolute;
     inset         : 0;
     border-radius : 50%;
-    border        : 2px dashed var(--vespera-gold);
+    border        : 2px dashed var(--vespera-silver);
     animation     : spinCw 8s linear infinite;
-    box-shadow    : 0 0 12px rgba(197, 160, 89, 0.3);
+    box-shadow    : 0 0 12px rgba(168, 173, 184, 0.25);
 }
 
 @keyframes spinCcw
@@ -46,13 +48,13 @@
     border-top    : 2px solid var(--vespera-crimson-bright);
     border-bottom : 2px solid var(--vespera-crimson-bright);
     animation     : spinCcw 3s linear infinite;
-    box-shadow    : 0 0 15px rgba(230, 0, 0, 0.5);
+    box-shadow    : 0 0 15px rgba(230, 0, 0, 0.55);
 }
 
 .sigil-core
 {
     font-size : 1.6rem;
-    color     : var(--vespera-gold-bright);
-    filter    : drop-shadow(0 0 8px var(--vespera-gold));
+    color     : var(--vespera-silver-bright);
+    filter    : drop-shadow(0 0 8px var(--vespera-silver));
     animation : candlePulse 2s infinite ease-in-out;
 }

@@ -50,10 +50,10 @@
 
 .alert-modal-icon-wrapper.alert-type-warning
 {
-    background-color : rgba(197, 160, 89, 0.2);
-    color            : var(--vespera-gold-bright);
-    border           : 2px solid var(--vespera-gold);
-    box-shadow       : 0 0 15px rgba(197, 160, 89, 0.4);
+    background-color : rgba(168, 173, 184, 0.20);
+    color            : var(--vespera-silver-bright);
+    border           : 2px solid var(--vespera-silver);
+    box-shadow       : 0 0 15px rgba(168, 173, 184, 0.35);
 }
 
 .alert-modal-icon-wrapper.alert-type-success
