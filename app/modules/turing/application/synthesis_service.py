@@ -17,6 +17,7 @@ from app.core.extensions import db
 from app.core.config import TuringSettings, RNGSettings, Colors
 from app.core.utils.cryptography_utils import compute_bytes_sha256, compute_params_hash, compute_artifact_hash
 from app.core.utils.image_utils import is_image
+from app.core.utils.text_utils import normalize_text
 from app.infrastructure.repositories.models import (
     SourceImage,  SynthesisFrame, SynthesisArtifact,
     ConfigTuring, ColorPalette
@@ -88,8 +89,8 @@ class SynthesisService:
 
     @staticmethod
     def _get_or_create_source_image(
-        file_bytes        : bytes,
-        original_filename : str
+        file_bytes : bytes,
+        alias      : str
     ) -> SourceImage:
         """
         Verifica si una imagen original ya se encuentra en la DB usando su hash; si no, la guarda.
@@ -108,11 +109,11 @@ class SynthesisService:
             path, width, height, size_bytes = FileRepository.save_source_image(file_bytes, sha256)
 
             new_source : SourceImage = SourceImage(
-                sha256_hash       = sha256,
-                original_filename = original_filename,
-                width             = width,
-                height            = height,
-                file_size_bytes   = size_bytes,
+                sha256_hash     = sha256,
+                alias           = alias,
+                width           = width,
+                height          = height,
+                file_size_bytes = size_bytes,
             )
             db.session.add(new_source)
             db.session.flush()
@@ -130,7 +131,7 @@ class SynthesisService:
         Orquesta la ejecución completa de la síntesis de Gray-Scott.
         :param params       : Diccionario con los parámetros recibidos en la petición.
         :param source_image : Archivo de la imagen original.
-        :return : Artefacto generado en formato de diccionario con keyframes.
+        :return             : Artefacto generado en formato de diccionario con keyframes.
         """
         start_time     : float           = perf_counter()
         execution_time : Optional[float] = None
@@ -150,7 +151,9 @@ class SynthesisService:
 
             is_image_res : dict[str, Any] = is_image(source_image)
             file_bytes   : Optional[bytes] = source_image.read() if is_image_res.get("is_image") else None
-            filename     : str             = params.get("original_filename", source_image.filename if is_image_res.get("is_image") else "upload.png")
+
+            raw_filename : str = (source_image.filename if (source_image and is_image_res.get("is_image")) else "catalyst.png") or "catalyst.png"
+            alias        : str = str(params.get("alias", raw_filename))
 
             source_image_id    : Optional[int] = int(params["source_image_id"]) if params.get("source_image_id") else None
             if not file_bytes and source_image_id:
@@ -222,15 +225,15 @@ class SynthesisService:
             execution_time : float = round(perf_counter() - start_time, 6)
 
             self._ephemeral_cache[artifact_hash] = {
-                "file_bytes"        : file_bytes,
-                "original_filename" : filename,
-                "src_hash"          : src_hash,
-                "artifact_hash"     : artifact_hash,
-                "final_img"         : final_img,
-                "frame_pils"        : frame_pils,
-                "captured_iters"    : captured_iters,
-                "execution_time"    : execution_time,
-                "params"            : {
+                "file_bytes"     : file_bytes,
+                "alias"          : alias,
+                "src_hash"       : src_hash,
+                "artifact_hash"  : artifact_hash,
+                "final_img"      : final_img,
+                "frame_pils"     : frame_pils,
+                "captured_iters" : captured_iters,
+                "execution_time" : execution_time,
+                "params"         : {
                     "feed_rate"  : feed_rate,
                     "kill_rate"  : kill_rate,
                     "diff_u"     : diff_u,
@@ -308,10 +311,19 @@ class SynthesisService:
             user_notes : Optional[str] = str(params["user_notes"]).strip() if params.get("user_notes") else None
             parent_id  : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
 
-            source_rec : SourceImage = self._get_or_create_source_image(
-                cached["file_bytes"],
-                cached["original_filename"]
-            )
+            source_rec : SourceImage = self._get_or_create_source_image(cached["file_bytes"], cached["alias"])
+
+            artifact_alias : Optional[str] = params.get("alias")
+            if not artifact_alias:
+                existing_count : int = (
+                    db.session
+                        .query(SynthesisArtifact)
+                        .filter_by(id_source_image=source_rec.id_source_image)
+                        .count()
+                )
+                pattern_number : int = existing_count + 1
+                clean_source_name : str = source_rec.alias.r_split(".", 1)[0]
+                artifact_alias    : str = f"pattern_{clean_source_name}_{pattern_number}.png"
 
             p : dict[str, Any] = cached["params"]
             config_rec : ConfigTuring = self._get_or_create_config(
@@ -347,6 +359,7 @@ class SynthesisService:
                 id_source_image    = source_rec.id_source_image,
                 id_config          = config_rec.id_config,
                 id_parent_artifact = parent_id,
+                alias              = normalize_text(artifact_alias),
                 artifact_hash      = artifact_hash,
                 seed               = p.get("seed", RNGSettings.SEED),
                 execution_time     = cached["execution_time"],

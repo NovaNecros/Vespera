@@ -70,25 +70,25 @@ class SourceImage(db.Model):
     """
     __tablename__ : str = "source_image"
 
-    id_source_image   = db.Column(db.Integer,     primary_key=True, autoincrement=True)
-    sha256_hash       = db.Column(db.String(64),  nullable=False, unique=True, index=True)
-    original_filename = db.Column(db.String(255), nullable=False)
-    width             = db.Column(db.Integer,     nullable=False)
-    height            = db.Column(db.Integer,     nullable=False)
-    file_size_bytes   = db.Column(db.Integer,     nullable=False)
-    created_at        = db.Column(db.DateTime,    nullable=False, default=db.func.now())
+    id_source_image = db.Column(db.Integer,     primary_key=True, autoincrement=True)
+    sha256_hash     = db.Column(db.String(64),  nullable=False, unique=True, index=True)
+    alias           = db.Column(db.String(255), nullable=False)
+    width           = db.Column(db.Integer,     nullable=False)
+    height          = db.Column(db.Integer,     nullable=False)
+    file_size_bytes = db.Column(db.Integer,     nullable=False)
+    created_at      = db.Column(db.DateTime,    nullable=False, default=db.func.now())
 
     artifacts = db.relationship("SynthesisArtifact", back_populates="source_image", lazy=True)
 
     def to_dict(self : SourceImage) -> dict[str, Any]:
         return {
-            "id_source_image"   : self.id_source_image,
-            "sha256_hash"       : self.sha256_hash,
-            "original_filename" : self.original_filename,
-            "width"             : self.width,
-            "height"            : self.height,
-            "file_size_bytes"   : self.file_size_bytes,
-            "created_at"        : self.created_at.isoformat() if self.created_at else None
+            "id_source_image" : self.id_source_image,
+            "sha256_hash"     : self.sha256_hash,
+            "alias"           : self.alias,
+            "width"           : self.width,
+            "height"          : self.height,
+            "file_size_bytes" : self.file_size_bytes,
+            "created_at"      : self.created_at.isoformat() if self.created_at else None
         }
 
 class ConfigTuring(db.Model):
@@ -136,6 +136,7 @@ class SynthesisArtifact(db.Model):
     id_source_image    = db.Column(db.Integer, db.ForeignKey("source_image.id_source_image", ondelete="RESTRICT"), nullable=False)
     id_config          = db.Column(db.Integer, db.ForeignKey("config_turing.id_config", ondelete="RESTRICT"), nullable=False)
     id_parent_artifact = db.Column(db.Integer, db.ForeignKey("synthesis_artifact.id_artifact", ondelete="SET NULL"), nullable=True)
+    alias              = db.Column(db.String(255), nullable=False)
     artifact_hash      = db.Column(db.String(64), unique=True, nullable=False, index=True)
     seed               = db.Column(db.Integer, nullable=False)
     execution_time     = db.Column(db.Numeric(10,2), nullable=False)
@@ -151,6 +152,7 @@ class SynthesisArtifact(db.Model):
     def to_dict(self : SynthesisArtifact) -> dict[str, Any]:
         return {
             "id_artifact"        : self.id_artifact,
+            "alias"              : self.alias,
             "artifact_hash"      : self.artifact_hash,
             "id_source_image"    : self.id_source_image,
             "id_parent_artifact" : self.id_parent_artifact,

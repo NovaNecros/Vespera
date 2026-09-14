@@ -1,7 +1,20 @@
 /* Vespera/app/presentation/static/css/_alert_modal.css */
 
+/* Icons */
+.alert-modal-icon-wrapper
+{
+    width           : 68px;
+    height          : 68px;
+    border-radius   : 50%;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    font-size       : 1.85rem;
+    transition      : all 0.3s ease;
+}
+
 /* Animations */
-@keyframes  vampIconPop
+@keyframes vampIconPop
 {
     0%
     {
@@ -19,23 +32,10 @@
         opacity   : 1;
     }
 }
-
-.alert-modal-icon-wrapper
+.vespera-alert-modal:not(.hidden) .alert-modal-icon-wrapper,
+.vespera-alert-modal.flex         .alert-modal-icon-wrapper
 {
-    width           : 68px;
-    height          : 68px;
-    border-radius   : 50%;
-    display         : flex;
-    align-items     : center;
-    justify-content : center;
-    font-size       : 1.85rem;
-    transition      : all 0.3s ease;
-}
-
-#general-alert-modal:not(.hidden) .alert-modal-icon-wrapper,
-#general-alert-modal.flex         .alert-modal-icon-wrapper
-{
-    animation : vampIconPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation : vampIconPop 0.4s cubic-bezier(0.175, 0.885, 0.320, 1.275) forwards;
 }
 
 /* --- Variants --- */

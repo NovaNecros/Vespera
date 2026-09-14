@@ -27,8 +27,8 @@ class VaultService:
         :return       : Lista formateada de patrones encontrados.
         """
         try:
-            palette        : Optional[str] = normalize_text(params["palette"], "LOWER") if params.get("palette") else None
-            only_favorites : bool          = normalize_text(params.get("favorites", ""), "LOWER")== "true"
+            id_palette     : Optional[int] = int(params["id_palette"]) if params.get("id_palette") else None
+            only_favorites : bool          = normalize_text(params.get("favorites", ""), "LOWER") in ("true", "1", "yes")
             search_query   : Optional[str] = str(params["search"]).replace("  ", " ").strip() if params.get("search") else None
             page           : int           = max(1, int(params.get("page", 1)))
             per_page       : int           = max(1, min(100, int(params.get("per_page", 24))))
@@ -46,11 +46,11 @@ class VaultService:
             if only_favorites:
                 query = query.filter(SynthesisArtifact.is_favorite == True)
 
-            if palette and palette != "all":
+            if id_palette:
                 query = (
                     query
                         .join(ConfigTuring, ConfigTuring.id_config == SynthesisArtifact.id_config)
-                        .filter(ConfigTuring.color_palette == palette)
+                        .filter(ConfigTuring.id_palette == id_palette)
                 )
 
             if search_query:
@@ -59,8 +59,9 @@ class VaultService:
                     query
                         .join(SourceImage, SourceImage.id_source_image == SynthesisArtifact.id_source_image)
                         .filter(
-                            SourceImage.original_filename.ilike(search_term) |
-                            SynthesisArtifact.user_notes.ilike(search_term)  |
+                            SourceImage.alias.ilike(search_term)               |
+                            SynthesisArtifact.alias.ilike(search_term)         |
+                            SynthesisArtifact.user_notes.ilike(search_term)    |
                             SynthesisArtifact.artifact_hash.ilike(search_term)
                         )
                 )

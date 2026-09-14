@@ -41,7 +41,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const generateApiUrl       : string = mainContainer.dataset.generateApiUrl       || "";
     const commitApiUrl         : string = mainContainer.dataset.commitApiUrl         || "";
     const palettesApiUrl       : string = mainContainer.dataset.palettesApiUrl       || "";
-    const downloadApiUrl       : string = mainContainer.dataset.downloadApiUrl       || "";
 
     // FORM
     const dropzoneEl      : HTMLElement       | null = document.getElementById("dropzone-container");
@@ -95,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const commitContainer : HTMLElement       | null = document.getElementById("commit-container");
     const commitBtn       : HTMLButtonElement | null = document.getElementById("commit-btn")               as HTMLButtonElement;
     const resetParamsBtn  : HTMLButtonElement | null = document.getElementById("reset-params-btn")         as HTMLButtonElement;
-    const downloadLink    : HTMLAnchorElement | null = document.getElementById("download-artifact-link")   as HTMLAnchorElement;
 
     // HIDDEN CANVAS FOR PALETTE SWITCHING
     const offscreenCanvas : HTMLCanvasElement = document.createElement("canvas");
@@ -403,6 +401,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 sourceStatusEl.textContent = "Catalyst Seeded";
                 sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-silverBright";
             }
+
+            synthesizeBtn?.classList.remove("hidden");
         };
 
         reader.readAsDataURL(file);
@@ -427,6 +427,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             sourceStatusEl.textContent = "No pictogram seeded";
             sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-silent";
         }
+
+        synthesizeBtn?.classList.add("hidden");
     }
 
     async function executeSynthesis() : Promise<void>
@@ -537,7 +539,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     }
     synthesizeBtn?.addEventListener("click", executeSynthesis);
 
-    async function commitArtifact() : Promise<void>
+    async function commitArtifact(alias : string) : Promise<void>
     {
         if(!state.currentArtifactHash) return;
 
@@ -548,6 +550,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         const payload = {
             artifact_hash : state.currentArtifactHash,
+            alias         : alias,
             id_palette    : paletteSelect?.value ? parseInt(paletteSelect.value) : 1,
             user_notes    : userNotesInput?.value || ""
         };
@@ -574,21 +577,32 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(modeBadge)
         {
             modeBadge.textContent = "Sealed";
-            modeBadge.className   = "vamp-badge vamp-badge-crimson";
-        }
-
-        if(downloadLink)
-        {
-            downloadLink.href     = downloadApiUrl.replace("/hash/PLACEHOLDER", `/hash/${res.data.artifact_hash}`);
-            downloadLink.download = `vespera_artifact_${res.data.artifact_hash.substring(0, 8)}.png`;
+            modeBadge.className   = "vamp-badge vamp-badge-crimson-dark";
         }
 
         commitContainer?.classList.add("hidden");
 
         (window as any).showAlertModal?.({
             title    : "Artifact Bound",
-            message  : `The pattern has been sealed into The Vault under Rune #${res.data.id_artifact}.`,
+            message  : `The pattern has been sealed into The Vault under the inscription ${res.data.alias}.`,
             type     : "success"
+        });
+    }
+
+    function promptArtifactAlias() : void
+    {
+        (window as any).showAlertModal({
+            title            : "Seal into The Vault",
+            message          : "Inscribe a sacred alias for your creation if you so desire.",
+            type             : "info",
+            icon             : "fa-feather",
+            showInput        : true,
+            inputLabel       : "Pattern Alias",
+            inputPlaceholder : "If left empty, a default alias will be generated. You can change it later, love.",
+            inputValue       : "",
+            confirmText      : "Seal Artifact",
+            cancelText       : "Cancel",
+            onConfirm        : (chosenAlias : string) : void =>  { commitArtifact(chosenAlias || "").then(); }
         });
     }
 
@@ -645,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         // Synthesis
         synthesizeBtn?.addEventListener("click", executeSynthesis);
-        commitBtn?.addEventListener("click", commitArtifact);
+        commitBtn?.addEventListener("click", promptArtifactAlias);
     }
 
     async function initStudio()

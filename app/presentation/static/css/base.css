@@ -47,6 +47,14 @@ body
     opacity        : 0.95;
 }
 
+.vespera-dimmed-background
+{
+    background              : radial-gradient(ellipse at 50% 45%, rgba(18, 20, 28, 0.77), rgba(6, 6, 8, 0.83) 85%);
+    backdrop-filter         : blur(20px);
+    -webkit-backdrop-filter : blur(20px);
+    transition              : opacity 0.3s ease;
+}
+
 nav,
 main,
 footer,
@@ -400,17 +408,24 @@ header
     padding        : 0.2rem 0.65rem;
     font-family    : "Cinzel", serif;
     font-size      : 0.72rem;
-    font-weight    : 500;
+    font-weight    : 700;
     letter-spacing : 0.05em;
     text-transform : uppercase;
     border-radius  : 3px;
     border         : 1px solid;
 }
 
-.vamp-badge-crimson
+.vamp-badge-crimson-bright
 {
     background-color : rgba(128, 0, 8, 0.25);
     color            : var(--vespera-crimson-bright);
+    border-color     : rgba(128, 0, 8, 0.6);
+}
+
+.vamp-badge-crimson-dark
+{
+    background-color : rgba(128, 0, 8, 0.10);
+    color            : var(--vespera-crimson-dark);
     border-color     : rgba(128, 0, 8, 0.6);
 }
 

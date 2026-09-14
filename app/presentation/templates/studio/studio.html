@@ -31,14 +31,9 @@
         <div class="flex items-center gap-2">
             <button id="reset-params-btn" type="button"
                     class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-3">
-                <i class="fa-solid fa-arrow-rotate-left mr-1.5 text-vespera-silver"></i>
+                <i class="fa-solid fa-arrow-rotate-left mr-1.5"></i>
                 Reset Formula
             </button>
-            <a href="{{ url_for('vault.vault') }}"
-               class="vamp-btn vamp-btn-silver text-xs py-1.5 px-3 no-underline">
-                <i class="fa-solid fa-dungeon mr-1.5"></i>
-                Open Vault
-            </a>
         </div>
     </header>
 
@@ -102,7 +97,7 @@
                             <div class="flex items-center justify-between w-full px-1">
                                 <span id="source-filename-label"
                                       class="font-mono text-xs text-vespera-silver truncate max-w-[140px]">
-                                    filename.png
+                                    <!-- TS -->
                                 </span>
                                 <button id="remove-source-btn" type="button"
                                         class="text-xs text-vespera-crimsonBright hover:text-vespera-crimson
@@ -118,7 +113,7 @@
                 <!-- Synthesis Button -->
                 <button id="synthesize-btn" type="button"
                         class="vamp-btn vamp-btn-crimson w-full py-2.5 text-sm font-bold
-                               tracking-widest anim-candle-pulse">
+                               tracking-widest anim-candle-pulse hidden">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2 text-vespera-silverBright"></i>
                     Invoke Morphogenesis
                 </button>
@@ -145,7 +140,7 @@
                     </div>
                     <div class="flex items-center gap-2 font-mono text-xs">
                         <span id="canvas-mode-badge"
-                              class="vamp-badge vamp-badge-crimson">
+                              class="vamp-badge vamp-badge-crimson-dark">
                             Idle
                         </span>
                     </div>
@@ -213,7 +208,7 @@
 
                 <!-- Artifact Metadata -->
                 <div id="artifact-metrics-bar"
-                     class="w-full grid grid-cols-4 gap-2 mt-3 pt-2.5 border-t
+                     class="w-full grid grid-cols-3 gap-2 mt-3 pt-2.5 border-t text-center
                             border-vespera-obsidian font-mono text-[0.7rem] text-vespera-bone-silent">
                     <div class="flex flex-col">
                         <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
@@ -242,23 +237,6 @@
                               title="None">
                             <!-- TS -->
                         </span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-vespera-bone-silent uppercase text-[0.6rem]">
-                            Actions
-                        </span>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <button id="save-favorite-btn" type="button"
-                                    class="text-vespera-silver hover:text-vespera-silverBright transition-colors"
-                                    title="Toggle Favorite">
-                                <i class="fa-regular fa-star"></i>
-                            </button>
-                            <a id="download-artifact-link" href="#" download
-                               class="text-vespera-crimsonBright hover:text-vespera-crimson transition-colors no-underline"
-                               title="Download Artifact">
-                                <i class="fa-solid fa-download"></i>
-                            </a>
-                        </div>
                     </div>
                 </div>
 

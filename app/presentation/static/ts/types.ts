@@ -37,7 +37,7 @@ export interface SourceImage
 {
     id_source_image   : number;
     sha256_hash       : string;
-    original_filename : string;
+    alias             : string;
     width             : number;
     height            : number;
     file_size_bytes   : number;
@@ -72,6 +72,7 @@ export interface SynthesisFrame
 export interface SynthesisArtifact
 {
     id_artifact        : number;
+    alias              : string;
     artifact_hash      : string;
     id_source_image    : number;
     id_parent_artifact : number       | null;
@@ -107,11 +108,19 @@ export type AlertType = "danger" | "error" | "warning" | "success" | "info";
 
 export interface AlertModalOptions
 {
-    title?  : string;
-    message : string;
-    type?   : AlertType;
-    icon?   : string;
-    isHtml? : boolean;
+    title?            : string;
+    message           : string;
+    type?             : AlertType;
+    icon?             : string;
+    isHtml?           : boolean;
+    showInput?        : boolean;
+    inputLabel?       : string;
+    inputPlaceholder? : string;
+    inputValue        : string;
+    confirmText?      : string;
+    cancelText?       : string;
+    onConfirm         : ((value : string) => void) | null;
+    onCancel          : (() => void)               | null;
 }
 
 export interface LoadingOverlayOptions
