@@ -9,7 +9,7 @@
     let width = 0;
     let height = 0;
     let wisps = [];
-    const WISP_COUNT = 28;
+    const WISP_COUNT = 30;
     const SOOT_RGB = { r: 4, g: 5, b: 8 };
     function createWisp(initialY) {
         const rY = Math.random() * 170 + 100;

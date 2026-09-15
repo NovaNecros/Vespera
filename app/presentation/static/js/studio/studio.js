@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const generateApiUrl = mainContainer.dataset.generateApiUrl || "";
     const commitApiUrl = mainContainer.dataset.commitApiUrl || "";
     const palettesApiUrl = mainContainer.dataset.palettesApiUrl || "";
+    const hydrateApiUrl = mainContainer.dataset.hydrateApiUrl || "";
     const dropzoneEl = document.getElementById("dropzone-container");
     const fileInput = document.getElementById("source-file-input");
     const sourceIdInput = document.getElementById("source-image-id-input");
@@ -210,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         paletteSelect.addEventListener("change", () => {
             const selectedId = parseInt(paletteSelect.value);
-            const pal = state.paletteCatalog.find(p => p.id_palette === selectedId);
+            const pal = state.paletteCatalog.find((p) => p.id_palette === selectedId);
             if (pal) {
                 state.activeLut = buildPaletteLut(pal.stops);
                 if (state.grayScaleFrames.length > 0 && !state.isComparing) {
@@ -218,6 +219,113 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
         });
+    }
+    async function checkUrlHydrationTarget() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const loadId = urlParams.get("load");
+            if (!loadId)
+                return;
+            showLoadingOverlay({
+                title: "Summoning Ancient Formula from The Vault",
+                subtitle: `Reconstructing alchemical conditions for Artifact #${loadId}`
+            });
+            const apiUrl = hydrateApiUrl.replace("/artifact/0", `/artifact/${loadId}`);
+            const res = await apiFetch(apiUrl);
+            if (!res.success || !res.data)
+                return;
+            const bundle = res.data;
+            const cfg = bundle.config;
+            if (cfg) {
+                if (feedSlider)
+                    feedSlider.value = cfg.feed_rate.toFixed(4);
+                if (killSlider)
+                    killSlider.value = cfg.kill_rate.toFixed(4);
+                if (diffUSlider)
+                    diffUSlider.value = cfg.diff_u.toFixed(3);
+                if (diffVSlider)
+                    diffVSlider.value = cfg.diff_v.toFixed(3);
+                if (iterSlider)
+                    iterSlider.value = cfg.iterations.toString();
+                if (dtSlider)
+                    dtSlider.value = cfg.dt.toFixed(2);
+                if (feedInput)
+                    feedInput.value = cfg.feed_rate.toFixed(4);
+                if (killInput)
+                    killInput.value = cfg.kill_rate.toFixed(4);
+                if (diffUInput)
+                    diffUInput.value = cfg.diff_u.toFixed(3);
+                if (diffVInput)
+                    diffVInput.value = cfg.diff_v.toFixed(3);
+                if (iterInput)
+                    iterInput.value = cfg.iterations.toString();
+                if (dtInput)
+                    dtInput.value = cfg.dt.toFixed(2);
+                if (paletteSelect && cfg.id_palette) {
+                    paletteSelect.value = cfg.id_palette.toString();
+                    const pal = state.paletteCatalog.find((p) => p.id_palette === cfg.id_palette);
+                    if (pal)
+                        state.activeLut = buildPaletteLut(pal.stops);
+                }
+            }
+            if (parentIdInput)
+                parentIdInput.value = bundle.id_artifact.toString();
+            if (userNotesInput)
+                userNotesInput.value = bundle.user_notes || "";
+            const srcImg = bundle.source_image;
+            if (srcImg) {
+                if (sourceIdInput)
+                    sourceIdInput.value = srcImg.id_source_image.toString();
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    state.sourceImageElement = img;
+                    if (previewImg)
+                        previewImg.src = img.src;
+                    dropzonePrompt?.classList.add("hidden");
+                    previewCont?.classList.remove("hidden");
+                    previewCont?.classList.add("flex");
+                    if (filenameLabel)
+                        filenameLabel.textContent = srcImg.alias;
+                    if (sourceStatusEl) {
+                        sourceStatusEl.textContent = `Branched from Catalyst #${srcImg.id_source_image}`;
+                        sourceStatusEl.className = "font-mono text-[0.7rem] text-vespera-silverBright";
+                    }
+                    synthesizeBtn?.classList.remove("hidden");
+                };
+                img.src = srcImg.stream_url;
+            }
+            if (bundle.frames && bundle.frames.length > 0) {
+                emptyState?.classList.add("hidden");
+                if (modeBadge) {
+                    modeBadge.textContent = "Rehydrated";
+                    modeBadge.className = "vamp-badge vamp-badge-silver";
+                }
+                state.currentArtifactHash = bundle.artifact_hash;
+                state.grayScaleFrames = await Promise.all(bundle.frames.map((url) => {
+                    return new Promise((resolve) => {
+                        const frameImg = new Image();
+                        frameImg.crossOrigin = "anonymous";
+                        frameImg.onload = () => resolve(frameImg);
+                        frameImg.src = url;
+                    });
+                }));
+                if (scrubber) {
+                    scrubber.max = (state.grayScaleFrames.length - 1).toString();
+                    scrubber.value = "0";
+                }
+                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
+                playbackBadge?.classList.remove("hidden");
+                applyShaderToFrame(0);
+                playAnimation();
+            }
+        }
+        catch (error) {
+            return console.error(error);
+        }
+        finally {
+            hideLoadingOverlay();
+        }
     }
     function pauseAnimation() {
         state.isPlaying = false;
@@ -502,6 +610,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function initStudio() {
         await loadPaletteCatalog();
         bindEvents();
+        await checkUrlHydrationTarget();
     }
     initStudio().then();
 });

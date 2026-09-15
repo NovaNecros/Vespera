@@ -8,7 +8,7 @@ export function getVesperaPalette() : VesperaPalette
     return {
         smokeCenter     : style.getPropertyValue("--vespera-smoke-center").trim()     || "#DFE1EA",
         smokeInner      : style.getPropertyValue("--vespera-smoke-inner").trim()      || "#BBBEC4",
-        smokerOuter     : style.getPropertyValue("--vespera-smoke-outer").trim()      || "#66686C",
+        smokeOuter      : style.getPropertyValue("--vespera-smoke-outer").trim()      || "#66686C",
 
         void            : style.getPropertyValue("--vespera-void").trim()             || "#060608",
         voidBorder      : style.getPropertyValue("--vespera-void-border").trim()      || "#14151B",

@@ -49,6 +49,7 @@ class TuringService:
                 "status_code" : 500
             }
 
+
     # --- SYNTHESIS ---
     def generate_synthesis(
         self         : TuringService,
@@ -74,7 +75,9 @@ class TuringService:
         """
         return self.synthesis_service.commit_artifact(params=params)
 
+
     # --- VAULT ---
+    # Artifacts
     def get_vault_gallery(self : TuringService, params : dict[str, Any]) -> dict[str, Any]:
         """
         Wrapper para consultar la galería con filtros.
@@ -86,6 +89,18 @@ class TuringService:
         Wrapper para consultar el detalle de un patrón de Turing generado.
         """
         return self.vault_service.get_artifact_detail(id_artifact=id_artifact)
+
+    def get_hydration_bundle(self : TuringService, id_artifact : int) -> dict[str, Any]:
+        """
+        Wrapper para obtener los datos de un patrón para inyectar en el estudio.
+        """
+        return self.vault_service.get_hydration_bundle(id_artifact=id_artifact)
+
+    def update_artifact_alias(self : TuringService, id_artifact : int, params : dict[str, Any]) -> dict[str, Any]:
+        """
+        Wrapper para actualizar el alias de un patrón de Turing.
+        """
+        return self.vault_service.update_alias(target_type="artifact", target_id=id_artifact, params=params)
 
     def toggle_favorite(self : TuringService, id_artifact : int) -> dict[str, Any]:
         """
@@ -99,6 +114,25 @@ class TuringService:
         """
         return self.vault_service.update_notes(id_artifact=id_artifact, params=params)
 
+    def delete_artifact(self : TuringService, id_artifact : int, params : dict[str, Any]) -> dict[str, Any]:
+        """
+        Wrapper para eliminar un patrón de Turing de la DB y sus archivos del almacenamiento.
+        """
+        return self.vault_service.delete_artifact(id_artifact=id_artifact, params=params)
+
+    # Sources
+    def get_sources_catalog(self : TuringService, params : dict[str, Any]) -> dict[str, Any]:
+        """
+        Wrapper para recuperar el catálogo de imágenes originales.
+        """
+        return self.vault_service.get_sources_catalog(params=params)
+
+    def update_source_alias(self : TuringService, id_source_image : int, params : dict[str, Any]) -> dict[str, Any]:
+        """
+        Wrapper para actualizar el alias de una imagen original.
+        """
+        return self.vault_service.update_alias(target_type="source", target_id=id_source_image, params=params)
+
     def get_orphaned_sources(self : TuringService) -> dict[str, Any]:
         """
         Wrapper para consultar las imágenes originales huérfanas.
@@ -111,8 +145,3 @@ class TuringService:
         """
         return self.vault_service.delete_source_image(id_source_image=id_source_image)
 
-    def delete_artifact(self : TuringService, id_artifact : int, params : dict[str, Any]) -> dict[str, Any]:
-        """
-        Wrapper para eliminar un patrón de Turing de la DB y sus archivos del almacenamiento.
-        """
-        return self.vault_service.delete_artifact(id_artifact=id_artifact, params=params)

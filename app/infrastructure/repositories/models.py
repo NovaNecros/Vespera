@@ -17,7 +17,7 @@ class ColorPalette(db.Model):
     display_name = db.Column(db.String(128), nullable=False)
     is_system    = db.Column(db.Boolean, nullable=False, default=True)
     is_favorite  = db.Column(db.Boolean, nullable=False, default=False)
-    created_at   = db.Column(db.DateTime, nullable=False, default=db.func.now())
+    created_at   = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
 
     stops   = db.relationship("PaletteStop", back_populates="palette", cascade="all, delete-orphan", order_by="PaletteStop.stop_position.asc()", lazy=True)
     configs = db.relationship("ConfigTuring", back_populates="palette", lazy=True)
@@ -76,7 +76,7 @@ class SourceImage(db.Model):
     width           = db.Column(db.Integer,     nullable=False)
     height          = db.Column(db.Integer,     nullable=False)
     file_size_bytes = db.Column(db.Integer,     nullable=False)
-    created_at      = db.Column(db.DateTime,    nullable=False, default=db.func.now())
+    created_at      = db.Column(db.DateTime,    nullable=False, default=db.func.now(), index=True)
 
     artifacts = db.relationship("SynthesisArtifact", back_populates="source_image", lazy=True)
 
@@ -106,7 +106,7 @@ class ConfigTuring(db.Model):
     dt            = db.Column(db.Numeric(6,4), nullable=False)
     iterations    = db.Column(db.Integer,      nullable=False)
     id_palette    = db.Column(db.Integer,      db.ForeignKey("color_palette.id_palette", ondelete="RESTRICT"), nullable=False)
-    created_at    = db.Column(db.DateTime,     nullable=False, default=db.func.now())
+    created_at    = db.Column(db.DateTime,     nullable=False, default=db.func.now(), index=True)
 
     palette   = db.relationship("ColorPalette", foreign_keys=[id_palette], back_populates="configs")
     artifacts = db.relationship("SynthesisArtifact", back_populates="turing_config", lazy=True)
@@ -142,7 +142,7 @@ class SynthesisArtifact(db.Model):
     execution_time     = db.Column(db.Numeric(10,2), nullable=False)
     is_favorite        = db.Column(db.Boolean, nullable=False, default=False)
     user_notes         = db.Column(db.String(1024), nullable=True)
-    created_at         = db.Column(db.DateTime, nullable=False, default=db.func.now())
+    created_at         = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
 
     source_image    = db.relationship("SourceImage", foreign_keys=[id_source_image], back_populates="artifacts")
     turing_config   = db.relationship("ConfigTuring", foreign_keys=[id_config], back_populates="artifacts")

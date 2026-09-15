@@ -32,7 +32,7 @@ interface SmokeWisp
     let height : number      = 0;
     let wisps  : SmokeWisp[] = [];
 
-    const WISP_COUNT : number = 28;
+    const WISP_COUNT : number = 30;
 
     const SOOT_RGB = { r : 4, g : 5, b : 8 };
 

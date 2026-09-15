@@ -31,8 +31,9 @@ def cript() -> str:
     """
     return render_template("vault/cript.html")
 
+
 # --- APIs ---
-# Bóveda
+# ARTIFACTS
 @vault_bp.route("/api/gallery", methods=["POST"])
 @api_standard_endpoint
 def api_get_vault_gallery() -> dict[str, Any]:
@@ -51,6 +52,27 @@ def api_get_artifact(id_artifact : int) -> dict[str, Any]:
     :return            : Datos recuperados.
     """
     return service.get_artifact_detail(id_artifact)
+
+@vault_bp.route("/api/hydrate/artifact/<int:id_artifact>", methods=["GET"])
+@api_standard_endpoint
+def api_get_hydration_bundle(id_artifact : int) -> dict[str, Any]:
+    """
+    Endpoint para recuperar los parámetros de un patrón de Turing y cargarlos en el estudio.
+    :param id_artifact : ID (PK) del patrón de Turing en la DB.
+    :return            : Parámetros en la DB incluyendo cuadros de animación.
+    """
+    return service.get_hydration_bundle(id_artifact)
+
+@vault_bp.route("/api/alias/artifact/<int:artifact_id>", methods=["POST"])
+@api_standard_endpoint
+def api_update_artifact_alias(artifact_id : int) -> dict[str, Any]:
+    """
+    Endpoint para actualizar el alias de un patrón de Turing.
+    :param artifact_id : ID (PK) del patrón.
+    :return            : Estado de éxito y detalles de la operación.
+    """
+    payload : dict[str, Any] = request.get_json(silent=True) or request.form.to_dict() or {}
+    return service.update_artifact_alias(artifact_id, payload)
 
 @vault_bp.route("/api/toggle/favorite/artifact/<int:id_artifact>", methods=["POST"])
 @api_standard_endpoint
@@ -82,7 +104,17 @@ def api_delete_artifact(id_artifact : int) -> dict[str, Any]:
     """
     return service.delete_artifact(id_artifact, request.get_json(silent=True) or {})
 
-# Cripta
+
+# SOURCES
+@vault_bp.route("/api/sources", methods=["POST"])
+@api_standard_endpoint
+def api_get_sources_catalog() -> dict[str, Any]:
+    """
+    Endpoint para obtener el catálogo de imágenes originales.
+    :return : Catálogo de imágenes originales en la DB.
+    """
+    return service.get_sources_catalog(request.get_json(silent=True) or {})
+
 @vault_bp.route("/api/cript", methods=["GET"])
 @api_standard_endpoint
 def api_get_orphans() -> dict[str, Any]:
@@ -91,6 +123,17 @@ def api_get_orphans() -> dict[str, Any]:
     :return : Estado de éxito y detalles de la operación.
     """
     return service.get_orphaned_sources()
+
+@vault_bp.route("/api/alias/source/<int:id_source_image>", methods=["POST"])
+@api_standard_endpoint
+def api_update_source_alias(id_source_image : int) -> dict[str, Any]:
+    """
+    Endpoint para actualizar el alias de una imagen original.
+    :param id_source_image : ID (PK) de la imagen original.
+    :return                : Estado de éxito de la operación.
+    """
+    payload : dict[str, Any] = request.get_json(silent=True) or request.form.to_dict() or {}
+    return service.update_source_alias(id_source_image, payload)
 
 @vault_bp.route("/api/cript/delete/source/<int:id_source_image>", methods=["DELETE"])
 @api_standard_endpoint
@@ -113,7 +156,6 @@ def api_stream_artifact_image(artifact_hash : str) -> Path:
     """
     return FileRepository.get_artifact_path(artifact_hash)
 
-
 @vault_bp.route("/api/stream/thumbnail/hash/<string:artifact_hash>", methods=["GET"])
 @api_stream_endpoint(mimetype="image/png")
 def api_stream_thumbnail_image(artifact_hash : str) -> Path:
@@ -124,7 +166,6 @@ def api_stream_thumbnail_image(artifact_hash : str) -> Path:
     """
     return FileRepository.get_thumbnail_path(artifact_hash)
 
-
 @vault_bp.route("/api/stream/source/hash/<string:source_hash>", methods=["GET"])
 @api_stream_endpoint(mimetype="image/png")
 def api_stream_source_image(source_hash : str) -> Path:
@@ -134,3 +175,14 @@ def api_stream_source_image(source_hash : str) -> Path:
     :return            : Bytes del archivo PNG.
     """
     return FileRepository.get_source_path(source_hash)
+
+@vault_bp.route("/api/stream/frame/<string:artifact_hash>/<int:frame_index>", methods=["GET"])
+@api_stream_endpoint(mimetype="image/webp")
+def api_stream_frame_image(artifact_hash : str, frame_index : int) -> Path:
+    """
+    Endpoint para obtener un frame en formato WebP para la reproducción de la animación.
+    :param artifact_hash : Hash SHA-256 compuesto del patrón.
+    :param frame_index   : Número de frame.
+    :return              : Ruta al archivo WebP en el disco.
+    """
+    return FileRepository.get_frame_path(artifact_hash, frame_index)

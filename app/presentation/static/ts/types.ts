@@ -55,8 +55,8 @@ export interface ConfigTuring
     dt          : number;
     iterations  : number;
     id_palette  : number;
-    palette     : string;
-    created_at  : string | null;
+    palette     : ColorPalette | null;
+    created_at  : string       | null;
 }
 
 export interface SynthesisFrame
@@ -85,6 +85,43 @@ export interface SynthesisArtifact
     children?          : SynthesisArtifact[];
     source_image       : SourceImage  | null;
     config             : ConfigTuring | null;
+}
+
+// --- HYDRATION CONTRACTS ---
+export interface HydrationSourceImage
+{
+    id_source_image : number;
+    alias           : string;
+    sha256_hash     : string;
+    width           : number;
+    height          : number;
+    stream_url      : string;
+}
+
+export interface HydrationConfig
+{
+    id_config  : number;
+    feed_rate  : number;
+    kill_rate  : number;
+    diff_u     : number;
+    diff_v     : number;
+    dt         : number;
+    iterations : number;
+    id_palette : number;
+    palette    : ColorPalette | null;
+}
+
+export interface HydrationBundle
+{
+    id_artifact        : number;
+    alias              : string;
+    artifact_hash      : string;
+    parent_artifact_id : number;
+    user_notes         : string;
+    source_image       : HydrationSourceImage | null;
+    config             : HydrationConfig      | null;
+    frames             : string[];
+    frame_count        : number;
 }
 
 // --- VAULT PAYLOADS ---
@@ -134,7 +171,7 @@ export interface VesperaPalette
 {
     smokeCenter     : string;
     smokeInner      : string;
-    smokerOuter     : string;
+    smokeOuter     : string;
 
     void            : string;
     voidBorder      : string;

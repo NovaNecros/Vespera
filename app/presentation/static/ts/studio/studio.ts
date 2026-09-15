@@ -2,9 +2,8 @@
 
 import {
     APIResponse,
-    SynthesisArtifact,
-    ColorPalette,
-    PaletteStop
+    SynthesisArtifact, ColorPalette, PaletteStop,
+    HydrationBundle, HydrationConfig, HydrationSourceImage
 } from "../types.js";
 import {
     apiFetch,
@@ -41,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const generateApiUrl       : string = mainContainer.dataset.generateApiUrl       || "";
     const commitApiUrl         : string = mainContainer.dataset.commitApiUrl         || "";
     const palettesApiUrl       : string = mainContainer.dataset.palettesApiUrl       || "";
+    const hydrateApiUrl        : string = mainContainer.dataset.hydrateApiUrl        || "";
 
     // FORM
     const dropzoneEl      : HTMLElement       | null = document.getElementById("dropzone-container");
@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         paletteSelect.addEventListener("change", () : void =>
         {
             const selectedId : number = parseInt(paletteSelect.value);
-            const pal : ColorPalette | undefined = state.paletteCatalog.find(p => p.id_palette === selectedId);
+            const pal : ColorPalette | undefined = state.paletteCatalog.find((p : ColorPalette) => p.id_palette === selectedId);
             if(pal)
             {
                 state.activeLut = buildPaletteLut(pal.stops);
@@ -307,7 +307,130 @@ document.addEventListener("DOMContentLoaded", () : void =>
         });
     }
 
-    // SYNTHESIS & VISUALIZATION
+    // POPULATE STUDIO
+    async function checkUrlHydrationTarget() : Promise<void>
+    {
+        try
+        {
+            const urlParams : URLSearchParams = new URLSearchParams(window.location.search);
+            const loadId    : string | null   = urlParams.get("load");
+
+            if(!loadId) return;
+
+            showLoadingOverlay({
+                title    : "Summoning Ancient Formula from The Vault",
+                subtitle : `Reconstructing alchemical conditions for Artifact #${loadId}`
+            });
+
+            const apiUrl : string      = hydrateApiUrl.replace("/artifact/0", `/artifact/${loadId}`);
+            const res    : APIResponse<HydrationBundle> = await apiFetch<HydrationBundle>(apiUrl);
+
+            if(!res.success || !res.data) return;
+
+            const bundle : HydrationBundle | null = res.data;
+
+            const cfg : HydrationConfig | null = bundle.config;
+            if(cfg)
+            {
+                if(feedSlider)  feedSlider.value  = cfg.feed_rate.toFixed(4);
+                if(killSlider)  killSlider.value  = cfg.kill_rate.toFixed(4);
+                if(diffUSlider) diffUSlider.value = cfg.diff_u.toFixed(3);
+                if(diffVSlider) diffVSlider.value = cfg.diff_v.toFixed(3);
+                if(iterSlider)  iterSlider.value  = cfg.iterations.toString();
+                if(dtSlider)    dtSlider.value    = cfg.dt.toFixed(2);
+
+                if(feedInput)   feedInput.value   = cfg.feed_rate.toFixed(4);
+                if(killInput)   killInput.value   = cfg.kill_rate.toFixed(4);
+                if(diffUInput)  diffUInput.value  = cfg.diff_u.toFixed(3);
+                if(diffVInput)  diffVInput.value  = cfg.diff_v.toFixed(3);
+                if(iterInput)   iterInput.value   = cfg.iterations.toString();
+                if(dtInput)     dtInput.value     = cfg.dt.toFixed(2);
+
+                if(paletteSelect && cfg.id_palette)
+                {
+                    paletteSelect.value = cfg.id_palette.toString();
+                    const pal : ColorPalette | undefined = state.paletteCatalog.find(
+                        (p : ColorPalette) => p.id_palette === cfg.id_palette);
+                    if(pal) state.activeLut = buildPaletteLut(pal.stops);
+                }
+            }
+
+            if(parentIdInput)  parentIdInput.value  = bundle.id_artifact.toString();
+            if(userNotesInput) userNotesInput.value = bundle.user_notes || "";
+
+            const srcImg : HydrationSourceImage | null = bundle.source_image;
+            if(srcImg)
+            {
+                if(sourceIdInput) sourceIdInput.value = srcImg.id_source_image.toString();
+
+                const img : HTMLImageElement = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () : void =>
+                {
+                    state.sourceImageElement      = img;
+                    if(previewImg) previewImg.src = img.src;
+                    dropzonePrompt?.classList.add("hidden");
+                    previewCont?.classList.remove("hidden");
+                    previewCont?.classList.add("flex");
+                    if(filenameLabel) filenameLabel.textContent = srcImg.alias;
+                    if(sourceStatusEl)
+                    {
+                        sourceStatusEl.textContent = `Branched from Catalyst #${srcImg.id_source_image}`;
+                        sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-silverBright";
+                    }
+                    synthesizeBtn?.classList.remove("hidden");
+                };
+                img.src = srcImg.stream_url;
+            }
+
+            if(bundle.frames && bundle.frames.length > 0)
+            {
+                emptyState?.classList.add("hidden");
+                if(modeBadge)
+                {
+                    modeBadge.textContent = "Rehydrated";
+                    modeBadge.className   = "vamp-badge vamp-badge-silver";
+                }
+
+                state.currentArtifactHash = bundle.artifact_hash;
+
+                state.grayScaleFrames = await Promise.all(
+                    bundle.frames.map((url : string) : Promise<HTMLImageElement> =>
+                    {
+                        return new Promise((resolve) : void =>
+                        {
+                           const frameImg : HTMLImageElement = new Image();
+                           frameImg.crossOrigin = "anonymous";
+                           frameImg.onload      = () : void => resolve(frameImg);
+                           frameImg.src         = url;
+                        });
+                    })
+                );
+
+                if(scrubber)
+                {
+                    scrubber.max    = (state.grayScaleFrames.length - 1).toString();
+                    scrubber.value  = "0";
+                }
+
+                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
+                playbackBadge?.classList.remove("hidden");
+
+                applyShaderToFrame(0);
+                playAnimation();
+            }
+        }
+        catch(error)
+        {
+            return console.error(error);
+        }
+        finally
+        {
+            hideLoadingOverlay();
+        }
+    }
+
+    // VISUALIZATION
     function pauseAnimation() : void
     {
         state.isPlaying = false;
@@ -431,6 +554,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         synthesizeBtn?.classList.add("hidden");
     }
 
+    // SYNTHESIS & SAVE
     async function executeSynthesis() : Promise<void>
     {
         const hasFile : boolean = !!state.sourceImageFile;
@@ -666,6 +790,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     {
         await loadPaletteCatalog();
         bindEvents();
+        await checkUrlHydrationTarget();
     }
 
     // --- INITIALIZATION ---

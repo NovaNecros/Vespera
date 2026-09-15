@@ -322,7 +322,7 @@ class SynthesisService:
                         .count()
                 )
                 pattern_number : int = existing_count + 1
-                clean_source_name : str = source_rec.alias.r_split(".", 1)[0]
+                clean_source_name : str = source_rec.alias.rsplit(".", 1)[0]
                 artifact_alias    : str = f"pattern_{clean_source_name}_{pattern_number}.png"
 
             p : dict[str, Any] = cached["params"]
