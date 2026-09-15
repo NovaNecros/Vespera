@@ -1,0 +1,187 @@
+/* Vespera/app/presentation/static/css/vault/vault.css */
+
+/* Buttons */
+.vault-tab-btn
+{
+    color            : var(--vespera-bone-silent);
+    background-color : transparent;
+    border           : 1px solid transparent;
+    cursor           : pointer;
+}
+
+.vault-tab-btn:hover
+{
+    color            : var(--vespera-parchment);
+    background-color : rgba(18, 20, 28, 0.45);
+}
+
+.vault-tab-btn.active
+{
+    color            : var(--vespera-parchment);
+    background-color : var(--vespera-charcoal);
+    border-color     : var(--vespera-obsidian);
+    box-shadow       : 0 2px 8px rgba(0, 0, 0, 0.60);
+}
+
+/* Artifact Cards */
+.vault-artifact-card
+{
+    position         : relative;
+    background-color : var(--vespera-glass-bg);
+    border           : 1px solid var(--vespera-border-black);
+    border-radius    : var(--vespera-radius);
+    overflow         : hidden;
+    display          : flex;
+    flex-direction   : column;
+    transition       : all 0.28s cubic-bezier(0.25, 0.80, 0.25, 1.00);
+}
+
+.vault-artifact-card:hover
+{
+    border-color : var(--vespera-border-crimson);
+    box-shadow   : var(--vespera-shadow-ambient), var(--vespera-glow-crimson);
+    transform    : translateY(-3px);
+}
+
+/* Zoomable Thumbnail */
+.vault-thumb-wrapper
+{
+    position     : relative;
+    width        : 100%;
+    aspect-ratio : 1 / 1;
+    overflow     : hidden;
+    background   : var(--vespera-obsidian);
+    cursor       : pointer;
+}
+
+.vault-thumb-img
+{
+    width      : 100%;
+    height     : 100%;
+    object-fit : cover;
+    transition : transform 0.4s ease;
+}
+
+.vault-artifact-card:hover .vault-thumb-img
+{
+    transform : scale(1.06);
+}
+
+.vault-thumb-overlay
+{
+    position        : absolute;
+    inset           : 0;
+    background      : linear-gradient(180deg, rgba(6, 6, 8, 0.20) 0%, rgba(6, 6, 8, 0.85) 100%);
+    opacity         : 0;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    gap             : 10px;
+    backdrop-filter : blur(2px);
+    transition      : opacity 0.25s ease;
+}
+
+.vault-thumb-wrapper:hover .vault-thumb-overlay
+{
+    opacity : 1;
+}
+
+.vault-quick-action-btn
+{
+    width           : 36px;
+    height          : 36px;
+    border-radius   : 50%;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    background      : var(--vespera-obsidian);
+    border          : 1px solid var(--vespera-silver);
+    color           : var(--vespera-parchment);
+    font-size       : 0.85rem;
+    transition      : all 0.2s ease;
+    cursor          : pointer;
+}
+
+.vault-quick-action-btn:hover
+{
+    background   : var(--vespera-crimson);
+    border-color : var(--vespera-crimson-bright);
+    color        : var(--vespera-white);
+    transform    : scale(1.15);
+    box-shadow   : var(--vespera-glow-crimson-int);
+}
+
+/* Favorite */
+.vault-fav-pin
+{
+    position        : absolute;
+    top             : 8px;
+    right           : 8px;
+    z-index         : 10;
+    width           : 26px;
+    height          : 26px;
+    border-radius   : 50%;
+    background      : rgba(6, 6, 8, 0.75);
+    border          : 1px solid var(--vespera-obsidian);
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    font-size       : 0.75rem;
+    cursor          : pointer;
+    transition      : all 0.2s ease;
+    backdrop-filter : blur(4px);
+}
+
+.vault-fav-pin.active
+{
+    color        : var(--vespera-crimson-bright);
+    border-color : var(--vespera-crimson);
+    box-shadow   : 0 0 10px rgba(184, 10, 24, 0.60);
+}
+
+/* Source Cards */
+.vault-source-card
+{
+    position         : relative;
+    background-color : var(--vespera-glass-bg);
+    border           : 1px solid var(--vespera-border-black);
+    border-radius    : var(--vespera-radius);
+    overflow         : hidden;
+    display          : flex;
+    flex-direction   : column;
+    transition       : all 0.28s cubic-bezier(0.25, 0.80, 0.25, 1.00);
+}
+
+.vault-source-card:hover
+{
+    border-color : var(--vespera-silver);
+    box-shadow   : var(--vespera-shadow-ambient), var(--vespera-glow-silver);
+    transform    : translateY(-3px);
+}
+
+.vault-source-thumb-wrapper
+{
+    position     : relative;
+    width        : 100%;
+    aspect-ratio : 4 / 3;
+    overflow     : hidden;
+    background   : var(--vespera-obsidian);
+}
+
+.vault-source-thumb-img
+{
+    width      : 100%;
+    height     : 100%;
+    object-fit : cover;
+    transition : transform 0.4s ease;
+}
+
+.vault-source-card:hover .vault-source-thumb-img
+{
+    transform : scale(1.05);
+}
+
+#inspector-canvas
+{
+    image-rendering : auto;
+}
