@@ -107,9 +107,32 @@ export function truncateHash(hash, chars = 8) {
         return hash;
     return `${hash.substring(0, chars)}...${hash.substring(hash.length - chars)}`;
 }
+export function buildPaletteLut(stops) {
+    const lut = new Uint8ClampedArray(256 * 3);
+    const sortedStops = [...stops].sort((a, b) => a.stop_position - b.stop_position);
+    for (let i = 0; i < 256; ++i) {
+        const t = i / 255.0;
+        let lower = sortedStops[0];
+        let upper = sortedStops[sortedStops.length - 1];
+        for (let s = 0; s < sortedStops.length - 1; ++s) {
+            if (t >= sortedStops[s].stop_position && t <= sortedStops[s + 1].stop_position) {
+                lower = sortedStops[s];
+                upper = sortedStops[s + 1];
+                break;
+            }
+        }
+        const range = upper.stop_position - lower.stop_position;
+        const factor = range === 0 ? 0 : (t - lower.stop_position) / range;
+        lut[i * 3] = Math.round(lower.r + (upper.r - lower.r) * factor);
+        lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
+        lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+    }
+    return lut;
+}
 window.getVesperaPalette = getVesperaPalette;
 window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;
 window.apiFetch = apiFetch;
 window.formatBytes = formatBytes;
 window.truncateHash = truncateHash;
+window.buildPaletteLut = buildPaletteLut;

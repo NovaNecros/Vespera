@@ -1,4 +1,4 @@
-import { apiFetch, hideLoadingOverlay, showLoadingOverlay, truncateHash } from "../base.js";
+import { apiFetch, hideLoadingOverlay, showLoadingOverlay, truncateHash, buildPaletteLut } from "../base.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("studio-main-container");
     if (!mainContainer)
@@ -119,8 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
             iterSlider.value = defaultIter;
         if (dtSlider)
             dtSlider.value = defaultDt;
-        if (paletteSelect)
-            paletteSelect.value = defaultPalette;
         if (userNotesInput)
             userNotesInput.value = "";
         if (feedInput)
@@ -135,28 +133,12 @@ document.addEventListener("DOMContentLoaded", () => {
             iterInput.value = defaultIter;
         if (dtInput)
             dtInput.value = defaultDt;
-    }
-    function buildPaletteLut(stops) {
-        const lut = new Uint8ClampedArray(256 * 3);
-        const sortedStops = [...stops].sort((a, b) => a.stop_position - b.stop_position);
-        for (let i = 0; i < 256; ++i) {
-            const t = i / 255.0;
-            let lower = sortedStops[0];
-            let upper = sortedStops[sortedStops.length - 1];
-            for (let s = 0; s < sortedStops.length - 1; ++s) {
-                if (t >= sortedStops[s].stop_position && t <= sortedStops[s + 1].stop_position) {
-                    lower = sortedStops[s];
-                    upper = sortedStops[s + 1];
-                    break;
-                }
-            }
-            const range = upper.stop_position - lower.stop_position;
-            const factor = range === 0 ? 0 : (t - lower.stop_position) / range;
-            lut[i * 3] = Math.round(lower.r + (upper.r - lower.r) * factor);
-            lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
-            lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+        if (paletteSelect) {
+            const defaultPal = state.paletteCatalog.find((p) => p.name === defaultPalette);
+            paletteSelect.value = defaultPal ? defaultPal.id_palette.toString() : "1";
+            if (defaultPal)
+                state.activeLut = buildPaletteLut(defaultPal.stops);
         }
-        return lut;
     }
     function applyShaderToFrame(index) {
         if (!canvas || !canvasContext || !offscreenCtx || state.grayScaleFrames.length === 0)
@@ -265,7 +247,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     paletteSelect.value = cfg.id_palette.toString();
                     const pal = state.paletteCatalog.find((p) => p.id_palette === cfg.id_palette);
                     if (pal)
-                        state.activeLut = buildPaletteLut(pal.stops);
+                        state.activeLut = window.buildPaletteLut(pal.stops);
                 }
             }
             if (parentIdInput)
@@ -424,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dropzonePrompt?.classList.remove("hidden");
         if (sourceStatusEl) {
             sourceStatusEl.textContent = "No pictogram seeded";
-            sourceStatusEl.className = "font-mono text-[0.7rem] text-vespera-silent";
+            sourceStatusEl.className = "font-mono text-[0.7rem] text-vespera-boneSilent";
         }
         synthesizeBtn?.classList.add("hidden");
     }
@@ -512,7 +494,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
-    synthesizeBtn?.addEventListener("click", executeSynthesis);
     async function commitArtifact(alias) {
         if (!state.currentArtifactHash)
             return;
@@ -523,6 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const payload = {
             artifact_hash: state.currentArtifactHash,
             alias: alias,
+            parent_artifact_id: parentIdInput?.value ? parseInt(parentIdInput.value) : null,
             id_palette: paletteSelect?.value ? parseInt(paletteSelect.value) : 1,
             user_notes: userNotesInput?.value || ""
         };
@@ -568,7 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
             onConfirm: (chosenAlias) => { commitArtifact(chosenAlias || "").then(); }
         });
     }
-    function bindEvents() {
+    function bindListeners() {
         syncControlPair(feedSlider, feedInput, 4);
         syncControlPair(killSlider, killInput, 4);
         syncControlPair(diffUSlider, diffUInput, 3);
@@ -609,7 +591,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     async function initStudio() {
         await loadPaletteCatalog();
-        bindEvents();
+        bindListeners();
         await checkUrlHydrationTarget();
     }
     initStudio().then();

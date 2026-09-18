@@ -1,0 +1,488 @@
+<!-- Vespera/app/presentation/templates/vault/vault.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Vespera - The Vault{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vault/vault.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/vault/vault.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div id="vault-main-container"
+     class="w-full flex flex-col gap-4"
+     data-studio-template-url="{{ url_for('studio.studio') }}"
+     data-palettes-api-url="{{ url_for('studio.api_get_palettes') }}"
+     data-gallery-api-url="{{ url_for('vault.api_get_vault_gallery') }}"
+     data-artifact-detail-api-url="{{ url_for('vault.api_get_artifact', id_artifact=0) }}"
+     data-update-artifact-alias-api-url="{{ url_for('vault.api_update_artifact_alias', id_artifact=0) }}"
+     data-toggle-favorite-api-url="{{ url_for('vault.api_toggle_favorite', id_artifact=0) }}"
+     data-update-notes-api-url="{{ url_for('vault.api_update_notes', id_artifact=0) }}"
+     data-delete-artifact-api-url="{{ url_for('vault.api_delete_artifact', id_artifact=0) }}"
+     data-sources-api-url="{{ url_for('vault.api_get_sources_catalog') }}"
+     data-update-source-alias-api-url="{{ url_for('vault.api_update_source_alias', id_source_image=0) }}"
+     data-delete-source-api-url="{{ url_for('vault.api_delete_source_image', id_source_image=0) }}"
+     data-stream-artifact-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
+     data-stream-thumb-api-url="{{ url_for('vault.api_stream_thumbnail_image', artifact_hash='PLACEHOLDER') }}"
+     data-stream-source-api-url="{{ url_for('vault.api_stream_source_image', source_hash='PLACEHOLDER') }}"
+     data-stream-frame-api-url="{{ url_for('vault.api_stream_frame_image', artifact_hash='PLACEHOLDER', frame_index=0) }}">
+
+    <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b
+                   border-vespera-obsidian pb-3">
+        <div class="flex flex-col">
+            <div class="flex items-center gap-3">
+                <span class="brand-sigil w-7 h-7 text-sm">
+                    <i class="fa-solid fa-dungeon"></i>
+                </span>
+                <h3 class="font-ornate text-2xl md:text-3xl text-vespera-crimsonDark font-bold tracking-wider mb-0">
+                    The Vault
+                </h3>
+            </div>
+            <p class="font-serif text-vespera-iron text-sm md:text-base mt-1 mb-0">
+                Reliquary of Morphogenetic Artifacts & Catalyst Lineages
+            </p>
+        </div>
+
+        <!-- TABS -->
+        <div class="flex items-center gap-3 flex-wrap">
+            <div class="inline-flex p-1 bg-vespera-obsidian border border-vespera-obsidian
+                        rounded-vespera shadow-inner">
+                <button id="tab-reliquary-button" type="button"
+                        class="vault-tab-btn px-3.5 py-1.5 rounded-sm font-cinzel text-xs uppercase tracking-wider
+                               transition-all text-vespera-boneSilent hover:text-vespera-parchment">
+                    <i class="fa-solid fa-gem mr-1.5 text-vespera-crimson"></i>
+                    The Reliquary
+                    <span id="badge-total-artifacts"
+                          class="ml-1.5 font-mono text-[0.65rem] opacity-75">
+                        <!-- TS -->
+                    </span>
+                </button>
+                <button id="tab-catalysts-btn" type="button"
+                        class="vault-tab-btn px-3.5 py-1.5 rounded-sm font-cinzel text-xs uppercase tracking-wider
+                               transition-all text-vespera-boneSilent hover:text-vespera-parchment">
+                    <i class="fa-solid fa-images mr-1.5 text-vespera-silver"></i>
+                    Catalysts
+                    <span id="badge-total-sources"
+                          class="ml-1.5 font-mono text-[0.65rem] opacity-75">
+                        <!-- TS -->
+                    </span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTROL PANEL -->
+    <section class="filigree-card p-3.5 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
+                    shadow-ambient">
+        <div class="filigree-corner-tl"></div>
+        <div class="filigree-corner-tr"></div>
+        <div class="filigree-corner-bl"></div>
+        <div class="filigree-corner-br"></div>
+
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            <!-- Search Bar -->
+            <div class="relative flex-grow max-w-xl">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2
+                          text-vespera-silver text-xs">
+                </i>
+                <label>
+                    <input id="vault-search-input" type="text"
+                           class="vamp-input pl-9 pr-8 text-xs py-2 w-full border border-vespera-obsidian
+                                  focus:border-vespera-silver"
+                           placeholder="Inscribe what you wish to find...">
+                </label>
+                <button id="clear-search-btn" type="button"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-vespera-boneSilent
+                               hover:text-vespera-parchment text-xs hidden">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <!-- Palette Filter -->
+                <div id="filter-palette-wrapper"
+                     class="flex items-center gap-1.5">
+                    <label for="filter-palette-select"
+                           class="font-cinzel text-xs text-vespera-silver hidden sm:inline">
+                        Spectrum
+                    </label>
+                    <select id="filter-palette-select"
+                            class="vamp-select text-xs py-1.5 px-2.5 w-40">
+                        <!-- TS -->
+                    </select>
+                </div>
+
+                <!-- Favorite Filter -->
+                <button id="filter-favorites-btn" type="button"
+                        class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-3 border border-vespera-obsidian">
+                    <i class="fa-regular fa-star mr-1 text-vespera-silver"></i>
+                    Favorites
+                </button>
+
+                <!-- Sorting -->
+                <div class="flex items-center gap-1.5">
+                    <label for="sort-by-select"
+                           class="font-cinzel text-xs text-vespera-silver hidden sm:inline">
+                        Sort:
+                    </label>
+                    <select id="sort-by-select"
+                            class="vamp-select text-xs py-1.5 px-2.5 w-36">
+                        <option value="date_created">Date Sealed</option>
+                        <option value="synthesis_time">Morph Duration</option>
+                        <option value="alias">Alias Inscribed</option>
+                    </select>
+                </div>
+
+                <!-- Sort Direction -->
+                <button id="sort-direction-btn" type="button"
+                        title="Toggle Ascending / Descending"
+                        class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-2.5 border border-vespera-obsidian">
+                    <i id="sort-direction-icon" class="fa-solid fa-arrow-down-wide-short"></i>
+                </button>
+
+                <!-- Reset Filters -->
+                <button id="reset-filters-btn" type="button"
+                        title="Reset search, filters and sorting"
+                        class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-2.5 border border-vespera-obsidian
+                               text-vespera-boneSilent hover:text-vespera-crimson">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TURING PATTERNS -->
+    <section id="view-reliquary"
+             class="flex flex-col gap-4">
+        <!-- Artifact Grid -->
+        <div id="vault-artifacts-grid"
+             class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6
+                    gap-4 items-stretch">
+            <!-- TS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="reliquary-empty-state"
+             class="filigree-card p-12 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
+                    flex flex-col items-center justify-center text-center gap-3 hidden my-6">
+            <div class="filigree-corner-tl"></div>
+            <div class="filigree-corner-tr"></div>
+            <div class="filigree-corner-bl"></div>
+            <div class="filigree-corner-br"></div>
+
+            <div class="w-14 h-14 rounded-full border border-dashed border-vespera-obsidian
+                        flex items-center justify-between text-vespera-crimson text-2xl">
+                <i class="fa-solid fa-box-open"></i>
+            </div>
+            <h4 class="font-cinzel text-lg text-vespera-parchment font-semibold mb-0">
+                The Reliquary Remains Empty
+            </h4>
+            <p class="font-serif text-sm text-vespera-boneSilent max-w-md mb-2">
+                No morphogenetic artifacts match your inquiry. Seed a catalyst in The Studio or broaden your search, love.
+            </p>
+            <a href="{{ url_for('studio.studio') }}"
+               class="vamp-btn vamp-btn-crimson text-xs py-2 px-4 no-underline">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>
+                Invoke First Reaction
+            </a>
+        </div>
+
+        <!-- Pagination -->
+        <div id="reliquary-pagination"
+             class="flex items-center justify-between border-t border-vespera-obsidian pt-3 mt-1
+                    font-mono text-xs text-vespera-boneSilent">
+            <span id="reliquary-page-info"
+                  class="text-vespera-crimsonDark">
+                <!-- TS -->
+            </span>
+            <div class="flex items-center gap-1.5">
+                <button id="reliquary-prev-page-btn" type="button" disabled
+                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5
+                               disabled:opacity-30 disabled:pointer-events-none">
+                    <i class="fa-solid fa-chevron-left mr-1.5"></i>
+                    Previous
+                </button>
+                <span id="reliquary-current-page"
+                      class="px-2 py-0.5 text-vespera-parchment">
+                    <label class="mr-1">
+                        <input id="reliquary-page-input" type="number" value="1" min="1"
+                               class="vamp-num-input">
+                    </label>
+                    of
+                    <span id="reliquary-total-pages" class="ml-1"><!--TS--></span>
+                </span>
+                <button id="reliquary-next-page-btn" type="button" disabled
+                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5
+                               disabled:opacity-30 disabled:pointer-events-none">
+                    Next
+                    <i class="fa-solid fa-chevron-right ml-1.5"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOURCE IMAGES -->
+    <section id="view-catalysts"
+             class="flex flex-col gap-4 hidden">
+        <!-- Catalyst Grid -->
+        <div id="vault-sources-grid"
+             class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5
+                    gap-4 items-stretch">
+            <!-- TS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="catalysts-empty-state"
+             class="filigree-card p-12 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
+                    flex flex-col items-center justify-center text-center gap-3 hidden my-6">
+            <div class="filigree-corner-tl"></div>
+            <div class="filigree-corner-tr"></div>
+            <div class="filigree-corner-bl"></div>
+            <div class="filigree-corner-br"></div>
+
+            <div class="w-14 h-14 rounded-full border border-dashed border-vespera-obsidian
+                        flex items-center justify-center text-vespera-silver text-2xl">
+                <i class="fa-solid fa-image"></i>
+            </div>
+            <h4 class="font-cinzel text-lg text-vespera-parchment font-semibold mb-0">
+                No Catalysts Inscribed
+            </h4>
+            <p class="font-serif text-sm text-vespera-boneSilent max-w-md mb-2">
+                No Catalysts found within The Vault. Seed a catalyst in The Studio or broaden your search, love.
+            </p>
+            <a href="{{ url_for('studio.studio') }}"
+               class="vamp-btn vamp-btn-crimson text-xs py-2 px-4 no-underline">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>
+                Invoke First Reaction
+            </a>
+        </div>
+
+        <!-- Pagination -->
+        <div id="catalyst-pagination"
+             class="flex items-center justify-between border-t border-vespera-obsidian pt-3 mt-1
+                    font-mono text-xs">
+            <span id="catalysts-page-info"
+                  class="text-vespera-crimsonDark">
+                <!-- TS -->
+            </span>
+            <div class="flex items-center gap-1.5">
+                <button id="catalysts-prev-page-btn" type="button" disabled
+                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5
+                               disabled:opacity-30 disabled:pointer-events-none">
+                    <i class="fa-solid fa-chevron-left mr-1.5"></i>
+                    Previous
+                </button>
+                <span id="catalysts-current-page"
+                      class="px-2 py-0.5 text-vespera-parchment">
+                    <label class="mr-1">
+                        <input id="catalysts-page-input" type="number" value="1" min="1"
+                               class="vamp-num-input">
+                    </label>
+                    of
+                    <span id="catalysts-total-pages" class="ml-1"><!--TS--></span>
+                </span>
+                <button id="catalysts-next-page-btn" type="button" disabled
+                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5
+                               disabled:opacity-30 disabled:pointer-events-none">
+                    Next
+                    <i class="fa-solid fa-chevron-right ml-1.5"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- VISUALIZATION MODAL -->
+<div id="artifact-inspector-modal" role="dialog" aria-modal="true"
+     class="vespera-dimmed-background fixed inset-0 z-[9990] hidden items-center justify-center
+            p-3 sm:p-6 backdrop-blur-md">
+    <div class="relative w-full max-w-5xl bg-vespera-charcoal border border-vespera-obsidian shadow-ambient
+                rounded-vespera filigree-card flex flex-col max-h-[92vh] overflow-hidden">
+        <div class="filigree-corner-tl"></div>
+        <div class="filigree-corner-tr"></div>
+        <div class="filigree-corner-bl"></div>
+        <div class="filigree-corner-br"></div>
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-5 py-3.5
+                    border-b border-vespera-obsidian  bg-vespera-obsidian/40">
+            <div class="flex items-center gap-3">
+                <button id="inspector-favorite-toggle-btn" type="button"
+                        class="text-vespera-silver hover:text-vespera-crimson transition-colors text-base"
+                        title="Toggle Favorite">
+                    <i id="inspector-favorite-icon" class="fa-solid fa-star"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <h4 id="inspector-artifact-alias"
+                        class="font-cinzel text-vespera-parchment font-bold text-base md:text-lg mb-0 tracking-wide">
+                        Pattern Alias
+                    </h4>
+                    <button id="inspector-rename-alias-btn" type="button"
+                            class="text-vespera-boneSilent hover:text-vespera-parchment text-xs transition-colors"
+                            title="Rename Artifact">
+                        <i class="fa-solid fa-feather"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button id="inspector-close-btn" type="button" aria-label="Close"
+                    class="text-vespera-boneSilent hover:text-vespera-parchment hover:rotate-90
+                           transition-all text-lg w-8 h-8 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="flex-grow overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- Animation -->
+            <div class="lg:col-span-7 flex flex-col gap-3 items-center">
+                <div class="canvas-stage-wrapper relative w-full aspect-square max-w-[420px] bg-vespera-obsidian
+                            border border-vespera-obsidian rounded overflow-hidden flex items-center
+                            justify-center shadow-inner">
+                    <canvas id="inspector-canvas" width="1024" height="1024"
+                            class="w-full h-full object-contain">
+                        <!-- TS -->
+                    </canvas>
+
+                    <!-- Frame Overlay -->
+                    <div id="inspector-frame-badge"
+                         class="absolute top-2 left-2 bg-vespera-obsidian/90 border border-vespera-obsidian
+                                px-2 py-0.5 rounded text-xs font-mono text-vespera-silverBright backdrop-blur-sm">
+                        <i class="fa-solid fa-play mr-1 text-[0.65rem] animate-pulse"></i>
+                        <span id="inspector-frame-label"><!-- TS --></span>
+                    </div>
+                </div>
+
+                <!-- Animation Controls -->
+                <div class="w-full max-w-[420px] flex items-center justify-between gap-3 pt-1">
+                    <button id="inspector-play-pause-btn" type="button"
+                            class="vamp-btn vamp-btn-silver text-xs py-1 px-3">
+                        <i id="inspector-play-icon" class="fa-solid fa-play mr-1.5"></i>
+                        Morph
+                    </button>
+                    <div class="flex-grow flex items-center">
+                        <label>
+                            <input id="inspector-timeline-scrubber" type="range"
+                                   min="0" max="60" step="1" value="0"
+                                   class="vamp-range w-full">
+                        </label>
+                    </div>
+                    <button id="inspector-compare-btn" type="button"
+                            class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5">
+                        <i class="fa-solid fa-code-compare mr-1"></i>
+                        Catalyst
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                <!-- Parameters -->
+                <div class="p-3.5 bg-vespera-surface border border-vespera-obsidian rounded-sm flex flex-col gap-2">
+                    <span class="font-cinzel text-xs text-vespera-silver font-bold uppercase
+                                 tracking-wider border-b border-vespera-obsidian pb-1.5">
+                        <i class="fa-solid fa-sliders mr-1.5 text-vespera-crimson"></i>
+                        Formula Coefficients
+                    </span>
+                    <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+                        <div class="flex flex-col">
+                            <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Feed Rate (F)</span>
+                            <span id="inspector-feed-rate" class="text-vespera-parchment font-bold"><!-- TS--></span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Kill Rate (K)</span>
+                            <span id="inspector-kill-rate" class="text-vespera-parchment font-bold"><!-- TS --></span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Diffusion Coefficients (DU & DV)</span>
+                            <span id="inspector-du-dv" class="text-vespera-silver"><!-- TS --></span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Iterations / Time Step (dt)</span>
+                            <span id="inspector-iter-dt" class="text-vespera-silver"><!-- TS --></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ID Card -->
+                <div class="p-3.5 bg-vespera-surface border border-vespera-obsidian rounded-sm flex flex-col gap-2
+                            font-mono text-xs">
+                    <span class="font-cinzel text-xs text-vespera-silver font-bold uppercase tracking-wider
+                                 border-b border-vespera-obsidian pb-1.5">
+                        <i class="fa-solid fa-fingerprint mr-1.5 text-vespera-silver"></i>
+                        Identity & Provenance
+                    </span>
+                    <div class="flex items-center justify-between">
+                        <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Spectrum:</span>
+                        <span id="inspector-palette-badge"
+                              class="vamp-badge vamp-badge-crimson-bright text-[0.65rem]">
+                            <!-- TS -->
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Morph Duration:</span>
+                        <span id="inspector-execution-time" class="text-vespera-silver"><!-- TS --></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Sealed on:</span>
+                        <span id="inspector-created-date" class="text-vespera-silver"><!-- TS --></span>
+                    </div>
+                    <div class="flex flex-col mt-1">
+                        <span class="text-vespera-boneSilent text-[0.65rem] uppercase">Cipher Rune:</span>
+                        <span id="inspector-artifact-hash"
+                              class="text-vespera-parchment text-[0.7rem] truncate mt-0.5"
+                              title="">
+                            <!-- TS -->
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="flex flex-col gap-1.5">
+                    <label for="inspector-notes-textarea"
+                           class="font-cinzel text-xs text-vespera-silver flex items-center justify-between">
+                        <span>
+                            <i class="fa-solid fa-feather-pointed mr-1.5"></i>
+                            Grimoire Inscription
+                        </span>
+                        <button id="inspector-save-notes-btn" type="button"
+                                class="text-vespera-silver hover:text-vespera-crimson transition-colors
+                                       text-[0.65rem] uppercase">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i>
+                            Save
+                        </button>
+                    </label>
+                    <textarea id="inspector-notes-textarea" rows="3"
+                              placeholder="Record observations or incantation notes..."
+                              class="vamp-textarea text-xs resize-none leading-relaxed"></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-col gap-2 pt-2 border-t border-vespera-obsidian">
+                    <button id="inspector-branch-studio-btn" type="button"
+                            class="vamp-btn vamp-btn-crimson w-full py-2 text-xs font-bold tracking-widest">
+                        <i class="fa-solid fa-code-branch mr-2"></i>
+                        Branch Formula in The Studio
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a id="inspector-download-btn" href="#" download
+                           class="vamp-btn vamp-btn-silver text-xs py-1.5 text-center no-underline">
+                            <i class="fa-solid fa-download mr-1.5"></i>
+                            Download
+                        </a>
+                        <button id="inspector-delete-btn" type="button"
+                                class="vamp-btn vamp-btn-ghost text-xs py-1.5 text-vespera-crimsonBright
+                                       hover:bg-vespera-crimson/10 border-vespera-crimson/30">
+                            <i class="fa-solid fa-trash-can mr-1.5"></i>
+                            Purge Artifact
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

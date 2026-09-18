@@ -81,7 +81,7 @@ export interface SynthesisArtifact
     is_favorite        : boolean;
     user_notes         : string;
     created_at         : string       | null;
-    keyframes?         : string[];
+    frames?            : SynthesisFrame[];
     children?          : SynthesisArtifact[];
     source_image       : SourceImage  | null;
     config             : ConfigTuring | null;
@@ -138,6 +138,31 @@ export interface GraveyardData
 {
     items : SourceImage[];
     count : number;
+}
+
+// --- VAULT API RESPONSES ---
+export interface SourceCatalogItem
+{
+    id_source_image   : number;
+    sha256_hash       : string;
+    alias             : string;
+    width             : number;
+    height            : number;
+    file_size_bytes   : number;
+    artifact_count    : number;
+    latest_hash       : string | null;
+    latest_thumb_url  : string | null;
+    source_stream_url : string;
+    created_at        : string | null;
+}
+
+export interface SourceCatalogData
+{
+    items       : SourceCatalogItem[];
+    total_items : number;
+    page        : number;
+    per_page    : number;
+    total_pages : number;
 }
 
 // --- MODAL & OVERLAY CONTRACTS ---

@@ -2,14 +2,15 @@
 
 import {
     APIResponse,
-    SynthesisArtifact, ColorPalette, PaletteStop,
+    SynthesisArtifact, ColorPalette,
     HydrationBundle, HydrationConfig, HydrationSourceImage
 } from "../types.js";
 import {
     apiFetch,
     hideLoadingOverlay,
     showLoadingOverlay,
-    truncateHash
+    truncateHash,
+    buildPaletteLut
 } from "../base.js";
 
 // Interfaces
@@ -184,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(diffVSlider)    diffVSlider.value        = defaultDv;
         if(iterSlider)     iterSlider.value         = defaultIter;
         if(dtSlider)       dtSlider.value           = defaultDt;
-        if(paletteSelect)  paletteSelect.value      = defaultPalette;
         if(userNotesInput) userNotesInput.value     = "";
 
         if(feedInput)      feedInput.value          = defaultF;
@@ -193,41 +193,16 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(diffVInput)     diffVInput.value         = defaultDv;
         if(iterInput)      iterInput.value          = defaultIter;
         if(dtInput)        dtInput.value            = defaultDt;
-    }
 
-    // PALETTES
-    function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
-    {
-        const lut : Uint8ClampedArray = new Uint8ClampedArray(256 * 3);
-        const sortedStops : PaletteStop[] = [...stops].sort((a, b) => a.stop_position - b.stop_position);
-
-        for(let i : number = 0; i < 256; ++i)
+        if(paletteSelect)
         {
-            const t : number = i / 255.0;
-            let lower : PaletteStop = sortedStops[0];
-            let upper : PaletteStop = sortedStops[sortedStops.length - 1];
-
-            for(let s : number = 0; s < sortedStops.length - 1; ++s)
-            {
-                if(t >= sortedStops[s].stop_position && t <= sortedStops[s + 1].stop_position)
-                {
-                    lower = sortedStops[s];
-                    upper = sortedStops[s + 1];
-                    break;
-                }
-            }
-
-            const range  : number = upper.stop_position - lower.stop_position;
-            const factor : number = range === 0 ? 0 : (t - lower.stop_position) / range;
-
-            lut[i * 3]     = Math.round(lower.r + (upper.r - lower.r) * factor);
-            lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
-            lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+            const defaultPal : ColorPalette | undefined = state.paletteCatalog.find((p : ColorPalette) => p.name === defaultPalette);
+            paletteSelect.value = defaultPal ? defaultPal.id_palette.toString() : "1";
+            if(defaultPal) state.activeLut = buildPaletteLut(defaultPal.stops);
         }
-
-        return lut;
     }
 
+    // Coloring
     function applyShaderToFrame(index : number) : void
     {
         if(!canvas || !canvasContext || !offscreenCtx || state.grayScaleFrames.length === 0) return;
@@ -351,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                     paletteSelect.value = cfg.id_palette.toString();
                     const pal : ColorPalette | undefined = state.paletteCatalog.find(
                         (p : ColorPalette) => p.id_palette === cfg.id_palette);
-                    if(pal) state.activeLut = buildPaletteLut(pal.stops);
+                    if(pal) state.activeLut = (window as any).buildPaletteLut(pal.stops);
                 }
             }
 
@@ -548,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(sourceStatusEl)
         {
             sourceStatusEl.textContent = "No pictogram seeded";
-            sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-silent";
+            sourceStatusEl.className   = "font-mono text-[0.7rem] text-vespera-boneSilent";
         }
 
         synthesizeBtn?.classList.add("hidden");
@@ -661,7 +636,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
             });
         }
     }
-    synthesizeBtn?.addEventListener("click", executeSynthesis);
 
     async function commitArtifact(alias : string) : Promise<void>
     {
@@ -673,10 +647,11 @@ document.addEventListener("DOMContentLoaded", () : void =>
         });
 
         const payload = {
-            artifact_hash : state.currentArtifactHash,
-            alias         : alias,
-            id_palette    : paletteSelect?.value ? parseInt(paletteSelect.value) : 1,
-            user_notes    : userNotesInput?.value || ""
+            artifact_hash      : state.currentArtifactHash,
+            alias              : alias,
+            parent_artifact_id : parentIdInput?.value ? parseInt(parentIdInput.value) : null,
+            id_palette         : paletteSelect?.value ? parseInt(paletteSelect.value) : 1,
+            user_notes         : userNotesInput?.value || ""
         };
 
         const res : APIResponse<SynthesisArtifact> = await apiFetch<SynthesisArtifact>(commitApiUrl, {
@@ -731,7 +706,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     }
 
     // LISTENERS
-    function bindEvents() : void
+    function bindListeners() : void
     {
         // Parameters
         syncControlPair(feedSlider,   feedInput,  4);
@@ -789,7 +764,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     async function initStudio()
     {
         await loadPaletteCatalog();
-        bindEvents();
+        bindListeners();
         await checkUrlHydrationTarget();
     }
 

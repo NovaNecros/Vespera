@@ -17,11 +17,11 @@ BANNER : str = f"""
 """
 
 def main() -> None:
-    print(f"\n{Colors.MAGENTA}{'='*75}{Colors.RESET}")
-    print(f"{Colors.RED} VESPERA :: TURING PATTERN ENIGMA SYNTHESIZER{Colors.RESET}")
-    print(f"{Colors.MAGENTA}{'='*75}{Colors.RESET}")
-    print(f"[*] {Colors.CYAN}Listening on http://localhost:{ServerSettings.PORT}{Colors.RESET}")
-    print(f"{Colors.MAGENTA}{BANNER}{Colors.RESET}")
+    # print(f"\n{Colors.MAGENTA}{'='*75}{Colors.RESET}")
+    # print(f"{Colors.RED} VESPERA :: TURING PATTERN ENIGMA SYNTHESIZER{Colors.RESET}")
+    # print(f"{Colors.MAGENTA}{'='*75}{Colors.RESET}")
+    # print(f"[*] {Colors.CYAN}Listening on http://localhost:{ServerSettings.PORT}{Colors.RESET}")
+    # print(f"{Colors.MAGENTA}{BANNER}{Colors.RESET}")
 
 
     app.run(

@@ -181,6 +181,25 @@
     transform : scale(1.05);
 }
 
+.vault-source-thumb-overlay
+{
+    position        : absolute;
+    inset           : 0;
+    background      : linear-gradient(180deg, rgba(6, 6, 8, 0.20) 0%, rgba(6, 6, 8, 0.85) 100%);
+    opacity         : 0;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    gap             : 10px;
+    backdrop-filter : blur(2px);
+    transition      : opacity 0.25s ease;
+}
+
+.vault-source-thumb-wrapper:hover .vault-source-thumb-overlay
+{
+    opacity : 1;
+}
+
 #inspector-canvas
 {
     image-rendering : auto;

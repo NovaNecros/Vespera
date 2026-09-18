@@ -63,16 +63,16 @@ def api_get_hydration_bundle(id_artifact : int) -> dict[str, Any]:
     """
     return service.get_hydration_bundle(id_artifact)
 
-@vault_bp.route("/api/alias/artifact/<int:artifact_id>", methods=["POST"])
+@vault_bp.route("/api/alias/artifact/<int:id_artifact>", methods=["POST"])
 @api_standard_endpoint
-def api_update_artifact_alias(artifact_id : int) -> dict[str, Any]:
+def api_update_artifact_alias(id_artifact : int) -> dict[str, Any]:
     """
     Endpoint para actualizar el alias de un patrón de Turing.
-    :param artifact_id : ID (PK) del patrón.
+    :param id_artifact : ID (PK) del patrón.
     :return            : Estado de éxito y detalles de la operación.
     """
     payload : dict[str, Any] = request.get_json(silent=True) or request.form.to_dict() or {}
-    return service.update_artifact_alias(artifact_id, payload)
+    return service.update_artifact_alias(id_artifact, payload)
 
 @vault_bp.route("/api/toggle/favorite/artifact/<int:id_artifact>", methods=["POST"])
 @api_standard_endpoint
@@ -176,7 +176,7 @@ def api_stream_source_image(source_hash : str) -> Path:
     """
     return FileRepository.get_source_path(source_hash)
 
-@vault_bp.route("/api/stream/frame/<string:artifact_hash>/<int:frame_index>", methods=["GET"])
+@vault_bp.route("/api/stream/artifact/hash/<string:artifact_hash>/frame/<int:frame_index>", methods=["GET"])
 @api_stream_endpoint(mimetype="image/webp")
 def api_stream_frame_image(artifact_hash : str, frame_index : int) -> Path:
     """

@@ -139,7 +139,7 @@ class SynthesisArtifact(db.Model):
     alias              = db.Column(db.String(255), nullable=False)
     artifact_hash      = db.Column(db.String(64), unique=True, nullable=False, index=True)
     seed               = db.Column(db.Integer, nullable=False)
-    execution_time     = db.Column(db.Numeric(10,2), nullable=False)
+    execution_time     = db.Column(db.Numeric(14,6), nullable=False)
     is_favorite        = db.Column(db.Boolean, nullable=False, default=False)
     user_notes         = db.Column(db.String(1024), nullable=True)
     created_at         = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)

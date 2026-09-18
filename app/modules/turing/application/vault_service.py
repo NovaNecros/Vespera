@@ -140,7 +140,10 @@ class VaultService:
                     .query(SynthesisArtifact)
                     .options(
                         db.joinedload(SynthesisArtifact.source_image),
-                        db.joinedload(SynthesisArtifact.turing_config).joinedload(ConfigTuring.palette),
+                        db.joinedload(SynthesisArtifact.turing_config)
+                            .joinedload(ConfigTuring.palette)
+                            .joinedload(ColorPalette.stops),
+                        db.joinedload(SynthesisArtifact.frames),
                         db.joinedload(SynthesisArtifact.parent_artifact)
                     )
                     .filter_by(id_artifact=id_artifact)
@@ -419,7 +422,7 @@ class VaultService:
                 db.session
                     .query(
                         SourceImage,
-                        db.func.coalesce(artifact_count_subquery.c.artifact_count).label("artifact_count"),
+                        db.func.coalesce(artifact_count_subquery.c.artifact_count, 0).label("artifact_count"),
                         artifact_count_subquery.c.latest_artifact_id
                     )
                     .outerjoin(
@@ -428,7 +431,7 @@ class VaultService:
                     )
             )
 
-            if search_query: query.filter(SourceImage.alias.ilike(f"%{search_query}%"))
+            if search_query: query = query.filter(SourceImage.alias.ilike(f"%{search_query}%"))
 
             query = query.order_by(SourceImage.created_at.desc())
             total_items : int = query.count()

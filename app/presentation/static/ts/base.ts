@@ -1,6 +1,12 @@
 // Vespera/app/presentation/static/ts/base.ts
 
-import { APIResponse, LoadingOverlayOptions, VesperaPalette } from "./types.js";
+import {
+    APIResponse,
+    LoadingOverlayOptions,
+    VesperaPalette,
+    ColorPalette,    PaletteStop,
+    HydrationBundle, HydrationConfig
+} from "./types.js";
 
 export function getVesperaPalette() : VesperaPalette
 {
@@ -141,9 +147,42 @@ export function truncateHash(hash : string, chars : number = 8) : string
     return `${hash.substring(0, chars)}...${hash.substring(hash.length - chars)}`;
 }
 
+export function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
+{
+    const lut : Uint8ClampedArray = new Uint8ClampedArray(256 * 3);
+    const sortedStops : PaletteStop[] = [...stops].sort((a, b) => a.stop_position - b.stop_position);
+
+    for(let i : number = 0; i < 256; ++i)
+    {
+        const t : number = i / 255.0;
+        let lower : PaletteStop = sortedStops[0];
+        let upper : PaletteStop = sortedStops[sortedStops.length - 1];
+
+        for(let s : number = 0; s < sortedStops.length - 1; ++s)
+        {
+            if(t >= sortedStops[s].stop_position && t <= sortedStops[s + 1].stop_position)
+            {
+                lower = sortedStops[s];
+                upper = sortedStops[s + 1];
+                break;
+            }
+        }
+
+        const range  : number = upper.stop_position - lower.stop_position;
+        const factor : number = range === 0 ? 0 : (t - lower.stop_position) / range;
+
+        lut[i * 3]     = Math.round(lower.r + (upper.r - lower.r) * factor);
+        lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
+        lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+    }
+
+    return lut;
+}
+
 (window as any).getVesperaPalette  = getVesperaPalette;
 (window as any).showLoadingOverlay = showLoadingOverlay;
 (window as any).hideLoadingOverlay = hideLoadingOverlay;
 (window as any).apiFetch           = apiFetch;
 (window as any).formatBytes        = formatBytes;
 (window as any).truncateHash       = truncateHash;
+(window as any).buildPaletteLut    = buildPaletteLut;
