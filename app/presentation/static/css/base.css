@@ -469,3 +469,55 @@ header
 {
     animation : candlePulse 3.5s infinite ease-in-out;
 }
+
+/* Modals */
+.vespera-modal
+{
+    position                : fixed;
+    inset                   : 0;
+    z-index                 : 9995;
+    display                 : flex;
+    align-items             : center;
+    justify-content         : center;
+    padding                 : 1rem;
+    background              : radial-gradient(ellipse at 50% 45%, rgba(18, 20, 28, 0.77), rgba(6, 6, 8, 0.88) 85%);
+    backdrop-filter         : blur(16px);
+    -webkit-backdrop-filter : blur(16px);
+    opacity                 : 0;
+    visibility              : hidden;
+    pointer-events          : none;
+    transition              : opacity    0.26s cubic-bezier(0.40, 0.00, 0.20, 1.00),
+                              visibility 0.26s cubic-bezier(0.40, 0.00, 0.20, 1.00);
+}
+
+.vespera-modal.active
+{
+    opacity        : 1;
+    visibility     : visible;
+    pointer-events : auto;
+}
+
+.vespera-modal-content
+{
+    transform  : scale(0.93) translateY(12px);
+    opacity    : 0;
+    transition : transform 0.28s cubic-bezier(0.34, 1.35, 0.64, 1.00),
+                 opacity   0.24s cubic-bezier(0.40, 0.00, 0.20, 1.00);
+}
+
+.vespera-modal.active .vespera-modal-content
+{
+    transform : scale(1.00) translateY(0);
+    opacity   : 1;
+}
+
+.vespera-modal.closing
+{
+    opacity : 0;
+}
+
+.vespera-modal.closing .vespera-modal-content
+{
+    transform : scale(0.94) translateY(12px);
+    opacity   : 0;
+}

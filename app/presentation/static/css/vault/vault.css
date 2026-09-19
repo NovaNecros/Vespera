@@ -7,6 +7,10 @@
     background-color : transparent;
     border           : 1px solid transparent;
     cursor           : pointer;
+    white-space      : nowrap;
+    display          : inline-flex;
+    align-items      : center;
+    gap              : 2px;
 }
 
 .vault-tab-btn:hover
@@ -166,6 +170,7 @@
     aspect-ratio : 4 / 3;
     overflow     : hidden;
     background   : var(--vespera-obsidian);
+    cursor       : pointer;
 }
 
 .vault-source-thumb-img

@@ -66,6 +66,28 @@ export function hideLoadingOverlay() {
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
 }
+export function openModalWithTransition(modalEl) {
+    if (!modalEl)
+        return;
+    modalEl.classList.remove("hidden", "closing");
+    modalEl.classList.add("flex");
+    document.body.classList.add("overflow-hidden");
+    void modalEl.offsetHeight;
+    modalEl.classList.add("active");
+}
+export function closeModalWithTransition(modalEl, onClosed) {
+    if (!modalEl)
+        return;
+    modalEl.classList.remove("active");
+    modalEl.classList.add("closing");
+    setTimeout(() => {
+        modalEl.classList.remove("closing", "flex");
+        modalEl.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+        if (onClosed)
+            onClosed();
+    }, 260);
+}
 export async function apiFetch(url, options) {
     try {
         const response = await fetch(url, options);
@@ -132,6 +154,8 @@ export function buildPaletteLut(stops) {
 window.getVesperaPalette = getVesperaPalette;
 window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;
+window.openModalWithTransition = openModalWithTransition;
+window.closeModalWithTransition = closeModalWithTransition;
 window.apiFetch = apiFetch;
 window.formatBytes = formatBytes;
 window.truncateHash = truncateHash;

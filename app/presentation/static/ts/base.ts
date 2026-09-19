@@ -89,11 +89,35 @@ export function hideLoadingOverlay() : void
     overlay.classList.remove("flex");
 }
 
+// MODALS
+export function openModalWithTransition(modalEl : HTMLElement | null) : void
+{
+    if(!modalEl) return;
+    modalEl.classList.remove("hidden", "closing");
+    modalEl.classList.add("flex");
+    document.body.classList.add("overflow-hidden");
+
+    void modalEl.offsetHeight;
+    modalEl.classList.add("active");
+}
+
+export function closeModalWithTransition(modalEl : HTMLElement | null, onClosed? : () => void) : void
+{
+    if(!modalEl) return;
+    modalEl.classList.remove("active");
+    modalEl.classList.add("closing");
+
+    setTimeout(() : void =>
+    {
+        modalEl.classList.remove("closing", "flex");
+        modalEl.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+        if(onClosed) onClosed();
+    }, 260);
+}
+
 // FETCH API DECORATOR
-export async function apiFetch<T = any>(
-    url      : string,
-    options? : RequestInit
-) : Promise<APIResponse<T>>
+export async function apiFetch<T = any>(url : string, options? : RequestInit) : Promise<APIResponse<T>>
 {
     try
     {
@@ -179,10 +203,12 @@ export function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
     return lut;
 }
 
-(window as any).getVesperaPalette  = getVesperaPalette;
-(window as any).showLoadingOverlay = showLoadingOverlay;
-(window as any).hideLoadingOverlay = hideLoadingOverlay;
-(window as any).apiFetch           = apiFetch;
-(window as any).formatBytes        = formatBytes;
-(window as any).truncateHash       = truncateHash;
-(window as any).buildPaletteLut    = buildPaletteLut;
+(window as any).getVesperaPalette        = getVesperaPalette;
+(window as any).showLoadingOverlay       = showLoadingOverlay;
+(window as any).hideLoadingOverlay       = hideLoadingOverlay;
+(window as any).openModalWithTransition  = openModalWithTransition;
+(window as any).closeModalWithTransition = closeModalWithTransition;
+(window as any).apiFetch                 = apiFetch;
+(window as any).formatBytes              = formatBytes;
+(window as any).truncateHash             = truncateHash;
+(window as any).buildPaletteLut          = buildPaletteLut;

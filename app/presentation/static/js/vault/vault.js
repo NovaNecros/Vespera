@@ -262,9 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 inspScrubber.max = Math.max(0, state.inspectorFrames.length - 1).toString();
                 inspScrubber.value = "0";
             }
-            inspectorModal?.classList.remove("hidden");
-            inspectorModal?.classList.add("flex");
-            document.body.classList.add("overflow-hidden");
+            window.openModalWithTransition(inspectorModal);
             renderInspectorFrame(0);
             playInspectorAnimation();
         }
@@ -278,13 +276,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     function closeInspectorModal() {
         pauseInspectorAnimation();
-        inspectorModal?.classList.add("hidden");
-        inspectorModal?.classList.remove("flex");
-        document.body.classList.remove("overflow-hidden");
-        state.inspectorArtifact = null;
-        state.inspectorFrames = [];
-        state.inspectorSourceImg = null;
-        state.inspectorIsComparing = false;
+        window.closeModalWithTransition(inspectorModal, () => {
+            state.inspectorArtifact = null;
+            state.inspectorFrames = [];
+            state.inspectorSourceImg = null;
+            state.inspectorIsComparing = false;
+        });
     }
     function updatePagination(target, totalItems, currentCount) {
         const isReliquary = target === "artifacts";
@@ -512,11 +509,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <img src="${src.source_stream_url}" alt="${src.alias}"
                          class="vault-source-thumb-img" loading="lazy">
                     <div class="vault-source-thumb-overlay">
-                        <button type="button" data-source-id="${src.id_source_image}"
-                                class="vault-quick-action-btn action-view-lineage"
-                                title="View Associated Patterns (${src.artifact_count})">
-                            <i class="fa-solid fa-gem"></i>
-                        </button>
+                    <button type="button" data-source-id="${src.id_source_image}"
+                            class="vault-quick-action-btn action-view-lineage"
+                            title="View Derived Artifacts (${src.artifact_count})">
+                        <i class="fa-solid fa-gem"></i>        
+                    </button>
                         <a href="${src.source_stream_url}" download="${src.alias}"
                            class="vault-quick-action-btn action-download-src no-underline"
                            title="Download Catalyst Image">
@@ -551,7 +548,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
                     </div>
                 
-                    <div class="flex items-center justify-between pt-2 border-t border-vespera-obsidian font-mono text-[0.65rem]">
+                    <div class="flex items-center justify-between pt-2 border-t border-vespera-obsidian 
+                                font-mono text-[0.65rem]">
                         <span>${dateStr}</span>
                     </div>
                 </div>
@@ -563,6 +561,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const srcId = parseInt(card.dataset.sourceId || "0");
             if (srcId === 0)
                 return;
+            const thumbWrapper = card.querySelector(".vault-source-thumb-wrapper");
+            thumbWrapper?.addEventListener("click", () => {
+                state.selectedSourceId = srcId;
+                switchToTab("artifacts");
+            });
             const renameBtn = card.querySelector(".action-rename-src");
             const titleEl = card.querySelector(".source-alias-label");
             renameBtn?.addEventListener("click", (event) => {

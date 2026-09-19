@@ -205,7 +205,7 @@ class VaultService:
             }
 
             frame_stream_urls : list[str] = [
-                f"/vault/api/stream/frame/{artifact.artifact_hash}/{frame.frame_index}"
+                f"/vault/api/stream/artifact/hash/{artifact.artifact_hash}/frame/{frame.frame_index}"
                 for frame in sorted(artifact.frames, key=lambda f : f.frame_index)
             ]
 

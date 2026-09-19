@@ -35,9 +35,6 @@
                    border-vespera-obsidian pb-3">
         <div class="flex flex-col">
             <div class="flex items-center gap-3">
-                <span class="brand-sigil w-7 h-7 text-sm">
-                    <i class="fa-solid fa-dungeon"></i>
-                </span>
                 <h3 class="font-ornate text-2xl md:text-3xl text-vespera-crimsonDark font-bold tracking-wider mb-0">
                     The Vault
                 </h3>
@@ -49,25 +46,33 @@
 
         <!-- TABS -->
         <div class="flex items-center gap-3 flex-wrap">
-            <div class="inline-flex p-1 bg-vespera-obsidian border border-vespera-obsidian
-                        rounded-vespera shadow-inner">
+            <div class="filigree-card px-2 py-1.5 bg-vespera-charcoal border border-vespera-obsidian
+                        rounded-vespera shadow-ambient flex items-center gap-2 relative">
+                <div class="filigree-corner-tl"></div>
+                <div class="filigree-corner-tr"></div>
+                <div class="filigree-corner-bl"></div>
+                <div class="filigree-corner-br"></div>
+
+                <!-- Artifacts -->
                 <button id="tab-reliquary-button" type="button"
                         class="vault-tab-btn px-3.5 py-1.5 rounded-sm font-cinzel text-xs uppercase tracking-wider
-                               transition-all text-vespera-boneSilent hover:text-vespera-parchment">
+                               transition-all items-center">
                     <i class="fa-solid fa-gem mr-1.5 text-vespera-crimson"></i>
-                    The Reliquary
+                    <span>The Reliquary</span>
                     <span id="badge-total-artifacts"
-                          class="ml-1.5 font-mono text-[0.65rem] opacity-75">
+                          class="ml-1.5 font-mono text-[0.65rem] text-vespera-crimson">
                         <!-- TS -->
                     </span>
                 </button>
+
+                <!-- Source Images -->
                 <button id="tab-catalysts-btn" type="button"
                         class="vault-tab-btn px-3.5 py-1.5 rounded-sm font-cinzel text-xs uppercase tracking-wider
-                               transition-all text-vespera-boneSilent hover:text-vespera-parchment">
+                               transition-all items-center">
                     <i class="fa-solid fa-images mr-1.5 text-vespera-silver"></i>
-                    Catalysts
+                    <span>Catalysts</span>
                     <span id="badge-total-sources"
-                          class="ml-1.5 font-mono text-[0.65rem] opacity-75">
+                          class="ml-1.5 font-mono text-[0.65rem] text-vespera-silver">
                         <!-- TS -->
                     </span>
                 </button>
@@ -175,13 +180,13 @@
             <div class="filigree-corner-br"></div>
 
             <div class="w-14 h-14 rounded-full border border-dashed border-vespera-obsidian
-                        flex items-center justify-between text-vespera-crimson text-2xl">
+                        flex items-center justify-center text-vespera-crimson text-2xl">
                 <i class="fa-solid fa-box-open"></i>
             </div>
             <h4 class="font-cinzel text-lg text-vespera-parchment font-semibold mb-0">
                 The Reliquary Remains Empty
             </h4>
-            <p class="font-serif text-sm text-vespera-boneSilent max-w-md mb-2">
+            <p class="font-serif text-sm text-vespera-silver max-w-md mb-2">
                 No morphogenetic artifacts match your inquiry. Seed a catalyst in The Studio or broaden your search, love.
             </p>
             <a href="{{ url_for('studio.studio') }}"
@@ -245,13 +250,13 @@
             <div class="filigree-corner-br"></div>
 
             <div class="w-14 h-14 rounded-full border border-dashed border-vespera-obsidian
-                        flex items-center justify-center text-vespera-silver text-2xl">
+                        flex items-center justify-center text-vespera-crimson text-2xl">
                 <i class="fa-solid fa-image"></i>
             </div>
             <h4 class="font-cinzel text-lg text-vespera-parchment font-semibold mb-0">
                 No Catalysts Inscribed
             </h4>
-            <p class="font-serif text-sm text-vespera-boneSilent max-w-md mb-2">
+            <p class="font-serif text-sm text-vespera-silver max-w-md mb-2">
                 No Catalysts found within The Vault. Seed a catalyst in The Studio or broaden your search, love.
             </p>
             <a href="{{ url_for('studio.studio') }}"
@@ -298,10 +303,11 @@
 
 <!-- VISUALIZATION MODAL -->
 <div id="artifact-inspector-modal" role="dialog" aria-modal="true"
-     class="vespera-dimmed-background fixed inset-0 z-[9990] hidden items-center justify-center
-            p-3 sm:p-6 backdrop-blur-md">
-    <div class="relative w-full max-w-5xl bg-vespera-charcoal border border-vespera-obsidian shadow-ambient
-                rounded-vespera filigree-card flex flex-col max-h-[92vh] overflow-hidden">
+     class="vespera-modal vespera-dimmed-background fixed inset-0 z-[9990] hidden
+            items-center justify-center p-3 sm:p-6 backdrop-blur-md">
+    <div class="vespera-modal-content relative w-full max-w-5xl bg-vespera-charcoal border
+                border-vespera-obsidian shadow-ambient rounded-vespera filigree-card flex flex-col max-h-[92vh]
+                overflow-hidden">
         <div class="filigree-corner-tl"></div>
         <div class="filigree-corner-tr"></div>
         <div class="filigree-corner-bl"></div>

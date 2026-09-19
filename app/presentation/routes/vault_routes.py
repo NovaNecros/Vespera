@@ -22,15 +22,6 @@ def vault() -> str:
     """
     return render_template("vault/vault.html")
 
-@vault_bp.route("/cript")
-@template_endpoint
-def cript() -> str:
-    """
-    Endpoint para la cripta de imágenes fantasma y huérfanas.
-    :return : HTML de la cripta.
-    """
-    return render_template("vault/cript.html")
-
 
 # --- APIs ---
 # ARTIFACTS

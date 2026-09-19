@@ -22,14 +22,13 @@
     function hideAlertModal() {
         if (!modalEl)
             return;
-        modalEl.classList.add("hidden");
-        modalEl.classList.remove("flex");
-        document.body.classList.remove("overflow-hidden");
-        if (activeOnCancel) {
-            activeOnCancel();
-            activeOnCancel = null;
-        }
-        activeOnConfirm = null;
+        window.closeModalWithTransition(modalEl, () => {
+            if (activeOnCancel) {
+                activeOnCancel();
+                activeOnCancel = null;
+            }
+            activeOnConfirm = null;
+        });
     }
     function handleConfirm() {
         const val = inputEl ? inputEl.value.trim() : "";
@@ -99,11 +98,9 @@
         }
         if (dismissBtn)
             dismissBtn.textContent = options.cancelText || "Dismiss";
-        modalEl.classList.remove("hidden");
-        modalEl.classList.add("flex");
-        document.body.classList.add("overflow-hidden");
+        window.openModalWithTransition(modalEl);
         if (options.showInput && inputEl)
-            setTimeout(() => inputEl.focus(), 50);
+            setTimeout(() => inputEl.focus(), 80);
     }
     if (closeBtn)
         closeBtn.addEventListener("click", hideAlertModal);

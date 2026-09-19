@@ -39,16 +39,16 @@ import { AlertModalOptions, AlertType } from "../types.js";
     function hideAlertModal() : void
     {
         if(!modalEl) return;
-        modalEl.classList.add("hidden");
-        modalEl.classList.remove("flex");
-        document.body.classList.remove("overflow-hidden");
 
-        if(activeOnCancel)
+        (window as any).closeModalWithTransition(modalEl, () : void =>
         {
-            activeOnCancel();
-            activeOnCancel = null;
-        }
-        activeOnConfirm = null;
+            if(activeOnCancel)
+            {
+                activeOnCancel();
+                activeOnCancel = null;
+            }
+            activeOnConfirm = null;
+        });
     }
 
     function handleConfirm() : void
@@ -133,11 +133,9 @@ import { AlertModalOptions, AlertType } from "../types.js";
 
         if(dismissBtn) dismissBtn.textContent = options.cancelText || "Dismiss";
 
-        modalEl.classList.remove("hidden");
-        modalEl.classList.add("flex");
-        document.body.classList.add("overflow-hidden");
+        (window as any).openModalWithTransition(modalEl);
 
-        if(options.showInput && inputEl) setTimeout(() => inputEl.focus(), 50);
+        if(options.showInput && inputEl) setTimeout(() => inputEl.focus(), 80);
     }
 
 
