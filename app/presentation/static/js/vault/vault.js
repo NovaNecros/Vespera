@@ -314,9 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
         state.activeTab = tab;
         const isReliquary = tab === "artifacts";
         tabReliquaryBtn?.classList.toggle("active", isReliquary);
-        tabReliquaryBtn?.classList.toggle("text-vespera-boneSilent", !isReliquary);
         tabCatalystsBtn?.classList.toggle("active", !isReliquary);
-        tabCatalystsBtn?.classList.toggle("text-vespera-boneSilent", isReliquary);
         viewReliquary?.classList.toggle("hidden", !isReliquary);
         viewCatalysts?.classList.toggle("hidden", isReliquary);
         const filterWrapper = document.getElementById("filter-palette-wrapper");
@@ -325,9 +323,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (filterFavBtn)
             filterFavBtn.classList.toggle("hidden", !isReliquary);
         if (isReliquary)
-            fetchReliquary().then();
+            loadArtifacts().then();
         else
-            fetchCatalysts().then();
+            loadCatalysts().then();
     }
     function renderReliquaryGrid(artifacts) {
         if (!artifactsGrid)
@@ -342,7 +340,6 @@ document.addEventListener("DOMContentLoaded", () => {
         artifacts.forEach((art) => {
             const thumbUrl = streamThumbUrl.replace("/PLACEHOLDER", `/${art.artifact_hash}`);
             const hdUrl = streamArtifactUrl.replace("/PLACEHOLDER", `/${art.artifact_hash}`);
-            const palName = art.config?.palette?.display_name || "Unknown";
             const dateStr = art.created_at ? new Date(art.created_at).toLocaleString() : "-";
             const isFav = art.is_favorite;
             bufferHTML.push(`
@@ -424,10 +421,8 @@ document.addEventListener("DOMContentLoaded", () => {
             downloadBtn?.addEventListener("click", (event) => event.stopPropagation());
         });
     }
-    async function fetchReliquary() {
+    async function fetchArtifactsData(page) {
         try {
-            if (!artifactsGrid)
-                return;
             const payload = {
                 id_palette: state.selectedPaletteId ? parseInt(state.selectedPaletteId) : null,
                 id_source_image: state.selectedSourceId,
@@ -435,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 search: state.searchQuery,
                 sort_by: state.sortBy,
                 sort_dir: state.sortDir,
-                page: state.reliquaryPage,
+                page: page,
                 per_page: state.reliquaryPerPage,
             };
             const res = await apiFetch(galleryApiUrl, {
@@ -443,17 +438,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if (!res.success || !res.data) {
-                artifactsGrid.innerHTML = "";
-                reliquaryEmpty?.classList.remove("hidden");
-                return;
-            }
-            const data = res.data;
-            state.reliquaryTotalPages = Math.max(1, data.total_pages);
-            if (badgeTotalArt)
-                badgeTotalArt.textContent = `(${data.total_items})`;
-            renderReliquaryGrid(data.items);
-            updatePagination("artifacts", data.total_items, data.items.length);
+            if (!res.success)
+                throw new Error(res.error || "Unknown error fetching reliquary data");
+            return res.data ? res.data : null;
         }
         catch (error) {
             console.error(error);
@@ -462,7 +449,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 message: "An unwarranted hex has befallen The Vault.",
                 type: "danger"
             });
+            return null;
         }
+    }
+    async function loadArtifacts() {
+        if (!artifactsGrid)
+            return;
+        const data = await fetchArtifactsData(state.reliquaryPage);
+        if (!data) {
+            artifactsGrid.innerHTML = "";
+            reliquaryEmpty?.classList.remove("hidden");
+            return;
+        }
+        state.reliquaryTotalPages = Math.max(1, data.total_pages);
+        if (badgeTotalArt)
+            badgeTotalArt.textContent = `(${data.total_items})`;
+        if (badgeTotalSrc) {
+            const uniqueSourceIds = new Set(data.items.map((a) => a.id_source_image));
+            badgeTotalSrc.textContent = `(${uniqueSourceIds.size})`;
+        }
+        renderReliquaryGrid(data.items);
+        updatePagination("artifacts", data.total_items, data.items.length);
     }
     function deleteCatalystSource(idSource, alias, artifactCount) {
         if (artifactCount > 0) {
@@ -485,7 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const res = await apiFetch(apiUrl, { method: "DELETE" });
                 if (!res.success)
                     return;
-                await fetchCatalysts();
+                await loadArtifacts();
             }
         });
     }
@@ -502,6 +509,8 @@ document.addEventListener("DOMContentLoaded", () => {
         sources.forEach((src) => {
             const dateStr = src.created_at ? new Date(src.created_at).toLocaleDateString() : "-";
             const sizeStr = formatBytes(src.file_size_bytes);
+            const downloadFilename = src.alias.match(/\.(png|jpg|jpeg|webp)$/i) ?
+                src.alias : `${src.alias}.png`;
             bufferHTML.push(`
             <div class="vault-source-card"
                  data-source-id="${src.id_source_image}">
@@ -509,12 +518,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     <img src="${src.source_stream_url}" alt="${src.alias}"
                          class="vault-source-thumb-img" loading="lazy">
                     <div class="vault-source-thumb-overlay">
-                    <button type="button" data-source-id="${src.id_source_image}"
-                            class="vault-quick-action-btn action-view-lineage"
-                            title="View Derived Artifacts (${src.artifact_count})">
-                        <i class="fa-solid fa-gem"></i>        
-                    </button>
-                        <a href="${src.source_stream_url}" download="${src.alias}"
+                        <button type="button" data-source-id="${src.id_source_image}"
+                                class="vault-quick-action-btn action-view-lineage"
+                                title="View Derived Artifacts (${src.artifact_count})">
+                            <i class="fa-solid fa-gem"></i>        
+                        </button>
+                        <a href="${src.source_stream_url}" download="${downloadFilename}"
                            class="vault-quick-action-btn action-download-src no-underline"
                            title="Download Catalyst Image">
                             <i class="fa-solid fa-download"></i>   
@@ -550,6 +559,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                     <div class="flex items-center justify-between pt-2 border-t border-vespera-obsidian 
                                 font-mono text-[0.65rem]">
+                        <span>${src.artifact_count} ${src.artifact_count === 1 ? "Pattern" : "Patterns"}</span>
+                        <span class="gothic-divider"></span>
                         <span>${dateStr}</span>
                     </div>
                 </div>
@@ -590,13 +601,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
-    async function fetchCatalysts() {
+    async function fetchCatalystsData(page) {
         try {
-            if (!sourcesGrid)
-                return;
             const payload = {
                 search: state.searchQuery,
-                page: state.catalystsPage,
+                page: page,
                 per_page: state.catalystsPerPage
             };
             const res = await apiFetch(sourcesApiUrl, {
@@ -604,14 +613,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if (!res.success || !res.data)
+            if (!res.success)
                 throw new Error(res.error || "Error fetching source images");
-            const data = res.data;
-            state.catalystsTotalPages = Math.max(1, data.total_pages);
-            if (badgeTotalSrc)
-                badgeTotalSrc.textContent = `(${data.total_items})`;
-            renderCatalystGrid(data.items);
-            updatePagination("catalysts", data.total_items, data.items.length);
+            return res.data ? res.data : null;
         }
         catch (error) {
             console.error(error);
@@ -620,7 +624,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 message: "An unwarranted hex has befallen The Archive.",
                 type: "danger"
             });
+            return null;
         }
+    }
+    async function loadCatalysts() {
+        if (!sourcesGrid)
+            return;
+        const data = await fetchCatalystsData(state.catalystsPage);
+        if (!data) {
+            sourcesGrid.innerHTML = "";
+            catalystsEmpty?.classList.remove("hidden");
+            return;
+        }
+        state.catalystsTotalPages = Math.max(1, data.total_pages);
+        if (badgeTotalSrc)
+            badgeTotalSrc.textContent = `(${data.total_items})`;
+        renderCatalystGrid(data.items);
+        updatePagination("catalysts", data.total_items, data.items.length);
     }
     async function saveEntityAlias(target, targetId, newAlias) {
         const trimmed = newAlias.trim();
@@ -657,7 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (success) {
                     state.inspectorArtifact.alias = val;
                     inspAliasHeading.textContent = val;
-                    await fetchReliquary();
+                    await loadArtifacts();
                 }
                 else {
                     inspAliasHeading.textContent = currentAlias;
@@ -702,7 +722,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (success) {
                     titleEl.textContent = val;
                     titleEl.title = val;
-                    await fetchCatalysts();
+                    await loadArtifacts();
                 }
                 else {
                     titleEl.textContent = currentAlias;
@@ -807,7 +827,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!res.success)
                     return;
                 closeInspectorModal();
-                await fetchReliquary();
+                await loadArtifacts();
             }
         });
     }
@@ -833,9 +853,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.reliquaryPage = 1;
                 state.catalystsPage = 1;
                 if (state.activeTab === "artifacts")
-                    fetchReliquary().then();
+                    loadArtifacts().then();
                 else
-                    fetchCatalysts().then();
+                    loadCatalysts().then();
             }, 300);
         });
         clearSearchBtn?.addEventListener("click", () => {
@@ -846,14 +866,14 @@ document.addEventListener("DOMContentLoaded", () => {
             state.reliquaryPage = 1;
             state.catalystsPage = 1;
             if (state.activeTab === "artifacts")
-                fetchReliquary().then();
+                loadArtifacts().then();
             else
-                fetchCatalysts().then();
+                loadCatalysts().then();
         });
         filterPaletteSel?.addEventListener("change", () => {
             state.selectedPaletteId = filterPaletteSel.value;
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
         filterFavBtn?.addEventListener("click", () => {
             state.filterFavorites = !state.filterFavorites;
@@ -861,12 +881,12 @@ document.addEventListener("DOMContentLoaded", () => {
             filterFavBtn.classList.toggle("text-vespera-crimsonBright", state.filterFavorites);
             filterFavBtn.classList.toggle("border-vespera-crimson", state.filterFavorites);
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
         sortBySel?.addEventListener("change", () => {
             state.sortBy = sortBySel.value;
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
         sortDirBtn?.addEventListener("click", () => {
             state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
@@ -876,7 +896,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "fa-solid fa-arrow-down-wide-short";
             }
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
         resetFiltersBtn?.addEventListener("click", () => {
             state = getDefaultState();
@@ -893,27 +913,27 @@ document.addEventListener("DOMContentLoaded", () => {
             if (filterFavBtn)
                 filterFavBtn.classList.remove("bg-vespera-crimson/20", "text-vespera-crimsonBright", "border-vespera-crimson");
             if (state.activeTab === "artifacts")
-                fetchReliquary().then();
+                loadArtifacts().then();
             else
-                fetchCatalysts().then();
+                loadCatalysts().then();
         });
         reliquaryPrevBtn?.addEventListener("click", () => {
             if (state.reliquaryPage > 1) {
                 --state.reliquaryPage;
-                fetchReliquary().then();
+                loadArtifacts().then();
             }
         });
         reliquaryNextBtn?.addEventListener("click", () => {
             if (state.reliquaryPage < state.reliquaryTotalPages) {
                 ++state.reliquaryPage;
-                fetchReliquary().then();
+                loadArtifacts().then();
             }
         });
         reliquaryPageInp?.addEventListener("change", () => {
             const targetPage = parseInt(reliquaryPageInp.value);
             if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= state.reliquaryTotalPages) {
                 state.reliquaryPage = targetPage;
-                fetchReliquary().then();
+                loadArtifacts().then();
             }
             else {
                 reliquaryPageInp.value = state.reliquaryPage.toString();
@@ -922,20 +942,20 @@ document.addEventListener("DOMContentLoaded", () => {
         catalystsPrevBtn?.addEventListener("click", () => {
             if (state.catalystsPage > 1) {
                 --state.catalystsPage;
-                fetchCatalysts().then();
+                loadCatalysts().then();
             }
         });
         catalystsNextBtn?.addEventListener("click", () => {
             if (state.catalystsPage < state.catalystsTotalPages) {
                 ++state.catalystsPage;
-                fetchCatalysts().then();
+                loadCatalysts().then();
             }
         });
         catalystsPageInp?.addEventListener("change", () => {
             const targetPage = parseInt(catalystsPageInp.value);
             if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= state.catalystsTotalPages) {
                 state.catalystsPage = targetPage;
-                fetchCatalysts().then();
+                loadArtifacts().then();
             }
             else {
                 catalystsPageInp.value = state.catalystsPage.toString();
@@ -974,7 +994,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function initVault() {
         await loadPaletteCatalog();
         bindListeners();
-        await fetchReliquary();
+        await loadArtifacts();
     }
     initVault().then();
 });

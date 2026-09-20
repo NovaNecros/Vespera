@@ -3,28 +3,31 @@
 /* Buttons */
 .vault-tab-btn
 {
-    color            : var(--vespera-bone-silent);
+    color            : var(--vespera-silver);
     background-color : transparent;
     border           : 1px solid transparent;
     cursor           : pointer;
     white-space      : nowrap;
     display          : inline-flex;
     align-items      : center;
-    gap              : 2px;
+    justify-content  : center;
+    padding          : 0.5rem 1.1rem;
+    min-height       : 42px;
+    transition       : background-color 0.22s ease, color 0.22s ease;
 }
 
 .vault-tab-btn:hover
 {
     color            : var(--vespera-parchment);
-    background-color : rgba(18, 20, 28, 0.45);
+    background-color : rgba(6, 6, 8, 0.20);
 }
 
 .vault-tab-btn.active
 {
-    color            : var(--vespera-parchment);
-    background-color : var(--vespera-charcoal);
+    color            : var(--vespera-silver-glow);
+    background-color : rgba(6, 6, 8, 0.48);
     border-color     : var(--vespera-obsidian);
-    box-shadow       : 0 2px 8px rgba(0, 0, 0, 0.60);
+    box-shadow       : 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
 /* Artifact Cards */

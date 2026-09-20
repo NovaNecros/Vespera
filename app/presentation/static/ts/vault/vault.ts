@@ -140,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     let searchDebounceTimer : number | null = null;
 
-
     // --- FUNCTIONS ---
     // State
     function getDefaultState() : VaultState
@@ -428,19 +427,18 @@ document.addEventListener("DOMContentLoaded", () : void =>
         const isReliquary : boolean = tab === "artifacts";
 
         tabReliquaryBtn?.classList.toggle("active", isReliquary);
-        tabReliquaryBtn?.classList.toggle("text-vespera-boneSilent", !isReliquary);
         tabCatalystsBtn?.classList.toggle("active", !isReliquary);
-        tabCatalystsBtn?.classList.toggle("text-vespera-boneSilent", isReliquary);
 
         viewReliquary?.classList.toggle("hidden", !isReliquary);
         viewCatalysts?.classList.toggle("hidden", isReliquary);
+
 
         const filterWrapper : HTMLElement | null = document.getElementById("filter-palette-wrapper");
         if(filterWrapper) filterWrapper.classList.toggle("hidden", !isReliquary);
         if(filterFavBtn)  filterFavBtn.classList.toggle("hidden", !isReliquary);
 
-        if(isReliquary) fetchReliquary().then();
-        else            fetchCatalysts().then();
+        if(isReliquary) loadArtifacts().then();
+        else            loadCatalysts().then();
     }
 
     // Artifacts
@@ -462,7 +460,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             const thumbUrl : string  = streamThumbUrl.replace("/PLACEHOLDER", `/${art.artifact_hash}`);
             const hdUrl    : string  = streamArtifactUrl.replace("/PLACEHOLDER", `/${art.artifact_hash}`);
-            const palName  : string  = art.config?.palette?.display_name || "Unknown";
             const dateStr  : string  = art.created_at ? new Date(art.created_at).toLocaleString() : "-";
             const isFav    : boolean = art.is_favorite;
 
@@ -555,12 +552,10 @@ document.addEventListener("DOMContentLoaded", () : void =>
         });
     }
 
-    async function fetchReliquary() : Promise<void>
+    async function fetchArtifactsData(page : number) : Promise<VaultGalleryData | null>
     {
         try
         {
-            if(!artifactsGrid) return;
-
             const payload = {
                 id_palette      : state.selectedPaletteId ? parseInt(state.selectedPaletteId) : null,
                 id_source_image : state.selectedSourceId,
@@ -568,7 +563,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 search          : state.searchQuery,
                 sort_by         : state.sortBy,
                 sort_dir        : state.sortDir,
-                page            : state.reliquaryPage,
+                page            : page,
                 per_page        : state.reliquaryPerPage,
             };
 
@@ -578,19 +573,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 body    : JSON.stringify(payload)
             });
 
-            if(!res.success || !res.data)
-            {
-                artifactsGrid.innerHTML = "";
-                reliquaryEmpty?.classList.remove("hidden");
-                return;
-            }
-
-            const data : VaultGalleryData = res.data;
-            state.reliquaryTotalPages     = Math.max(1, data.total_pages);
-            if(badgeTotalArt) badgeTotalArt.textContent = `(${data.total_items})`;
-
-            renderReliquaryGrid(data.items);
-            updatePagination("artifacts", data.total_items, data.items.length);
+            if(!res.success) throw new Error(res.error || "Unknown error fetching reliquary data");
+            return res.data ? res.data : null;
         }
         catch(error)
         {
@@ -600,7 +584,34 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 message : "An unwarranted hex has befallen The Vault.",
                 type    : "danger"
             });
+            return null;
         }
+    }
+
+    async function loadArtifacts() : Promise<void>
+    {
+        if(!artifactsGrid) return;
+
+        const data : VaultGalleryData | null = await fetchArtifactsData(state.reliquaryPage);
+        if(!data)
+        {
+            artifactsGrid.innerHTML = "";
+            reliquaryEmpty?.classList.remove("hidden");
+            return;
+        }
+
+        state.reliquaryTotalPages = Math.max(1, data.total_pages);
+        if(badgeTotalArt) badgeTotalArt.textContent = `(${data.total_items})`;
+
+        if(badgeTotalSrc)
+        {
+            const uniqueSourceIds : Set<number> = new Set(
+                data.items.map((a : SynthesisArtifact) => a.id_source_image));
+            badgeTotalSrc.textContent = `(${uniqueSourceIds.size})`;
+        }
+
+        renderReliquaryGrid(data.items);
+        updatePagination("artifacts", data.total_items, data.items.length);
     }
 
     // Catalysts
@@ -629,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 const apiUrl : string = deleteSourceUrl.replace("/source/0", `/source/${idSource}`);
                 const res : APIResponse = await apiFetch(apiUrl, { method : "DELETE" });
                 if(!res.success) return;
-                await fetchCatalysts();
+                await loadArtifacts();
             }
         })
     }
@@ -642,7 +653,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             sourcesGrid.innerHTML = "";
             catalystsEmpty?.classList.remove("hidden");
-            return
+            return;
         }
 
         catalystsEmpty?.classList.add("hidden");
@@ -653,6 +664,9 @@ document.addEventListener("DOMContentLoaded", () : void =>
             const dateStr : string = src.created_at ? new Date(src.created_at).toLocaleDateString() : "-";
             const sizeStr : string = formatBytes(src.file_size_bytes);
 
+            const downloadFilename : string = src.alias.match(/\.(png|jpg|jpeg|webp)$/i) ?
+                src.alias : `${src.alias}.png`;
+
             bufferHTML.push(`
             <div class="vault-source-card"
                  data-source-id="${src.id_source_image}">
@@ -660,12 +674,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
                     <img src="${src.source_stream_url}" alt="${src.alias}"
                          class="vault-source-thumb-img" loading="lazy">
                     <div class="vault-source-thumb-overlay">
-                    <button type="button" data-source-id="${src.id_source_image}"
-                            class="vault-quick-action-btn action-view-lineage"
-                            title="View Derived Artifacts (${src.artifact_count})">
-                        <i class="fa-solid fa-gem"></i>        
-                    </button>
-                        <a href="${src.source_stream_url}" download="${src.alias}"
+                        <button type="button" data-source-id="${src.id_source_image}"
+                                class="vault-quick-action-btn action-view-lineage"
+                                title="View Derived Artifacts (${src.artifact_count})">
+                            <i class="fa-solid fa-gem"></i>        
+                        </button>
+                        <a href="${src.source_stream_url}" download="${downloadFilename}"
                            class="vault-quick-action-btn action-download-src no-underline"
                            title="Download Catalyst Image">
                             <i class="fa-solid fa-download"></i>   
@@ -701,6 +715,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 
                     <div class="flex items-center justify-between pt-2 border-t border-vespera-obsidian 
                                 font-mono text-[0.65rem]">
+                        <span>${src.artifact_count} ${src.artifact_count === 1 ? "Pattern" : "Patterns"}</span>
+                        <span class="gothic-divider"></span>
                         <span>${dateStr}</span>
                     </div>
                 </div>
@@ -752,32 +768,24 @@ document.addEventListener("DOMContentLoaded", () : void =>
         });
     }
 
-    async function fetchCatalysts() : Promise<void>
+    async function fetchCatalystsData(page : number) : Promise<SourceCatalogData | null>
     {
         try
         {
-            if(!sourcesGrid) return;
-
             const payload = {
                 search   : state.searchQuery,
-                page     : state.catalystsPage,
+                page     : page,
                 per_page : state.catalystsPerPage
             };
 
-            const res : APIResponse<SourceCatalogData> = await apiFetch(sourcesApiUrl, {
+            const res : APIResponse<SourceCatalogData> = await apiFetch<SourceCatalogData>(sourcesApiUrl, {
                 method  : "POST",
                 headers : { "Content-Type" : "application/json" },
                 body    : JSON.stringify(payload)
             });
 
-            if(!res.success || !res.data) throw new Error(res.error || "Error fetching source images");
-
-            const data : SourceCatalogData = res.data;
-            state.catalystsTotalPages      = Math.max(1, data.total_pages);
-            if(badgeTotalSrc) badgeTotalSrc.textContent = `(${data.total_items})`;
-
-            renderCatalystGrid(data.items);
-            updatePagination("catalysts", data.total_items, data.items.length);
+            if(!res.success) throw new Error(res.error || "Error fetching source images");
+            return res.data ? res.data : null;
         }
         catch(error)
         {
@@ -787,7 +795,27 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 message : "An unwarranted hex has befallen The Archive.",
                 type    : "danger"
             });
+            return null;
         }
+    }
+
+    async function loadCatalysts() : Promise<void>
+    {
+        if(!sourcesGrid) return;
+
+        const data : SourceCatalogData | null = await fetchCatalystsData(state.catalystsPage);
+        if(!data)
+        {
+            sourcesGrid.innerHTML = "";
+            catalystsEmpty?.classList.remove("hidden");
+            return;
+        }
+
+        state.catalystsTotalPages = Math.max(1, data.total_pages);
+        if(badgeTotalSrc) badgeTotalSrc.textContent = `(${data.total_items})`;
+
+        renderCatalystGrid(data.items);
+        updatePagination("catalysts", data.total_items, data.items.length);
     }
 
     // API Handlers
@@ -838,7 +866,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 {
                     state.inspectorArtifact.alias = val;
                     inspAliasHeading.textContent  = val;
-                    await fetchReliquary();
+                    await loadArtifacts();
                 }
                 else
                 {
@@ -899,7 +927,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 {
                     titleEl.textContent = val;
                     titleEl.title       = val;
-                    await fetchCatalysts();
+                    await loadArtifacts();
                 }
                 else
                 {
@@ -1032,7 +1060,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 if(!res.success) return;
 
                 closeInspectorModal();
-                await fetchReliquary();
+                await loadArtifacts();
             }
         });
     }
@@ -1067,8 +1095,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             {
                 state.reliquaryPage = 1;
                 state.catalystsPage = 1;
-                if(state.activeTab === "artifacts") fetchReliquary().then();
-                else                                fetchCatalysts().then();
+                if(state.activeTab === "artifacts") loadArtifacts().then();
+                else                                loadCatalysts().then();
             }, 300);
         });
         clearSearchBtn?.addEventListener("click", () =>
@@ -1078,8 +1106,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             clearSearchBtn.classList.add("hidden");
             state.reliquaryPage = 1;
             state.catalystsPage = 1;
-            if(state.activeTab === "artifacts") fetchReliquary().then();
-            else                                fetchCatalysts().then();
+            if(state.activeTab === "artifacts") loadArtifacts().then();
+            else                                loadCatalysts().then();
         });
 
         // Filters
@@ -1087,7 +1115,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             state.selectedPaletteId = filterPaletteSel.value;
             state.reliquaryPage     = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
         filterFavBtn?.addEventListener("click", () =>
         {
@@ -1096,7 +1124,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             filterFavBtn.classList.toggle("text-vespera-crimsonBright", state.filterFavorites);
             filterFavBtn.classList.toggle("border-vespera-crimson",     state.filterFavorites);
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
 
         // Sorting
@@ -1104,7 +1132,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             state.sortBy        = sortBySel.value;
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
         sortDirBtn?.addEventListener("click", () =>
         {
@@ -1116,7 +1144,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                     "fa-solid fa-arrow-down-wide-short";
             }
             state.reliquaryPage = 1;
-            fetchReliquary().then();
+            loadArtifacts().then();
         });
 
         // Reset
@@ -1131,8 +1159,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(sortDirIcon)      sortDirIcon.className  = "fa-solid fa-arrow-up-wide-short";
             if(filterFavBtn)     filterFavBtn.classList.remove("bg-vespera-crimson/20", "text-vespera-crimsonBright", "border-vespera-crimson");
 
-            if(state.activeTab === "artifacts") fetchReliquary().then();
-            else                                fetchCatalysts().then();
+            if(state.activeTab === "artifacts") loadArtifacts().then();
+            else                                loadCatalysts().then();
         });
 
         // Pagination
@@ -1141,7 +1169,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(state.reliquaryPage > 1)
             {
                 --state.reliquaryPage;
-                fetchReliquary().then();
+                loadArtifacts().then();
             }
         });
         reliquaryNextBtn?.addEventListener("click", () =>
@@ -1149,7 +1177,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(state.reliquaryPage < state.reliquaryTotalPages)
             {
                 ++state.reliquaryPage;
-                fetchReliquary().then();
+                loadArtifacts().then();
             }
         });
         reliquaryPageInp?.addEventListener("change", () =>
@@ -1158,7 +1186,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(!isNaN(targetPage) && targetPage >= 1 && targetPage <= state.reliquaryTotalPages)
             {
                 state.reliquaryPage = targetPage;
-                fetchReliquary().then();
+                loadArtifacts().then();
             }
             else
             {
@@ -1171,7 +1199,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(state.catalystsPage > 1)
             {
                 --state.catalystsPage;
-                fetchCatalysts().then();
+                loadCatalysts().then();
             }
         });
         catalystsNextBtn?.addEventListener("click", () =>
@@ -1179,7 +1207,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(state.catalystsPage < state.catalystsTotalPages)
             {
                 ++state.catalystsPage;
-                fetchCatalysts().then();
+                loadCatalysts().then();
             }
         });
         catalystsPageInp?.addEventListener("change", () =>
@@ -1188,7 +1216,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(!isNaN(targetPage) && targetPage >= 1 && targetPage <= state.catalystsTotalPages)
             {
                 state.catalystsPage = targetPage;
-                fetchCatalysts().then();
+                loadArtifacts().then();
             }
             else
             {
@@ -1239,7 +1267,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     {
         await loadPaletteCatalog();
         bindListeners();
-        await fetchReliquary();
+        await loadArtifacts();
     }
 
     initVault().then();
