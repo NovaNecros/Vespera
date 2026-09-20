@@ -78,15 +78,6 @@
                 inputEl.value = options.inputValue || "";
                 inputEl.placeholder = options.inputPlaceholder || "Enter text here...";
             }
-            if (confirmBtn) {
-                confirmBtn.classList.remove("hidden");
-                if (options.confirmText) {
-                    confirmBtn.innerHTML = `
-                        <i class="fa-solid fa-feather mr-1.5"></i>
-                        ${options.confirmText}
-                    `;
-                }
-            }
         }
         else {
             if (inputContEl) {
@@ -98,6 +89,20 @@
         }
         if (dismissBtn)
             dismissBtn.textContent = options.cancelText || "Dismiss";
+        if (confirmBtn) {
+            if (options.onConfirm) {
+                confirmBtn.classList.remove("hidden");
+                if (options.confirmText) {
+                    confirmBtn.innerHTML = `
+                        <i class="fa-solid fa-feather mr-1.5"></i>
+                        ${options.confirmText}
+                    `;
+                }
+            }
+            else {
+                confirmBtn.classList.add("hidden");
+            }
+        }
         window.openModalWithTransition(modalEl);
         if (options.showInput && inputEl)
             setTimeout(() => inputEl.focus(), 80);
