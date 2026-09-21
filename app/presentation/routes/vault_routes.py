@@ -3,10 +3,10 @@
 from typing import Any
 from pathlib import Path
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, abort, send_file, Response
 
 from app.core.utils.decorators import api_standard_endpoint, template_endpoint, api_stream_endpoint
-from app.infrastructure.repositories.files_repo import FileRepository
+from app.infrastructure.files_repo import FileRepository
 from app.modules.turing.services import TuringService
 
 vault_bp : Blueprint     = Blueprint("vault", __name__, url_prefix="/vault")
@@ -54,6 +54,17 @@ def api_get_hydration_bundle(id_artifact : int) -> dict[str, Any]:
     """
     return service.get_hydration_bundle(id_artifact)
 
+@vault_bp.route("/api/relationship/artifact/<int:id_artifact>/palette/<int:id_palette>", methods=["POST"])
+@api_standard_endpoint
+def api_create_artifact_palette_rel(id_artifact : int, id_palette : int) -> dict[str, Any]:
+    """
+    Endpoint para crear una nueva relación entre un patrón de Turing y una paleta de colores
+    :param id_artifact : ID (PK) del patrón de Turing en la DB.
+    :param id_palette  : ID (PK) de la paleta de colores en la DB.
+    :return            : Estado de éxito y detalles de la operación.
+    """
+    return service.create_artifact_palette_rel(id_artifact, id_palette)
+
 @vault_bp.route("/api/alias/artifact/<int:id_artifact>", methods=["POST"])
 @api_standard_endpoint
 def api_update_artifact_alias(id_artifact : int) -> dict[str, Any]:
@@ -84,6 +95,16 @@ def api_update_notes(id_artifact : int) -> dict[str, Any]:
     :return            : Estado de éxito y detalles de la operación.
     """
     return service.update_notes(id_artifact, request.get_json(silent=True) or request.form.to_dict() or {})
+
+@vault_bp.route("/api/delete/relationship/<int:id_rel>", methods=["DELETE"])
+@api_standard_endpoint
+def api_delete_palette_relation(id_rel : int) -> dict[str, Any]:
+    """
+    Endpoint para eliminar una relación entre un patrón de Turing y una paleta de colores.
+    :param id_rel : ID (PK) de la relación.
+    :return       : Estado de éxito y detalles de la operación.
+    """
+    return service.delete_palette_relation(id_rel)
 
 @vault_bp.route("/api/delete/artifact/<int:id_artifact>", methods=["DELETE"])
 @api_standard_endpoint
@@ -137,6 +158,29 @@ def api_delete_source_image(id_source_image : int) -> dict[str, Any]:
     return service.delete_source_image(id_source_image)
 
 # --- STREAMING APIs ---
+@vault_bp.route("/api/download/relationship/<int:id_rel>", methods=["GET"])
+def api_download_artifact_manifestation(id_rel : int) -> tuple[Response, int]:
+    """
+    Endpoint para descargar el archivo PNG de un patrón de Turing a color.
+    :param id_rel : ID (PK) de la relación entre patrón y paleta.
+    :return       : Descarga del archivo.
+    """
+    try:
+        res : dict[str, Any] = service.download_colored_artifact(id_rel=id_rel)
+        if not res.get("success"): abort(res.get("status_code", 500))
+        payload : dict[str, Any] = res["data"]
+        return send_file(
+            payload["buffer"],
+            mimetype      = payload["mimetype"],
+            as_attachment = True,
+            download_name = payload["download_name"]
+        ), res.get("status_code", 200)
+    except Exception as e:
+        print(f"[!] Unexpected error streaming colored artifact: {e}")
+        import traceback
+        traceback.print_exc()
+        abort(500)
+
 @vault_bp.route("/api/stream/artifact/hash/<string:artifact_hash>", methods=["GET"])
 @api_stream_endpoint(mimetype="image/png")
 def api_stream_artifact_image(artifact_hash : str) -> Path:

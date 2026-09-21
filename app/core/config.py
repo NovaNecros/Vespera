@@ -79,7 +79,6 @@ class TuringSettings:
     DEFAULT_ITERATIONS        : int   = 12000
     DEFAULT_FRAMES            : int   = 60
     DEFAULT_FRAME_DENSITY_EXP : float = 3.2
-    DEFAULT_PALETTE           : str   = "crimson_eclipse"
     DEFAULT_WIDTH             : int   = 1024
     DEFAULT_HEIGHT            : int   = 1024
     MAX_IMAGE_DIMENSION       : int   = 2048

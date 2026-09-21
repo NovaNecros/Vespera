@@ -5,12 +5,10 @@ from typing import Any
 from flask import Blueprint, render_template, request
 
 from app.core.utils.decorators import api_standard_endpoint, template_endpoint
-from app.infrastructure.palettes import ColorPalettes
 from app.modules.turing.services import TuringService
 
 studio_bp : Blueprint     = Blueprint("studio", __name__, url_prefix="/studio")
 service   : TuringService = TuringService(verbose=True)
-palettes  : ColorPalettes = ColorPalettes()
 
 # --- TEMPLATES ---
 @studio_bp.route("/")
@@ -23,15 +21,6 @@ def studio() -> str:
     return render_template("studio/studio.html")
 
 # --- APIs ---
-@studio_bp.route("/api/palettes", methods=["GET"])
-@api_standard_endpoint
-def api_get_palettes() -> dict[str, Any]:
-    """
-    Endpoint para recuperar la lista de paletas disponibles.
-    :return : Lista de paletas disponibles.
-    """
-    return service.get_palettes()
-
 @studio_bp.route("/api/generate", methods=["POST"])
 @api_standard_endpoint
 def api_generate_pattern() -> dict[str, Any]:

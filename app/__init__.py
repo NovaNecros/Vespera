@@ -56,23 +56,25 @@ def create_app() -> Flask:
         }
 
     with app.app_context():
-        from app.infrastructure.repositories.models import (
-            SourceImage, SynthesisFrame, SynthesisArtifact,
-            ConfigTuring, ColorPalette, PaletteStop,
-            EnigmaQuest
+        from app.infrastructure.models import (
+            SourceImage,  SynthesisFrame, SynthesisArtifact,
+            ConfigTuring, ColorPalette,   PaletteStop,
+            EnigmaQuest,  RelArtifactPalette
         )
-        from app.infrastructure.repositories.seed import seed_db
+        from app.infrastructure.seed import seed_db
         db.create_all()
         seed_db()
         print(f"[*]{Colors.BLUE} DB INITIALIZED AND SEEDED AT: {Colors.RESET}{DBSettings.DB_PATH}")
 
     try:
-        from app.presentation.routes.studio_routes import studio_bp
-        from app.presentation.routes.vault_routes  import vault_bp
-        #from app.presentation.routes.enigma_routes import enigma_bp
+        from app.presentation.routes.studio_routes     import studio_bp
+        from app.presentation.routes.vault_routes      import vault_bp
+        from app.presentation.routes.compendium_routes import compendium_bp
+        #from app.presentation.routes.enigma_routes     import enigma_bp
 
         app.register_blueprint(studio_bp)
         app.register_blueprint(vault_bp)
+        app.register_blueprint(compendium_bp)
         #app.register_blueprint(enigma_bp)
     except ImportError as e:
         print(f"[!]{Colors.YELLOW} WARNING - COULD NOT IMPORT ROUTES: {Colors.RESET}{e}")

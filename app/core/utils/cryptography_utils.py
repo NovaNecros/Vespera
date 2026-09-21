@@ -40,8 +40,7 @@ def compute_params_hash(
     diff_u     : float,
     diff_v     : float,
     dt         : float,
-    iterations : int,
-    id_palette : int
+    iterations : int
 ) -> str:
     """
     Genera el hash canónico único para una combinación de parámetros de la simulación.
@@ -54,8 +53,7 @@ def compute_params_hash(
             f"Du:{diff_u:.6f}|"
             f"Dv:{diff_v:.6f}|"
             f"dt:{dt:.6f}|"
-            f"iter:{iterations}|"
-            f"pal:{id_palette}"
+            f"iter:{iterations}"
         )
         return compute_bytes_sha256(signature.encode("utf-8"))
     except Exception as e:

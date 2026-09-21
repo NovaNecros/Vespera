@@ -1,4 +1,4 @@
-# Vespera/app/infrastructure/repositories/models.py
+# Vespera/app/infrastructure/models.py
 
 from __future__ import annotations
 
@@ -12,25 +12,30 @@ class ColorPalette(db.Model):
     """
     __tablename__ : str = "color_palette"
 
-    id_palette   = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name         = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    display_name = db.Column(db.String(128), nullable=False)
-    is_system    = db.Column(db.Boolean, nullable=False, default=True)
-    is_favorite  = db.Column(db.Boolean, nullable=False, default=False)
-    created_at   = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
+    id_palette        = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name              = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    display_name      = db.Column(db.String(128), nullable=False)
+    is_system         = db.Column(db.Boolean, nullable=False, default=True)
+    is_favorite       = db.Column(db.Boolean, nullable=False, default=False)
+    user_notes        = db.Column(db.String(1024), nullable=True)
+    id_parent_palette = db.Column(db.Integer, db.ForeignKey("color_palette.id_palette", ondelete="SET NULL"), nullable=True)
+    created_at        = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
 
-    stops   = db.relationship("PaletteStop", back_populates="palette", cascade="all, delete-orphan", order_by="PaletteStop.stop_position.asc()", lazy=True)
-    configs = db.relationship("ConfigTuring", back_populates="palette", lazy=True)
+    parent_palette = db.relationship("ColorPalette", remote_side=[id_palette], backref=db.backref("derived_palettes", lazy=True))
+    stops          = db.relationship("PaletteStop", back_populates="palette", cascade="all, delete-orphan", order_by="PaletteStop.stop_position.asc()", lazy=True)
+    artifact_rels  = db.relationship("RelArtifactPalette", back_populates="palette", cascade="all, delete-orphan", lazy=True)
 
     def to_dict(self : ColorPalette) -> dict[str, Any]:
         return {
-            "id_palette"   : self.id_palette,
-            "name"         : self.name,
-            "display_name" : self.display_name,
-            "is_system"    : self.is_system,
-            "is_favorite"  : self.is_favorite,
-            "stops"        : [stop.to_dict() for stop in self.stops],
-            "created_at"   : self.created_at.isoformat() if self.created_at else None
+            "id_palette"        : self.id_palette,
+            "name"              : self.name,
+            "display_name"      : self.display_name,
+            "is_system"         : self.is_system,
+            "is_favorite"       : self.is_favorite,
+            "user_notes"        : self.user_notes or "",
+            "id_parent_palette" : self.id_parent_palette,
+            "stops"             : [stop.to_dict() for stop in self.stops],
+            "created_at"        : self.created_at.isoformat() if self.created_at else None
         }
 
 class PaletteStop(db.Model):
@@ -55,13 +60,13 @@ class PaletteStop(db.Model):
 
     def to_dict(self : PaletteStop) -> dict[str, Any]:
         return {
-            "id_stop"      : self.id_stop,
-            "id_palette"   : self.id_palette,
-            "stop_position": self.stop_position,
-            "r"            : self.r,
-            "g"            : self.g,
-            "b"            : self.b,
-            "hex"          : self.hex
+            "id_stop"       : self.id_stop,
+            "id_palette"    : self.id_palette,
+            "stop_position" : float(self.stop_position),
+            "r"             : self.r,
+            "g"             : self.g,
+            "b"             : self.b,
+            "hex"           : self.hex
         }
 
 class SourceImage(db.Model):
@@ -105,10 +110,8 @@ class ConfigTuring(db.Model):
     diff_v        = db.Column(db.Numeric(8,6), nullable=False)
     dt            = db.Column(db.Numeric(6,4), nullable=False)
     iterations    = db.Column(db.Integer,      nullable=False)
-    id_palette    = db.Column(db.Integer,      db.ForeignKey("color_palette.id_palette", ondelete="RESTRICT"), nullable=False)
     created_at    = db.Column(db.DateTime,     nullable=False, default=db.func.now(), index=True)
 
-    palette   = db.relationship("ColorPalette", foreign_keys=[id_palette], back_populates="configs")
     artifacts = db.relationship("SynthesisArtifact", back_populates="turing_config", lazy=True)
 
     def to_dict(self : ConfigTuring) -> dict[str, Any]:
@@ -121,8 +124,6 @@ class ConfigTuring(db.Model):
             "diff_v"        : float(self.diff_v),
             "dt"            : float(self.dt),
             "iterations"    : self.iterations,
-            "id_palette"    : self.id_palette,
-            "palette"       : self.palette.to_dict() if self.palette else None,
             "created_at"    : self.created_at.isoformat() if self.created_at else None
         }
 
@@ -148,6 +149,7 @@ class SynthesisArtifact(db.Model):
     turing_config   = db.relationship("ConfigTuring", foreign_keys=[id_config], back_populates="artifacts")
     parent_artifact = db.relationship("SynthesisArtifact", remote_side=[id_artifact], foreign_keys=[id_parent_artifact])
     frames          = db.relationship("SynthesisFrame", back_populates="artifact", cascade="all, delete-orphan", order_by="SynthesisFrame.frame_index.asc()", lazy=True)
+    palette_rels    = db.relationship("RelArtifactPalette", back_populates="artifact", cascade="all, delete-orphan", lazy=True)
 
     def to_dict(self : SynthesisArtifact) -> dict[str, Any]:
         return {
@@ -217,4 +219,28 @@ class EnigmaQuest(db.Model):
             "unlocked_at"        : self.unlocked_at.isoformat()     if self.unlocked_at       else None,
             "solution_artifact"  : self.solution_artifact.to_dict() if self.solution_artifact else None,
             "solution_config"    : self.solution_config.to_dict()   if self.solution_config   else None
+        }
+
+class RelArtifactPalette(db.Model):
+    """
+    Relación entre un patrón de Turing y sus paletas de colores.
+    """
+    __tablename__ : str = "rel_artifact_palette"
+
+    id_rel      = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_artifact = db.Column(db.Integer, db.ForeignKey("synthesis_artifact.id_artifact", ondelete="CASCADE"),  nullable=False, index=True)
+    id_palette  = db.Column(db.Integer, db.ForeignKey("color_palette.id_palette",       ondelete="RESTRICT"), nullable=False, index=True)
+    created_at  = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
+
+    artifact = db.relationship("SynthesisArtifact", back_populates="palette_rels")
+    palette  = db.relationship("ColorPalette",      back_populates="artifact_rels")
+
+    def to_dict(self : RelArtifactPalette) -> dict[str, Any]:
+        return {
+
+            "id_rel"      : self.id_rel,
+            "id_artifact" : self.id_artifact,
+            "id_palette"  : self.id_palette,
+            "palette"     : self.palette.to_dict()      if self.palette    else None,
+            "created_at"  : self.created_at.isoformat() if self.created_at else None
         }

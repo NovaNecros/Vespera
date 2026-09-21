@@ -17,7 +17,7 @@
      class="w-full flex flex-col gap-3"
      data-generate-api-url="{{ url_for('studio.api_generate_pattern') }}"
      data-commit-api-url="{{ url_for('studio.api_commit_pattern') }}"
-     data-palettes-api-url="{{ url_for('studio.api_get_palettes') }}"
+     data-palettes-api-url="{{ url_for('compendium.api_get_palettes') }}"
      data-download-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
      data-hydrate-api-url="{{ url_for('vault.api_get_hydration_bundle', id_artifact=0) }}">
     <header class="flex items-center justify-between gap-3 border-b border-vespera-obsidian pb-2 mb-2">

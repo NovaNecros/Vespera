@@ -35,7 +35,6 @@ class TuringEngine:
         iterations     : int   = TuringSettings.DEFAULT_ITERATIONS,
         frame_count    : int   = TuringSettings.DEFAULT_FRAMES,
         frame_dist_exp : float = TuringSettings.DEFAULT_FRAME_DENSITY_EXP,
-        color_palette  : str   = TuringSettings.DEFAULT_PALETTE,
         seed           : int   = RNGSettings.SEED,
         verbose        : bool  = False
     ) -> None:
@@ -47,7 +46,6 @@ class TuringEngine:
         self.iterations     : int   = int(iterations)
         self.frame_count    : int   = int(frame_count)
         self.frame_dist_exp : float = float(frame_dist_exp)
-        self.color_palette  : str   = color_palette
         self.seed           : int   = int(seed)
         self.verbose        : bool  = verbose
 
@@ -197,7 +195,7 @@ class TuringEngine:
 
             # Renderización usando la paleta de colores seleccionada
             final_array : np.ndarray  = (np.clip(v, 0.0, 1.0)*255.0).astype(np.uint8)
-            final_image : Image.Image = Image.fromarray(final_array, mode="L").convert("RGB")
+            final_image : Image.Image = Image.fromarray(final_array, mode="L")
 
             return v, final_image, frame_images, keyframes_b64, captured_iters
 

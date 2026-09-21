@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+from io import BytesIO
+from pathlib import Path
+from PIL import Image
 from typing import Optional, Any, Union
 
 from app.core.extensions import db
 from app.core.config import Colors
 from app.core.utils.text_utils import normalize_text
-from app.infrastructure.repositories.models import (
+from app.infrastructure.models import (
     SourceImage,  SynthesisArtifact,
-    ColorPalette, ConfigTuring
+    ColorPalette, RelArtifactPalette
 )
 
-from app.infrastructure.repositories.files_repo import FileRepository
+from app.infrastructure.files_repo import FileRepository
+from app.modules.spectra.application.palette_service import PaletteService
 
 class VaultService:
     """
@@ -41,37 +45,33 @@ class VaultService:
 
             query = (
                 db.session
-                    .query(SynthesisArtifact)
+                    .query(RelArtifactPalette)
                     .options(
-                        db.joinedload(SynthesisArtifact.source_image),
-                        db.joinedload(SynthesisArtifact.turing_config).joinedload(ConfigTuring.palette)
-                )
+                        db.joinedload(RelArtifactPalette.artifact).joinedload(SynthesisArtifact.source_image),
+                        db.joinedload(RelArtifactPalette.artifact).joinedload(SynthesisArtifact.turing_config),
+                        db.joinedload(RelArtifactPalette.palette).joinedload(ColorPalette.stops)
+                    )
+                    .join(SynthesisArtifact, SynthesisArtifact.id_artifact == RelArtifactPalette.id_artifact)
+                    .join(ColorPalette,      ColorPalette.id_palette       == RelArtifactPalette.id_palette)
+                    .join(SourceImage,       SourceImage.id_source_image   == SynthesisArtifact.id_source_image)
             )
-
-            if only_favorites:
-                query = query.filter(SynthesisArtifact.is_favorite == True)
 
             if id_source_image:
                 query = query.filter(SynthesisArtifact.id_source_image == id_source_image)
 
+            if only_favorites:
+                query = query.filter(SynthesisArtifact.is_favorite == True)
+
             if id_palette:
-                query = (
-                    query
-                        .join(ConfigTuring, ConfigTuring.id_config == SynthesisArtifact.id_config)
-                        .filter(ConfigTuring.id_palette == id_palette)
-                )
+                query = query.filter(RelArtifactPalette.id_palette == id_palette)
 
             if search_query:
                 search_term : str = f"%{search_query}%"
-                query = (
-                    query
-                        .join(SourceImage, SourceImage.id_source_image == SynthesisArtifact.id_source_image)
-                        .filter(
-                            SourceImage.alias.ilike(search_term)               |
-                            SynthesisArtifact.alias.ilike(search_term)         |
-                            SynthesisArtifact.user_notes.ilike(search_term)    |
-                            SynthesisArtifact.artifact_hash.ilike(search_term)
-                        )
+                query = query.filter(
+                    SourceImage.alias.ilike(search_term)               |
+                    SynthesisArtifact.alias.ilike(search_term)         |
+                    SynthesisArtifact.user_notes.ilike(search_term)    |
+                    SynthesisArtifact.artifact_hash.ilike(search_term)
                 )
 
             sort_map : dict[str, Any] = {
@@ -79,39 +79,44 @@ class VaultService:
                 "synthesis_time" : SynthesisArtifact.execution_time,
                 "alias"          : SynthesisArtifact.alias
             }
-            if sort_dir == "asc":
-                order_expr = db.asc(sort_map.get(sort_by, SynthesisArtifact.created_at))
-            else:
-                order_expr = db.desc(sort_map.get(sort_by, SynthesisArtifact.created_at))
 
-            query = query.order_by(order_expr)
+            sort_col   = sort_map.get(sort_by, SynthesisArtifact.created_at)
+            order_expr = db.asc(sort_col) if sort_dir == "asc" else db.desc(sort_col)
+            query      = query.order_by(order_expr)
 
             total_items : int = query.count()
 
-            artifacts : list[SynthesisArtifact] = (
+            rels : list[RelArtifactPalette] = (
                 query
                     .offset((page-1) * per_page)
                     .limit(per_page)
                     .all()
             )
 
-            results : list[dict[str, Any]] = [{
-                "id_artifact"        : a.id_artifact,
-                "alias"              : a.alias,
-                "artifact_hash"      : a.artifact_hash,
-                "id_source_image"    : a.id_source_image,
-                "id_parent_artifact" : a.id_parent_artifact,
-                "seed"               : a.seed,
-                "execution_time"     : a.execution_time,
-                "is_favorite"        : a.is_favorite,
-                "user_notes"         : a.user_notes,
-                "created_at"         : a.created_at.isoformat()  if a.created_at    else None,
-                "source_image"       : a.source_image.to_dict()  if a.source_image  else None,
-                "config"             : a.turing_config.to_dict() if a.turing_config else None
-            } for a in artifacts]
+            results : list[dict[str, Any]] = []
+            for rel in rels:
+                art : SynthesisArtifact = rel.artifact
+                if not art: continue
+                results.append({
+                    "id_rel"             : rel.id_rel,
+                    "id_artifact"        : art.id_artifact,
+                    "alias"              : art.alias,
+                    "artifact_hash"      : art.artifact_hash,
+                    "id_source_image"    : art.id_source_image,
+                    "id_parent_artifact" : art.id_parent_artifact,
+                    "seed"               : art.seed,
+                    "execution_time"     : art.execution_time,
+                    "is_favorite"        : art.is_favorite,
+                    "user_notes"         : art.user_notes,
+                    "palette"            : rel.palette.to_dict()       if rel.palette       else None,
+                    "created_at"         : art.created_at.isoformat()  if art.created_at    else None,
+                    "source_image"       : art.source_image.to_dict()  if art.source_image  else None,
+                    "config"             : art.turing_config.to_dict() if art.turing_config else None
+                })
 
             if self.verbose:
-                print(f"[OK]{Colors.GREEN} Vault gallery fetched: {len(results)}/{total_items} items{Colors.RESET}")
+            #     print(f"[OK]{Colors.GREEN} Vault gallery fetched: {len(results)}/{total_items} items{Colors.RESET}")
+                pass
 
             return {
                 "success"     : True,
@@ -140,8 +145,9 @@ class VaultService:
                     .query(SynthesisArtifact)
                     .options(
                         db.joinedload(SynthesisArtifact.source_image),
-                        db.joinedload(SynthesisArtifact.turing_config)
-                            .joinedload(ConfigTuring.palette)
+                        db.joinedload(SynthesisArtifact.turing_config),
+                        db.joinedload(SynthesisArtifact.palette_rels)
+                            .joinedload(RelArtifactPalette.palette)
                             .joinedload(ColorPalette.stops),
                         db.joinedload(SynthesisArtifact.frames),
                         db.joinedload(SynthesisArtifact.parent_artifact)
@@ -165,7 +171,13 @@ class VaultService:
             )
 
             formatted_detail : dict[str, Any] = artifact.to_dict()
-            formatted_detail["children"] = [child.to_dict() for child in children]
+            formatted_detail["children"]       = [child.to_dict() for child in children]
+            formatted_detail["manifestations"] = [{
+                "id_rel"     : r.id_rel,
+                "id_palette" : r.id_palette,
+                "palette"    : r.palette.to_dict() if r.palette else None,
+                "created_at" : r.created_at.isoformat() if r.created_at else None
+            } for r in artifact.palette_rels]
 
             return {
                 "success"     : True,
@@ -177,10 +189,11 @@ class VaultService:
             raise e
 
     @staticmethod
-    def get_hydration_bundle(id_artifact : int) -> dict[str, Any]:
+    def get_hydration_bundle(id_artifact : int, id_palette : Optional[int] = None) -> dict[str, Any]:
         """
         Recupera los parámetros de un patrón para sembrarlos en el estudio.
         :param id_artifact : ID del artefacto a cargar en el estudio.
+        :param id_palette  : ID de la paleta para aplicar al patrón.
         :return            : Información completa del patrón.
         """
         try:
@@ -189,8 +202,9 @@ class VaultService:
                     .query(SynthesisArtifact)
                     .options(
                         db.joinedload(SynthesisArtifact.source_image),
-                        db.joinedload(SynthesisArtifact.turing_config)
-                            .joinedload(ConfigTuring.palette)
+                        db.joinedload(SynthesisArtifact.turing_config),
+                        db.joinedload(SynthesisArtifact.palette_rels)
+                            .joinedload(RelArtifactPalette.palette)
                             .joinedload(ColorPalette.stops),
                         db.joinedload(SynthesisArtifact.frames)
                     )
@@ -203,6 +217,13 @@ class VaultService:
                 "error"       : f"Artifact #{id_artifact} not found in The Vault",
                 "status_code" : 404
             }
+
+            selected_pal : Optional[ColorPalette] = None
+            if id_palette:
+                selected_pal : Optional[ColorPalette] = next(
+                    (r.palette for r in artifact.palette_rels if r.id_palette == id_palette), None)
+            if not selected_pal and artifact.palette_rels:
+                selected_pal : ColorPalette = artifact.palette_rels[0].palette
 
             frame_stream_urls : list[str] = [
                 f"/vault/api/stream/artifact/hash/{artifact.artifact_hash}/frame/{frame.frame_index}"
@@ -231,8 +252,8 @@ class VaultService:
                     "diff_v"     : float(artifact.turing_config.diff_v),
                     "dt"         : float(artifact.turing_config.dt),
                     "iterations" : artifact.turing_config.iterations,
-                    "id_palette" : artifact.turing_config.id_palette,
-                    "palette"    : artifact.turing_config.palette.to_dict() if artifact.turing_config.palette else None
+                    "id_palette" : selected_pal.id_palette if selected_pal else 1,
+                    "palette"    : selected_pal.to_dict()  if selected_pal else None
                 } if artifact.turing_config else None,
                 "frames"             : frame_stream_urls,
                 "frame_count"        : len(frame_stream_urls)
@@ -245,6 +266,129 @@ class VaultService:
             }
 
         except Exception as e:
+            raise e
+
+    @staticmethod
+    def get_colored_artifact_download(id_rel : int) -> dict[str, Any]:
+        """
+        Aplica color a un patrón de Turing y lo envía para descargar.
+        :param id_rel : ID de la relación entre el patrón y la paleta.
+        :return       : Diccionario con el buffer, mimetype y nombre de la descarga.
+        """
+        try:
+            rel : Optional[RelArtifactPalette] = (
+                db.session
+                    .query(RelArtifactPalette)
+                    .options(
+                        db.joinedload(RelArtifactPalette.artifact),
+                        db.joinedload(RelArtifactPalette.palette).joinedload(ColorPalette.stops)
+                    )
+                    .filter_by(id_rel=id_rel)
+                    .first()
+            )
+            if not rel or not rel.artifact or not rel.palette: return {
+                "success"     : False,
+                "error"       : f"Relationship #{id_rel} was not found",
+                "status_code" : 404
+            }
+
+            raw_path : Path = FileRepository.get_artifact_path(rel.artifact.artifact_hash)
+            if not raw_path.exists(): return {
+                "success"     : False,
+                "error"       : f"Image {raw_path} file not found in disk.",
+                "status_code" : 404
+            }
+
+            palette_service : PaletteService = PaletteService()
+            with Image.open(raw_path) as gray_img:
+                color_res : dict[str, Any] = palette_service.apply_palette(gray_img, rel.palette)
+                if not color_res.get("success"): return {
+                    "success"     : False,
+                    "error"       : color_res.get("error", "Unknown error applying palette to image."),
+                    "status_code" : color_res.get("status_code", 500)
+                }
+
+                colored_img : Image.Image = color_res["data"]
+                buffer      : BytesIO     = BytesIO()
+                colored_img.save(buffer, format="PNG", optimize=True)
+                buffer.seek(0)
+
+            img_alias : str = normalize_text(rel.artifact.alias, "LOWER")
+            img_alias : str = img_alias if img_alias.endswith(".png") else f"{img_alias}.png"
+
+            return {
+                "success"     : True,
+                "data"        : {
+                    "buffer"        : buffer,
+                    "mimetype"      : "image/png",
+                    "download_name" : img_alias
+                },
+                "status_code" : 200
+            }
+
+        except Exception as e:
+            raise e
+
+    @staticmethod
+    def add_artifact_palette(id_artifact : int, id_palette : int) -> dict[str, Any]:
+        """
+        Crea una relación entre un artefacto y una paleta de colores.
+        :param id_artifact : ID del artefacto.
+        :param id_palette  : ID de la paleta.
+        :return            : Relación en la DB.
+        """
+        try:
+            artifact : Optional[SynthesisArtifact] = (
+                db.session
+                    .query(SynthesisArtifact)
+                    .filter_by(id_artifact=id_artifact)
+                    .first()
+            )
+            if not artifact: return{
+                "success"     : False,
+                "error"       : f"Artifact #{id_artifact} not found",
+                "status_code" : 404
+            }
+
+            palette : Optional[ColorPalette] = (
+                db.session
+                    .query(ColorPalette)
+                    .filter_by(id_palette=id_palette)
+                    .first()
+            )
+            if not palette: return {
+                "success"     : False,
+                "error"       : f"Color Palette #{id_palette} not found",
+                "status_code" : 404
+            }
+
+            existing_rel : Optional[RelArtifactPalette] = (
+                db.session
+                    .query(RelArtifactPalette)
+                    .filter_by(id_artifact=id_artifact, id_palette=id_palette)
+                    .first()
+            )
+            if existing_rel: return {
+                "success"     : True,
+                "message"     : f"Relationship between Artifact {artifact.alias} and Palette #{palette.display_name} already exists.",
+                "data"        : existing_rel.to_dict(),
+                "status_code" : 200
+            }
+
+            new_rel : RelArtifactPalette = RelArtifactPalette(id_artifact=id_artifact, id_palette=id_palette)
+            db.session.add(new_rel)
+            db.session.commit()
+
+            print(f"[OK]{Colors.GREEN} BOUND SPECTRUM {palette.display_name} TO ARTIFACT #{artifact.alias} SUCCESSFULLY {Colors.RESET}")
+
+            return {
+                "success"     : True,
+                "message"     : f"Spectrum {palette.display_name} bound to artifact {artifact.alias}",
+                "data"        : new_rel.to_dict(),
+                "status_code" : 201
+            }
+        except Exception as e:
+            db.session.rollback()
             raise e
 
     @staticmethod
@@ -469,7 +613,8 @@ class VaultService:
                 })
 
             if self.verbose:
-                print(f"[OK]{Colors.GREEN} Found {total_items} catalysts in The Vault.{Colors.RESET}")
+                # print(f"[OK]{Colors.GREEN} Found {total_items} catalysts in The Vault.{Colors.RESET}")
+                pass
 
             return {
                 "success"   : True,
@@ -560,6 +705,42 @@ class VaultService:
                 "status_code" : 200
             }
 
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def delete_palette_relation(id_rel : int) -> dict[str, Any]:
+        """
+        Elimina una relación entre un patrón de Turing y una paleta de colores.
+        :param id_rel : ID (PK) de la relación.
+        :return       : Estado de éxito de la operación.
+        """
+        try:
+            rel : Optional[RelArtifactPalette] = (
+                db.session
+                    .query(RelArtifactPalette)
+                    .filter_by(id_rel=id_rel)
+                    .first()
+            )
+            if not rel: return {
+                "success"     : False,
+                "error"       : f"Relationship #{id_rel} not found in DB",
+                "status_code" : 404
+            }
+
+            id_artifact : int = rel.id_artifact
+            id_palette  : int = rel.id_palette
+            db.session.delete(rel)
+            db.session.commit()
+
+            print(f"[OK]{Colors.YELLOW} RELATION #{id_rel} BETWEEN ARTIFACT #{id_artifact} AND PALETTE #{id_palette} DELETED{Colors.RESET}")
+
+            return {
+                "success"     : True,
+                "message"     : f"Manifestation #{id_rel} purged from The Reliquary",
+                "status_code" : 200
+            }
         except Exception as e:
             db.session.rollback()
             raise e

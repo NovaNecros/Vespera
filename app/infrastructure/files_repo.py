@@ -1,4 +1,4 @@
-# Vespera/app/infrastructure/repositories/files_repo.py
+# Vespera/app/infrastructure/files_repo.py
 
 from __future__ import annotations
 
@@ -106,8 +106,9 @@ class FileRepository:
             out_path   : Path = cls.get_artifact_path(sha256)
             thumb_path : Path = cls.get_thumbnail_path(sha256)
 
-            if not out_path.exists():
-                artifact_img.save(out_path, format="PNG", optimize=True)
+            if artifact_img.mode != "L": artifact_img : Image.Image = artifact_img.convert("L")
+
+            if not out_path.exists(): artifact_img.save(out_path, format="PNG", optimize=True)
 
             if not thumb_path.exists():
                 thumb : Image.Image = artifact_img.copy()
@@ -118,6 +119,7 @@ class FileRepository:
 
         except Exception as e:
             raise e
+
 
     @classmethod
     def delete_artifact_files(cls : type[FileRepository], sha256_hash : str) -> bool:

@@ -8,7 +8,6 @@ from pathlib import Path
 import traceback
 from time import perf_counter
 
-import numpy as np
 from PIL import Image
 
 from werkzeug.datastructures import FileStorage
@@ -18,12 +17,11 @@ from app.core.config import TuringSettings, RNGSettings, Colors
 from app.core.utils.cryptography_utils import compute_bytes_sha256, compute_params_hash, compute_artifact_hash
 from app.core.utils.image_utils import is_image
 from app.core.utils.text_utils import normalize_text
-from app.infrastructure.repositories.models import (
+from app.infrastructure.models import (
     SourceImage,  SynthesisFrame, SynthesisArtifact,
-    ConfigTuring, ColorPalette
+    ConfigTuring, RelArtifactPalette
 )
-from app.infrastructure.repositories.files_repo import FileRepository
-from app.infrastructure.palettes import ColorPalettes as Palettes
+from app.infrastructure.files_repo import FileRepository
 from app.modules.turing.domain.turing_engine import TuringEngine
 
 class SynthesisService:
@@ -44,8 +42,7 @@ class SynthesisService:
         diff_u     : float,
         diff_v     : float,
         dt         : float,
-        iterations : int,
-        id_palette : int
+        iterations : int
     ) -> ConfigTuring:
         """
         Busca un conjunto de parámetros de configuración. Si no lo encuentra, lo crea y lo guarda.
@@ -57,8 +54,7 @@ class SynthesisService:
                 diff_u     = diff_u,
                 diff_v     = diff_v,
                 dt         = dt,
-                iterations = iterations,
-                id_palette = id_palette
+                iterations = iterations
             )
 
             existing_config : Optional[ConfigTuring] = (
@@ -77,8 +73,7 @@ class SynthesisService:
                 diff_u        = diff_u,
                 diff_v        = diff_v,
                 dt            = dt,
-                iterations    = iterations,
-                id_palette    = id_palette
+                iterations    = iterations
             )
             db.session.add(new_config)
             db.session.flush()
@@ -149,22 +144,20 @@ class SynthesisService:
                     "status_code" : 403
                 }
 
-            is_image_res : dict[str, Any] = is_image(source_image)
-            file_bytes   : Optional[bytes] = source_image.read() if is_image_res.get("is_image") else None
+            is_image_res    : dict[str, Any]  = is_image(source_image)
+            file_bytes      : Optional[bytes] = source_image.read()            if is_image_res.get("is_image")  else None
+            source_image_id : Optional[int]   = int(params["source_image_id"]) if params.get("source_image_id") else None
+            source_rec      : Optional[SourceImage] = None
 
-            raw_filename : str = (source_image.filename if (source_image and is_image_res.get("is_image")) else "catalyst.png") or "catalyst.png"
-            alias        : str = str(params.get("alias", raw_filename))
-
-            source_image_id    : Optional[int] = int(params["source_image_id"]) if params.get("source_image_id") else None
             if not file_bytes and source_image_id:
-                src_rec : Optional[SourceImage] = (
+                source_rec : Optional[SourceImage] = (
                     db.session
                         .query(SourceImage)
                         .filter_by(id_source_image=source_image_id)
                         .first()
                 )
-                if src_rec:
-                    source_path : Path = FileRepository.get_source_path(src_rec.sha256_hash)
+                if source_rec:
+                    source_path : Path = FileRepository.get_source_path(source_rec.sha256_hash)
                     if source_path.exists():
                         file_bytes : Optional[bytes] = source_path.read_bytes()
 
@@ -174,17 +167,29 @@ class SynthesisService:
                 "status_code" : 400
             }
 
-            feed_rate          : float         = float(params.get("feed_rate", TuringSettings.DEFAULT_FEED_RATE))
-            kill_rate          : float         = float(params.get("kill_rate", TuringSettings.DEFAULT_KILL_RATE))
-            diff_u             : float         = float(params.get("diff_u", TuringSettings.DEFAULT_DIFF_U))
-            diff_v             : float         = float(params.get("diff_v", TuringSettings.DEFAULT_DIFF_V))
-            dt                 : float         = float(params.get("dt", TuringSettings.DEFAULT_DT))
-            iterations         : int           = int(params.get("iterations", TuringSettings.DEFAULT_ITERATIONS))
-            frame_count        : int           = int(params.get("frame_count", TuringSettings.DEFAULT_FRAMES))
-            frame_dist_exp     : float         = float(params.get("frame_dist_exp", TuringSettings.DEFAULT_FRAME_DENSITY_EXP))
-            id_palette         : int           = int(params.get("id_palette", 1))
+            if source_rec:
+                src_hash : str = source_rec.sha256_hash
+                alias    : str = source_rec.alias
+            else:
+                src_hash     : str = compute_bytes_sha256(file_bytes)
+                raw_filename : str = (
+                    source_image.filename
+                    if (source_image and is_image_res.get("is_image"))
+                    else "catalyst.png" ) or "catalyst.png"
 
-            src_hash    : str = compute_bytes_sha256(file_bytes)
+                alias      : str         = str(params.get("alias", raw_filename))
+                source_rec : SourceImage = self._get_or_create_source_image(file_bytes, alias)
+
+            feed_rate          : float         = float(params.get("feed_rate",      TuringSettings.DEFAULT_FEED_RATE))
+            kill_rate          : float         = float(params.get("kill_rate",      TuringSettings.DEFAULT_KILL_RATE))
+            diff_u             : float         = float(params.get("diff_u",         TuringSettings.DEFAULT_DIFF_U))
+            diff_v             : float         = float(params.get("diff_v",         TuringSettings.DEFAULT_DIFF_V))
+            dt                 : float         = float(params.get("dt",             TuringSettings.DEFAULT_DT))
+            iterations         : int           = int(params.get("iterations",       TuringSettings.DEFAULT_ITERATIONS))
+            frame_count        : int           = int(params.get("frame_count",      TuringSettings.DEFAULT_FRAMES))
+            frame_dist_exp     : float         = float(params.get("frame_dist_exp", TuringSettings.DEFAULT_FRAME_DENSITY_EXP))
+            id_palette         : int           = int(params.get("id_palette",       1))
+
             params_hash : str = compute_params_hash(
                 feed_rate  = feed_rate,
                 kill_rate  = kill_rate,
@@ -192,7 +197,6 @@ class SynthesisService:
                 diff_v     = diff_v,
                 dt         = dt,
                 iterations = iterations,
-                id_palette = id_palette
             )
             artifact_hash : str = compute_artifact_hash(src_hash, params_hash, RNGSettings.SEED)
 
@@ -225,15 +229,16 @@ class SynthesisService:
             execution_time : float = round(perf_counter() - start_time, 6)
 
             self._ephemeral_cache[artifact_hash] = {
-                "file_bytes"     : file_bytes,
-                "alias"          : alias,
-                "src_hash"       : src_hash,
-                "artifact_hash"  : artifact_hash,
-                "final_img"      : final_img,
-                "frame_pils"     : frame_pils,
-                "captured_iters" : captured_iters,
-                "execution_time" : execution_time,
-                "params"         : {
+                "file_bytes"      : file_bytes,
+                "id_source_image" : source_rec.id_source_image,
+                "alias"           : alias,
+                "src_hash"        : src_hash,
+                "artifact_hash"   : artifact_hash,
+                "final_img"       : final_img,
+                "frame_pils"      : frame_pils,
+                "captured_iters"  : captured_iters,
+                "execution_time"  : execution_time,
+                "params"          : {
                     "feed_rate"  : feed_rate,
                     "kill_rate"  : kill_rate,
                     "diff_u"     : diff_u,
@@ -311,7 +316,19 @@ class SynthesisService:
             user_notes : Optional[str] = str(params["user_notes"]).strip() if params.get("user_notes") else None
             parent_id  : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
 
-            source_rec : SourceImage = self._get_or_create_source_image(cached["file_bytes"], cached["alias"])
+            cached_source_id : Optional[int]         = cached.get("id_source_image")
+            source_rec       : Optional[SourceImage] = None
+
+            if cached_source_id:
+                source_rec : Optional[SourceImage] = (
+                    db.session
+                        .query(SourceImage)
+                        .filter_by(id_source_image=cached_source_id)
+                        .first()
+                )
+
+            if not source_rec:
+                source_rec : SourceImage = self._get_or_create_source_image(cached["file_bytes"], cached["alias"])
 
             artifact_alias : Optional[str] = params.get("alias")
             if not artifact_alias:
@@ -332,25 +349,15 @@ class SynthesisService:
                 diff_u     = p["diff_u"],
                 diff_v     = p["diff_v"],
                 dt         = p["dt"],
-                iterations = p["iterations"],
-                id_palette = id_palette
+                iterations = p["iterations"]
             )
 
-            palette_obj : Optional[ColorPalette] = (
-                db.session
-                    .query(ColorPalette)
-                    .filter_by(id_palette=id_palette)
-                    .first()
+            final_img : Image.Image = (
+                cached["final_img"].convert("L")
+                if cached["final_img"].mode != "L"
+                else cached["final_img"]
             )
-
-            palette_name : str = palette_obj.name if palette_obj else TuringSettings.DEFAULT_PALETTE
-
-            final_rgb_array : np.ndarray = Palettes.apply_palette(
-                np.asarray(cached["final_img"].convert("L"), dtype=np.float32) / 255.0,
-                palette_name
-            )
-            final_colored_img : Image.Image = Image.fromarray(final_rgb_array, mode="RGB")
-            FileRepository.save_artifact_bundle(final_colored_img, artifact_hash)
+            FileRepository.save_artifact_bundle(final_img, artifact_hash)
 
             raw_fav : Any = params.get("is_favorite", False)
             is_favorite : bool = raw_fav if isinstance(raw_fav, bool) else str(raw_fav).strip().lower() in ("true", "1", "yes")
@@ -368,6 +375,12 @@ class SynthesisService:
             )
             db.session.add(artifact)
             db.session.flush()
+
+            palette_rel : RelArtifactPalette = RelArtifactPalette(
+                id_artifact = artifact.id_artifact,
+                id_palette  = id_palette
+            )
+            db.session.add(palette_rel)
 
             for idx, (frame_img, iter_num) in enumerate(zip(cached["frame_pils"], cached["captured_iters"])):
                 FileRepository.save_animation_frame(frame_img, artifact_hash, idx)
