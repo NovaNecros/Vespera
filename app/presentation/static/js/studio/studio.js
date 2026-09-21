@@ -243,11 +243,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     iterInput.value = cfg.iterations.toString();
                 if (dtInput)
                     dtInput.value = cfg.dt.toFixed(2);
-                if (paletteSelect && cfg.id_palette) {
-                    paletteSelect.value = cfg.id_palette.toString();
-                    const pal = state.paletteCatalog.find((p) => p.id_palette === cfg.id_palette);
+                const targetPaletteId = bundle.selected_palette?.id_palette || cfg.id_palette;
+                if (paletteSelect && targetPaletteId) {
+                    paletteSelect.value = targetPaletteId.toString();
+                    const pal = state.paletteCatalog.find((p) => p.id_palette === targetPaletteId);
                     if (pal)
-                        state.activeLut = window.buildPaletteLut(pal.stops);
+                        state.activeLut = buildPaletteLut(pal.stops);
                 }
             }
             if (parentIdInput)

@@ -321,12 +321,13 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 if(iterInput)   iterInput.value   = cfg.iterations.toString();
                 if(dtInput)     dtInput.value     = cfg.dt.toFixed(2);
 
-                if(paletteSelect && cfg.id_palette)
+                const targetPaletteId : number | undefined = bundle.selected_palette?.id_palette || cfg.id_palette;
+                if(paletteSelect && targetPaletteId)
                 {
-                    paletteSelect.value = cfg.id_palette.toString();
+                    paletteSelect.value = targetPaletteId.toString();
                     const pal : ColorPalette | undefined = state.paletteCatalog.find(
-                        (p : ColorPalette) => p.id_palette === cfg.id_palette);
-                    if(pal) state.activeLut = (window as any).buildPaletteLut(pal.stops);
+                        (p : ColorPalette) => p.id_palette === targetPaletteId);
+                    if(pal) state.activeLut = buildPaletteLut(pal.stops);
                 }
             }
 

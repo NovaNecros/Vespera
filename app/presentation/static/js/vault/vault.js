@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleFavoriteUrl = mainContainer.dataset.toggleFavoriteApiUrl || "";
     const updateNotesUrl = mainContainer.dataset.updateNotesApiUrl || "";
     const deleteArtifactUrl = mainContainer.dataset.deleteArtifactApiUrl || "";
+    const dwnldManifestUrl = mainContainer.dataset.downloadManifestApiUrl || "";
     const deleteSourceUrl = mainContainer.dataset.deleteSourceApiUrl || "";
     const streamArtifactUrl = mainContainer.dataset.streamArtifactApiUrl || "";
     const streamThumbUrl = mainContainer.dataset.streamThumbApiUrl || "";
@@ -92,6 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedSourceId: null,
             paletteCatalog: [],
             activeLut: null,
+            inspectorRelId: null,
             inspectorArtifact: null,
             inspectorFrames: [],
             inspectorSourceImg: null,
@@ -198,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
             inspCompareBtn?.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
         }
     }
-    async function openInspectorModal(idArtifact) {
+    async function openInspectorModal(idArtifact, idRel) {
         try {
             const apiUrl = artifactDetailUrl.replace("/artifact/0", `/artifact/${idArtifact}`);
             const res = await apiFetch(apiUrl);
@@ -206,6 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             const art = res.data;
             state.inspectorArtifact = art;
+            state.inspectorRelId = idRel || art.manifestations?.[0]?.id_rel || null;
             if (inspAliasHeading)
                 inspAliasHeading.textContent = art.alias;
             if (inspFavIcon) {
@@ -219,8 +222,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 inspDUDV.textContent = art.config ? `${art.config.diff_u.toFixed(3)} • ${art.config.diff_v.toFixed(3)}` : "- • -";
             if (inspIterDt)
                 inspIterDt.textContent = art.config ? `${art.config.iterations} • ${art.config.dt.toFixed(2)}` : "- • -";
-            if (inspPaletteBadge)
-                inspPaletteBadge.textContent = art.config?.palette?.display_name || "CryptoChroma";
             if (inspExecTime)
                 inspExecTime.textContent = `${art.execution_time.toFixed(6)} s`;
             if (inspCreatedDate)
@@ -231,16 +232,28 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (inspNotesTextArea)
                 inspNotesTextArea.value = art.user_notes || "";
-            if (inspDownloadBtn) {
-                inspDownloadBtn.href = streamArtifactUrl.replace("PLACEHOLDER", art.artifact_hash);
-                inspDownloadBtn.download = `${art.alias}.png`;
-            }
-            if (art.config?.palette)
-                state.activeLut = buildPaletteLut(art.config.palette.stops);
+            const manifestPalette = (art.manifestations?.[0]?.palette ||
+                art.palette ||
+                null);
+            if (inspPaletteBadge)
+                inspPaletteBadge.textContent = manifestPalette?.display_name || "Criptochroma";
+            if (manifestPalette && manifestPalette.stops)
+                state.activeLut = buildPaletteLut(manifestPalette.stops);
             else
                 state.activeLut = null;
+            if (inspDownloadBtn) {
+                const downloadFilename = (art.alias.match(/\.(png|jpg|jpeg|webp)$/i)
+                    ? art.alias : `${art.alias}.png`);
+                if (state.inspectorRelId && dwnldManifestUrl) {
+                    inspDownloadBtn.href = dwnldManifestUrl.replace("/relationship/0", `/relationship/${state.inspectorRelId}`);
+                }
+                else {
+                    inspDownloadBtn.href = streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${art.artifact_hash}`);
+                }
+                inspDownloadBtn.download = downloadFilename;
+            }
             if (art.source_image) {
-                const srcUrl = streamSourceUrl.replace("PLACEHOLDER", art.source_image.sha256_hash);
+                const srcUrl = streamSourceUrl.replace("/PLACEHOLDER", `/${art.source_image.sha256_hash}`);
                 state.inspectorSourceImg = new Image();
                 state.inspectorSourceImg.crossOrigin = "anonymous";
                 state.inspectorSourceImg.src = srcUrl;
@@ -327,67 +340,106 @@ document.addEventListener("DOMContentLoaded", () => {
         else
             loadCatalysts().then();
     }
-    function renderReliquaryGrid(artifacts) {
+    function recolorThumbnailCanvas(canvas, srcUrl, palette) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            canvas.width = img.width || 256;
+            canvas.height = img.height || 256;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (!ctx)
+                return;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if (!palette || !palette.stops || palette.stops.length === 0)
+                return;
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            const lut = buildPaletteLut(palette.stops);
+            for (let p = 0; p < data.length; p += 4) {
+                const gray = data[p];
+                data[p] = lut[gray * 3];
+                data[p + 1] = lut[gray * 3 + 1];
+                data[p + 2] = lut[gray * 3 + 2];
+            }
+            ctx.putImageData(imgData, 0, 0);
+        };
+        img.src = srcUrl;
+    }
+    function renderReliquaryGrid(manifestations) {
         if (!artifactsGrid)
             return;
         artifactsGrid.innerHTML = "";
-        if (artifacts.length === 0) {
+        if (manifestations.length === 0) {
             reliquaryEmpty?.classList.remove("hidden");
             return;
         }
         reliquaryEmpty?.classList.add("hidden");
         const bufferHTML = [];
-        artifacts.forEach((art) => {
-            const thumbUrl = streamThumbUrl.replace("/PLACEHOLDER", `/${art.artifact_hash}`);
-            const hdUrl = streamArtifactUrl.replace("/PLACEHOLDER", `/${art.artifact_hash}`);
-            const dateStr = art.created_at ? new Date(art.created_at).toLocaleString() : "-";
-            const isFav = art.is_favorite;
+        manifestations.forEach((item) => {
+            const thumbUrl = streamThumbUrl.replace("/PLACEHOLDER", `/${item.artifact_hash}`);
+            const dateStr = item.created_at ? new Date(item.created_at).toLocaleString() : "-";
+            const isFav = item.is_favorite;
+            const downloadFilename = (item.alias.match(/\.(png|jpg|jpeg|webp)$/i)
+                ? item.alias : `${item.alias}.png`);
+            const cardDownloadUrl = dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`);
             bufferHTML.push(`
                 <div class="vault-artifact-card"
-                     data-artifact-id="${art.id_artifact}">
-                    <div class="vault-fav-pin ${isFav ? "active" : ""}"
-                         data-artifact-id="${art.id_artifact}"
-                         title="${isFav ? "Favorited" : "Mark as Favorite"}">
+                     data-rel-id="${item.id_rel}"
+                     data-artifact-id="${item.id_artifact}">
+                     <div class="vault-fav-pin ${isFav ? "active" : ""}"
+                          data-artifact-id="${item.id_artifact}"
+                          title="${isFav ? "Favorited" : "Mark as Favorite"}">
                         <i class="fa-solid fa-star"></i>     
                     </div>
                     <div class="vault-thumb-wrapper"
-                         data-artifact-id="${art.id_artifact}">
-                        <img src="${thumbUrl}" alt="${art.alias}"
-                             class="vault-thumb-img" loading="lazy">
+                         data-rel-id="${item.id_rel}"
+                         data-artifact-id="${item.id_artifact}">
+                        <canvas class="vault-thumb-img w-full h-full object-cover"
+                                 data-thumb-src="${thumbUrl}"
+                                 data-rel-id="${item.id_rel}"></canvas>
                         <div class="vault-thumb-overlay">
-                            <button type="button" data-artifact-id="${art.id_artifact}"
+                            <button type="button"
+                                    data-rel-id="${item.id_rel}"
+                                    data-artifact-id="${item.id_artifact}"
                                     class="vault-quick-action-btn action-inspect"
                                     title="Inspect Pattern">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
-                            <button type="button" data-artifact-id="${art.id_artifact}"
+                            <a href="${cardDownloadUrl}"
+                               download="${downloadFilename}"
+                               class="vault-quick-action-btn action-download-manifest no-underline"
+                               title="Download Manifestation">
+                                <i class="fa-solid fa-download"></i>   
+                            </a> 
+                            <button type="button"
+                                    data-rel-id="${item.id_rel}" 
+                                    data-artifact-id="${item.id_artifact}"
                                     class="vault-quick-action-btn action-branch"
                                     title="Branch Formula in Studio">
                                 <i class="fa-solid fa-code-branch"></i>        
                             </button>
-                            <a href="${hdUrl}" download="${art.alias}.png"
-                               class="vault-quick-action-btn action-download no-underline"
-                               title="Download Pattern">
-                               <i class="fa-solid fa-download"></i>
-                            </a>
                         </div>     
                     </div>
                     
                     <div class="p-2.5 flex flex-col gap-1.5 flex-grow justify-between bg-vespera-charcoal/80"
-                         data-artifact-id="${art.id_artifact}">
+                         data-rel-id="${item.id_rel}"
+                         data-artifact-id="${item.id_artifact}">
                          <div class="flex flex-col pointer-events-none">
                             <span class="font-cinzel text-xs text-vespera-parchment font-bold truncate"
-                                  title="${art.alias}">
-                                ${art.alias}      
+                                  title="${item.alias}">
+                                ${item.alias}      
                             </span>
                             <span class="font-mono text-[0.65rem] text-vespera-silver truncate"
-                                  title="${art.artifact_hash}">
-                                #${art.id_artifact} • ${truncateHash(art.artifact_hash, 5)}
+                                  title="${item.artifact_hash}">
+                                #${item.id_artifact} • ${truncateHash(item.artifact_hash, 5)}
                             </span>
                          </div>
                          
                          <div class="flex items-center justify-between pt-1 border-t border-vespera-obsidian 
                                      font-mono text-[0.65rem] pointer-events-none">
+                            <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5">
+                                ${item.palette?.display_name || "Raw"}
+                            </span>
                             <span class="text-vespera-silver">
                                 ${dateStr}
                             </span>
@@ -396,12 +448,20 @@ document.addEventListener("DOMContentLoaded", () => {
                  </div>`);
         });
         artifactsGrid.innerHTML = bufferHTML.join("");
+        manifestations.forEach((item) => {
+            const canvas = artifactsGrid.querySelector(`canvas[data-rel-id="${item.id_rel}"]`);
+            if (canvas) {
+                const thumbUrl = streamThumbUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`);
+                recolorThumbnailCanvas(canvas, thumbUrl, item.palette);
+            }
+        });
         const cards = artifactsGrid.querySelectorAll(".vault-artifact-card");
         cards.forEach((card) => {
             const artId = parseInt(card.dataset.artifactId || "0");
+            const relId = parseInt(card.dataset.relId || "0");
             if (artId === 0)
                 return;
-            card.addEventListener("click", () => openInspectorModal(artId));
+            card.addEventListener("click", () => openInspectorModal(artId, relId));
             const favPin = card.querySelector(".vault-fav-pin");
             favPin?.addEventListener("click", async (event) => {
                 event.stopPropagation();
@@ -410,15 +470,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const inspectBtn = card.querySelector(".action-inspect");
             inspectBtn?.addEventListener("click", async (event) => {
                 event.stopPropagation();
-                await openInspectorModal(artId);
+                await openInspectorModal(artId, relId);
             });
+            const downloadBtn = card.querySelector(".action-download-manifest");
+            downloadBtn?.addEventListener("click", (event) => event.stopPropagation());
             const branchBtn = card.querySelector(".action-branch");
             branchBtn?.addEventListener("click", (event) => {
                 event.stopPropagation();
                 branchInStudio(artId);
             });
-            const downloadBtn = card.querySelector(".action-download");
-            downloadBtn?.addEventListener("click", (event) => event.stopPropagation());
         });
     }
     async function fetchArtifactsData(page) {
@@ -492,7 +552,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 const res = await apiFetch(apiUrl, { method: "DELETE" });
                 if (!res.success)
                     return;
-                await loadArtifacts();
+                await loadCatalysts();
+                window.showAlertModal({
+                    title: "Catalyst Purged",
+                    message: "The Catalyst has been banished for eternity.",
+                    type: "success"
+                });
             }
         });
     }
@@ -828,6 +893,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 closeInspectorModal();
                 await loadArtifacts();
+                window.showAlertModal({
+                    title: "Artifact Purged",
+                    message: "The Artifact has been banished for eternity.",
+                    type: "success"
+                });
             }
         });
     }

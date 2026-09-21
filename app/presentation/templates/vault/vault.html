@@ -26,6 +26,7 @@
      data-sources-api-url="{{ url_for('vault.api_get_sources_catalog') }}"
      data-update-source-alias-api-url="{{ url_for('vault.api_update_source_alias', id_source_image=0) }}"
      data-delete-source-api-url="{{ url_for('vault.api_delete_source_image', id_source_image=0) }}"
+     data-download-manifest-api-url="{{ url_for('vault.api_download_artifact_manifestation', id_rel=0) }}"
      data-stream-artifact-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
      data-stream-thumb-api-url="{{ url_for('vault.api_stream_thumbnail_image', artifact_hash='PLACEHOLDER') }}"
      data-stream-source-api-url="{{ url_for('vault.api_stream_source_image', source_hash='PLACEHOLDER') }}"

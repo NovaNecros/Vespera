@@ -54,9 +54,34 @@ export interface ConfigTuring
     diff_v      : number;
     dt          : number;
     iterations  : number;
+    created_at  : string | null;
+}
+
+export interface RelArtifactPalette
+{
+    id_rel      : number;
+    id_artifact : number;
     id_palette  : number;
-    palette     : ColorPalette | null;
+    palette?    : ColorPalette | null;
     created_at  : string       | null;
+}
+
+export interface ArtifactManifestation
+{
+    id_rel             : number;
+    id_artifact        : number;
+    alias              : string;
+    artifact_hash      : string;
+    id_source_image    : number;
+    id_parent_artifact : number       | null;
+    seed               : number;
+    execution_time     : number;
+    is_favorite        : boolean;
+    user_notes         : string;
+    palette            : ColorPalette | null;
+    created_at         : string       | null;
+    source_image       : SourceImage  | null;
+    config             : ConfigTuring | null;
 }
 
 export interface SynthesisFrame
@@ -85,6 +110,7 @@ export interface SynthesisArtifact
     children?          : SynthesisArtifact[];
     source_image       : SourceImage  | null;
     config             : ConfigTuring | null;
+    manifestations?    : RelArtifactPalette[];
 }
 
 // --- HYDRATION CONTRACTS ---
@@ -118,6 +144,7 @@ export interface HydrationBundle
     artifact_hash      : string;
     parent_artifact_id : number;
     user_notes         : string;
+    selected_palette?  : ColorPalette         | null;
     source_image       : HydrationSourceImage | null;
     config             : HydrationConfig      | null;
     frames             : string[];
@@ -127,17 +154,11 @@ export interface HydrationBundle
 // --- VAULT PAYLOADS ---
 export interface VaultGalleryData
 {
-    items       : SynthesisArtifact[];
+    items       : ArtifactManifestation[];
     total_items : number;
     page        : number;
     per_page    : number;
     total_pages : number;
-}
-
-export interface GraveyardData
-{
-    items : SourceImage[];
-    count : number;
 }
 
 // --- VAULT API RESPONSES ---
