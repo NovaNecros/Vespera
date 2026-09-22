@@ -4,10 +4,6 @@
 
 {% block title %}Vespera - The Studio{% endblock %}
 
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/studio/studio.css') }}">
-{% endblock %}
-
 {% block scripts %}
 <script type="module" src="{{ url_for('static', filename='js/studio/studio.js') }}"></script>
 {% endblock %}
@@ -147,65 +143,7 @@
                     </div>
                 </div>
 
-                <div id="canvas-stage-wrapper"
-                     class="canvas-stage-wrapper relative w-full aspect-square max-w-[440px] xl:max-w-[480px]
-                            2xl:max-w-[520px] border rounded overflow-hidden
-                            flex items-center justify-center shadow-inner">
-                    <canvas id="synthesis-canvas" width="1024" height="1024"
-                            class="w-full h-full object-contain">
-                        <!-- TS -->
-                    </canvas>
-
-                    <!-- Empty State -->
-                    <div id="canvas-empty-state"
-                         class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
-                        <div class="w-12 h-12 rounded-full border border-dashed border-vespera-obsidian flex
-                                    items-center justify-center text-vespera-crimson">
-                            <i class="fa-solid fa-biohazard text-2xl"></i>
-                        </div>
-                        <span class="font-cinzel text-base text-vespera-parchment font-semibold">
-                            Canvas in Equilibrium
-                        </span>
-                        <p class="font-serif text-xs text-vespera-bone max-w-xs mb-0">
-                            Seed a catalyst image and initiate the reaction to visualize morphogenetic formation.
-                        </p>
-                    </div>
-
-                    <!-- Animation Overlay -->
-                    <div id="canvas-playback-badge"
-                         class="hidden absolute top-2 left-2 bg-vespera-obsidian border border-vespera-obsidian
-                                px-2 py-0.5 rounded text-xs font-mono text-vespera-silverBright backdrop-blur-sm">
-                        <i class="fa-solid fa-play mr-1 text-[0.65rem] animate-pulse"></i>
-                        <span id="playback-frame-label"><!-- TS --></span>
-                    </div>
-                </div>
-
-                <!-- Animation Controls -->
-                <div id="playback-controls-panel"
-                     class="w-full flex flex-col gap-1.5 mt-3 pt-2.5 border-t border-vespera-obsidian
-                            opacity-40 pointer-events-none transition-opacity duration-300">
-                    <div class="flex items-center justify-between gap-3">
-                        <button id="play-pause-btn" type="button"
-                                class="vamp-btn vamp-btn-silver text-xs py-1 px-2.5">
-                            <i id="play-pause-icon" class="fa-solid fa-play mr-1"></i>
-                            Morph
-                        </button>
-
-                        <div class="flex-grow flex items-center">
-                            <label>
-                                <input id="timeline-scrubber" type="range"
-                                       min="0" max="60" step="1" value="0"
-                                       class="vamp-range w-full">
-                            </label>
-                        </div>
-
-                        <button id="toggle-view-original-btn" type="button"
-                                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5">
-                            <i class="fa-solid fa-code-compare mr-1"></i>
-                            Compare
-                        </button>
-                    </div>
-                </div>
+                {% include "partials/scrying_mirror.html" %}
 
                 <!-- Artifact Metadata -->
                 <div id="artifact-metrics-bar"

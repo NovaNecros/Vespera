@@ -1,4 +1,5 @@
-import { apiFetch, truncateHash, formatBytes, buildPaletteLut } from "../base.js";
+import { apiFetch, truncateHash, formatBytes, buildPaletteLut, applyPalette } from "../base.js";
+import { ScryingMirror } from "../partials/scrying_mirror.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("vault-main-container");
     if (!mainContainer)
@@ -53,13 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inspFavIcon = document.getElementById("inspector-favorite-icon");
     const inspAliasHeading = document.getElementById("inspector-artifact-alias");
     const inspRenameBtn = document.getElementById("inspector-rename-alias-btn");
-    const inspFrameLabel = document.getElementById("inspector-frame-label");
-    const inspPlayPauseBtn = document.getElementById("inspector-play-pause-btn");
-    const inspPlayIcon = document.getElementById("inspector-play-icon");
-    const inspScrubber = document.getElementById("inspector-timeline-scrubber");
-    const inspCompareBtn = document.getElementById("inspector-compare-btn");
-    const inspectorCanvas = document.getElementById("inspector-canvas");
-    const offscreenCanvas = document.createElement("canvas");
+    const mirror = new ScryingMirror();
     const inspFeedRate = document.getElementById("inspector-feed-rate");
     const inspKillRate = document.getElementById("inspector-kill-rate");
     const inspDUDV = document.getElementById("inspector-du-dv");
@@ -73,8 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const inspBranchBtn = document.getElementById("inspector-branch-studio-btn");
     const inspDownloadBtn = document.getElementById("inspector-download-btn");
     const inspDelBtn = document.getElementById("inspector-delete-btn");
-    const inspectorCanvasCtx = inspectorCanvas ? inspectorCanvas.getContext("2d", { willReadFrequently: true }) : null;
-    const offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
     let searchDebounceTimer = null;
     function getDefaultState() {
         return {
@@ -94,13 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
             paletteCatalog: [],
             activeLut: null,
             inspectorRelId: null,
-            inspectorArtifact: null,
-            inspectorFrames: [],
-            inspectorSourceImg: null,
-            inspectorFrameIndex: 0,
-            inspectorIsPlaying: false,
-            inspectorTimer: null,
-            inspectorIsComparing: false
+            inspectorArtifact: null
         };
     }
     let state = getDefaultState();
@@ -116,89 +103,6 @@ document.addEventListener("DOMContentLoaded", () => {
             bufferHTML.push(`<option value="${pal.id_palette.toString()}">${pal.display_name}</option>`);
         });
         filterPaletteSel.innerHTML = bufferHTML.join("");
-    }
-    function renderInspectorFrame(index) {
-        if (!inspectorCanvas || !inspectorCanvasCtx || state.inspectorFrames.length === 0)
-            return;
-        if (index < 0 || index >= state.inspectorFrames.length)
-            return;
-        const img = state.inspectorFrames[index];
-        if (offscreenCanvas.width !== inspectorCanvas.width || offscreenCanvas.height !== inspectorCanvas.height) {
-            offscreenCanvas.width = inspectorCanvas.width;
-            offscreenCanvas.height = inspectorCanvas.height;
-        }
-        if (!state.activeLut) {
-            inspectorCanvasCtx.clearRect(0, 0, inspectorCanvas.width, inspectorCanvas.height);
-            inspectorCanvasCtx.drawImage(img, 0, 0, inspectorCanvas.width, inspectorCanvas.height);
-            return;
-        }
-        offscreenCtx?.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        offscreenCtx?.drawImage(img, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        const imgData = offscreenCtx?.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        if (!imgData)
-            return;
-        const data = imgData.data;
-        const lut = state.activeLut;
-        for (let p = 0; p < data.length; p += 4) {
-            const gray = data[p];
-            data[p] = lut[gray * 3];
-            data[p + 1] = lut[gray * 3 + 1];
-            data[p + 2] = lut[gray * 3 + 2];
-        }
-        inspectorCanvasCtx.putImageData(imgData, 0, 0);
-        state.inspectorFrameIndex = index;
-        if (inspScrubber)
-            inspScrubber.value = index.toString();
-        if (inspFrameLabel)
-            inspFrameLabel.textContent = `Frame ${index + 1} / ${state.inspectorFrames.length}`;
-    }
-    function pauseInspectorAnimation() {
-        state.inspectorIsPlaying = false;
-        if (state.inspectorTimer !== null) {
-            clearInterval(state.inspectorTimer);
-            state.inspectorTimer = null;
-        }
-        if (inspPlayIcon)
-            inspPlayIcon.className = "fa-solid fa-play mr-1.5";
-    }
-    function playInspectorAnimation() {
-        if (state.inspectorFrames.length <= 1)
-            return;
-        state.inspectorIsPlaying = true;
-        if (inspPlayIcon)
-            inspPlayIcon.className = "fa-solid fa-pause mr-1.5 text-vespera-silverBright";
-        if (state.inspectorFrameIndex >= state.inspectorFrames.length - 1)
-            renderInspectorFrame(0);
-        state.inspectorTimer = window.setInterval(() => {
-            const nextIdx = state.inspectorFrameIndex + 1;
-            if (nextIdx >= state.inspectorFrames.length)
-                pauseInspectorAnimation();
-            else
-                renderInspectorFrame(nextIdx);
-        }, 120);
-    }
-    function toggleInspectorPlayPause() {
-        if (state.inspectorIsPlaying)
-            pauseInspectorAnimation();
-        else
-            playInspectorAnimation();
-    }
-    function toggleInspectorComparison() {
-        if (!inspectorCanvasCtx || !inspectorCanvas)
-            return;
-        state.inspectorIsComparing = !state.inspectorIsComparing;
-        if (state.inspectorIsComparing) {
-            pauseInspectorAnimation();
-            if (state.inspectorSourceImg) {
-                inspectorCanvasCtx.clearRect(0, 0, inspectorCanvas.width, inspectorCanvas.height);
-                inspectorCanvasCtx.drawImage(state.inspectorSourceImg, 0, 0, inspectorCanvas.width, inspectorCanvas.height);
-                inspCompareBtn?.classList.add("bg-vespera-crimson", "text-vespera-parchment");
-            }
-        }
-        else {
-            renderInspectorFrame(state.inspectorFrameIndex);
-            inspCompareBtn?.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
-        }
     }
     async function openInspectorModal(idArtifact, idRel) {
         try {
@@ -241,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.activeLut = buildPaletteLut(manifestPalette.stops);
             else
                 state.activeLut = null;
+            mirror.setPaletteLut(state.activeLut);
             if (inspDownloadBtn) {
                 const downloadFilename = (art.alias.match(/\.(png|jpg|jpeg|webp)$/i)
                     ? art.alias : `${art.alias}.png`);
@@ -254,46 +159,30 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (art.source_image) {
                 const srcUrl = streamSourceUrl.replace("/PLACEHOLDER", `/${art.source_image.sha256_hash}`);
-                state.inspectorSourceImg = new Image();
-                state.inspectorSourceImg.crossOrigin = "anonymous";
-                state.inspectorSourceImg.src = srcUrl;
+                mirror.setCatalyst(srcUrl);
             }
             const frameUrls = (art.frames || []).map((frame) => {
                 return streamFrameUrl
                     .replace("/PLACEHOLDER", `/${art.artifact_hash}`)
                     .replace("/0", `/${frame.frame_index}`);
             });
-            state.inspectorFrames = await Promise.all(frameUrls.map((url) => {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.onload = () => resolve(img);
-                    img.src = url;
-                });
-            }));
-            if (inspScrubber) {
-                inspScrubber.max = Math.max(0, state.inspectorFrames.length - 1).toString();
-                inspScrubber.value = "0";
-            }
             window.openModalWithTransition(inspectorModal);
-            renderInspectorFrame(0);
-            playInspectorAnimation();
+            await mirror.loadFrames(frameUrls);
+            mirror.play();
         }
         catch (error) {
             window.showAlertModal?.({
                 title: "Poisoned Vault",
-                message: "The seal for Artifact #${idArtifact} persists...",
+                message: `The seal for Artifact #${idArtifact} persists...`,
                 type: "danger"
             });
         }
     }
     function closeInspectorModal() {
-        pauseInspectorAnimation();
+        mirror.reset();
         window.closeModalWithTransition(inspectorModal, () => {
             state.inspectorArtifact = null;
-            state.inspectorFrames = [];
-            state.inspectorSourceImg = null;
-            state.inspectorIsComparing = false;
+            state.inspectorRelId = null;
         });
     }
     function updatePagination(target, totalItems, currentCount) {
@@ -355,12 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
             const lut = buildPaletteLut(palette.stops);
-            for (let p = 0; p < data.length; p += 4) {
-                const gray = data[p];
-                data[p] = lut[gray * 3];
-                data[p + 1] = lut[gray * 3 + 1];
-                data[p + 2] = lut[gray * 3 + 2];
-            }
+            applyPalette(data, lut);
             ctx.putImageData(imgData, 0, 0);
         };
         img.src = srcUrl;
@@ -1032,12 +916,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
         inspectorCloseBtn?.addEventListener("click", closeInspectorModal);
-        inspPlayPauseBtn?.addEventListener("click", toggleInspectorPlayPause);
-        inspScrubber?.addEventListener("input", () => {
-            pauseInspectorAnimation();
-            renderInspectorFrame(parseInt(inspScrubber.value));
-        });
-        inspCompareBtn?.addEventListener("click", toggleInspectorComparison);
         inspFavToggleBtn?.addEventListener("click", () => {
             if (state.inspectorArtifact) {
                 toggleArtifactFavorite(state.inspectorArtifact.id_artifact, undefined).then();

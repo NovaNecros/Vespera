@@ -347,43 +347,7 @@
         <div class="flex-grow overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <!-- Animation -->
             <div class="lg:col-span-7 flex flex-col gap-3 items-center">
-                <div class="canvas-stage-wrapper relative w-full aspect-square max-w-[420px] bg-vespera-obsidian
-                            border border-vespera-obsidian rounded overflow-hidden flex items-center
-                            justify-center shadow-inner">
-                    <canvas id="inspector-canvas" width="1024" height="1024"
-                            class="w-full h-full object-contain">
-                        <!-- TS -->
-                    </canvas>
-
-                    <!-- Frame Overlay -->
-                    <div id="inspector-frame-badge"
-                         class="absolute top-2 left-2 bg-vespera-obsidian/90 border border-vespera-obsidian
-                                px-2 py-0.5 rounded text-xs font-mono text-vespera-silverBright backdrop-blur-sm">
-                        <i class="fa-solid fa-play mr-1 text-[0.65rem] animate-pulse"></i>
-                        <span id="inspector-frame-label"><!-- TS --></span>
-                    </div>
-                </div>
-
-                <!-- Animation Controls -->
-                <div class="w-full max-w-[420px] flex items-center justify-between gap-3 pt-1">
-                    <button id="inspector-play-pause-btn" type="button"
-                            class="vamp-btn vamp-btn-silver text-xs py-1 px-3">
-                        <i id="inspector-play-icon" class="fa-solid fa-play mr-1.5"></i>
-                        Morph
-                    </button>
-                    <div class="flex-grow flex items-center">
-                        <label>
-                            <input id="inspector-timeline-scrubber" type="range"
-                                   min="0" max="60" step="1" value="0"
-                                   class="vamp-range w-full">
-                        </label>
-                    </div>
-                    <button id="inspector-compare-btn" type="button"
-                            class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5">
-                        <i class="fa-solid fa-code-compare mr-1"></i>
-                        Catalyst
-                    </button>
-                </div>
+                {% include "partials/scrying_mirror.html" %}
             </div>
 
             <div class="lg:col-span-5 flex flex-col gap-4">

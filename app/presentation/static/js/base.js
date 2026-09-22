@@ -151,6 +151,13 @@ export function buildPaletteLut(stops) {
     }
     return lut;
 }
+export function applyPalette(data, lut) {
+    for (let p = 0; p < data.length; p += 4) {
+        data[p] = lut[data[p] * 3];
+        data[p + 1] = lut[data[p] * 3 + 1];
+        data[p + 2] = lut[data[p] * 3 + 2];
+    }
+}
 window.getVesperaPalette = getVesperaPalette;
 window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;

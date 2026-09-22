@@ -12,6 +12,7 @@ import {
     truncateHash,
     buildPaletteLut
 } from "../base.js";
+import { ScryingMirror } from "../partials/scrying_mirror.js";
 
 // Interfaces
 interface StudioState
@@ -21,12 +22,6 @@ interface StudioState
     sourceImageFile      : File              | null;
     sourceImageDataUrl   : string            | null;
     sourceImageElement   : HTMLImageElement  | null;
-    grayScaleFrames      : HTMLImageElement[];
-    rawKeyframeBuffers   : ImageData[];
-    currentFrameIndex    : number;
-    isPlaying            : boolean;
-    animationTimer       : number            | null;
-    isComparing          : boolean;
     paletteCatalog       : ColorPalette[];
     activeLut            : Uint8ClampedArray | null;
 }
@@ -72,18 +67,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const userNotesInput  : HTMLTextAreaElement | null = document.getElementById("user-notes-input")       as HTMLTextAreaElement;
 
     // CANVAS
-    const canvasStageWrap : HTMLElement       | null = document.getElementById("canvas-stage-wrapper");
-    const canvas          : HTMLCanvasElement | null = document.getElementById("synthesis-canvas")         as HTMLCanvasElement;
-    const emptyState      : HTMLElement       | null = document.getElementById("canvas-empty-state");
+    const mirror          : ScryingMirror            = new ScryingMirror();
     const modeBadge       : HTMLElement       | null = document.getElementById("canvas-mode-badge");
-    const playbackBadge   : HTMLElement       | null = document.getElementById("canvas-playback-badge");
-    const frameLabel      : HTMLElement       | null = document.getElementById("playback-frame-label");
-    const playbackPanel   : HTMLElement       | null = document.getElementById("playback-controls-panel");
-    const playPauseButton : HTMLButtonElement | null = document.getElementById("play-pause-btn")           as HTMLButtonElement;
-    const playPauseIcon   : HTMLElement       | null = document.getElementById("play-pause-icon");
-    const scrubber        : HTMLInputElement  | null = document.getElementById("timeline-scrubber")        as HTMLInputElement;
-    const compareBtn      : HTMLButtonElement | null = document.getElementById("toggle-view-original-btn") as HTMLButtonElement;
-    const canvasContext   : CanvasRenderingContext2D | null = canvas ? canvas.getContext("2d") : null;
 
     // METRICS
     const metricId        : HTMLElement       | null = document.getElementById("metric-id");
@@ -95,10 +80,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const commitContainer : HTMLElement       | null = document.getElementById("commit-container");
     const commitBtn       : HTMLButtonElement | null = document.getElementById("commit-btn")               as HTMLButtonElement;
     const resetParamsBtn  : HTMLButtonElement | null = document.getElementById("reset-params-btn")         as HTMLButtonElement;
-
-    // HIDDEN CANVAS FOR PALETTE SWITCHING
-    const offscreenCanvas : HTMLCanvasElement = document.createElement("canvas");
-    const offscreenCtx    : CanvasRenderingContext2D | null = offscreenCanvas.getContext("2d", { willReadFrequently : true});
 
     // DEFAULT PARAMETERS
     const defaultF       = "0.0545";
@@ -120,12 +101,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
             sourceImageFile      : null,
             sourceImageDataUrl   : null,
             sourceImageElement   : null,
-            grayScaleFrames      : [],
-            rawKeyframeBuffers   : [],
-            currentFrameIndex    : 0,
-            isPlaying            : false,
-            animationTimer       : null,
-            isComparing          : false,
             paletteCatalog       : [],
             activeLut            : null,
         };
@@ -199,50 +174,10 @@ document.addEventListener("DOMContentLoaded", () : void =>
             const defaultPal : ColorPalette | undefined = state.paletteCatalog.find((p : ColorPalette) => p.name === defaultPalette);
             paletteSelect.value = defaultPal ? defaultPal.id_palette.toString() : "1";
             if(defaultPal) state.activeLut = buildPaletteLut(defaultPal.stops);
+            mirror.setPaletteLut(state.activeLut);
         }
     }
 
-    // Coloring
-    function applyShaderToFrame(index : number) : void
-    {
-        if(!canvas || !canvasContext || !offscreenCtx || state.grayScaleFrames.length === 0) return;
-        if(index < 0 || index >= state.grayScaleFrames.length) return;
-
-        const img : HTMLImageElement = state.grayScaleFrames[index];
-
-        if(offscreenCanvas.width !== canvas.width || offscreenCanvas.height !== canvas.height)
-        {
-            offscreenCanvas.width  = canvas.width;
-            offscreenCanvas.height = canvas.height;
-        }
-
-        if(!state.activeLut)
-        {
-            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-            canvasContext.drawImage(img, 0, 0, canvas.width, canvas.height);
-            return;
-        }
-
-        offscreenCtx.clearRect(0, 0, canvas.width, canvas.height);
-        offscreenCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        const imgData : ImageData = offscreenCtx.getImageData(0, 0, canvas.width, canvas.height);
-        const data    : Uint8ClampedArray = imgData.data;
-        const lut     : Uint8ClampedArray = state.activeLut;
-
-        for(let p : number = 0; p < data.length; p += 4)
-        {
-            const gray : number = data[p];
-            data[p]     = lut[gray*3];
-            data[p + 1] = lut[gray*3 + 1];
-            data[p + 2] = lut[gray*3 + 2];
-        }
-
-        canvasContext.putImageData(imgData, 0, 0);
-        state.currentFrameIndex = index;
-        if(scrubber) scrubber.value = index.toString();
-        if(frameLabel) frameLabel.textContent = `Frame ${index + 1} / ${state.grayScaleFrames.length}`;
-    }
 
     async function loadPaletteCatalog() : Promise<void>
     {
@@ -270,14 +205,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
         paletteSelect.addEventListener("change", () : void =>
         {
             const selectedId : number = parseInt(paletteSelect.value);
-            const pal : ColorPalette | undefined = state.paletteCatalog.find((p : ColorPalette) => p.id_palette === selectedId);
+            const pal : ColorPalette | undefined = state.paletteCatalog.find(
+                (p : ColorPalette) => p.id_palette === selectedId);
             if(pal)
             {
                 state.activeLut = buildPaletteLut(pal.stops);
-                if(state.grayScaleFrames.length > 0 && !state.isComparing)
-                {
-                    applyShaderToFrame(state.currentFrameIndex);
-                }
+                mirror.setPaletteLut(state.activeLut);
             }
         });
     }
@@ -361,7 +294,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             if(bundle.frames && bundle.frames.length > 0)
             {
-                emptyState?.classList.add("hidden");
                 if(modeBadge)
                 {
                     modeBadge.textContent = "Rehydrated";
@@ -369,31 +301,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 }
 
                 state.currentArtifactHash = bundle.artifact_hash;
-
-                state.grayScaleFrames = await Promise.all(
-                    bundle.frames.map((url : string) : Promise<HTMLImageElement> =>
-                    {
-                        return new Promise((resolve) : void =>
-                        {
-                           const frameImg : HTMLImageElement = new Image();
-                           frameImg.crossOrigin = "anonymous";
-                           frameImg.onload      = () : void => resolve(frameImg);
-                           frameImg.src         = url;
-                        });
-                    })
-                );
-
-                if(scrubber)
-                {
-                    scrubber.max    = (state.grayScaleFrames.length - 1).toString();
-                    scrubber.value  = "0";
-                }
-
-                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
-                playbackBadge?.classList.remove("hidden");
-
-                applyShaderToFrame(0);
-                playAnimation();
+                await mirror.loadFrames(bundle.frames);
+                mirror.play();
             }
         }
         catch(error)
@@ -403,63 +312,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         finally
         {
             hideLoadingOverlay();
-        }
-    }
-
-    // VISUALIZATION
-    function pauseAnimation() : void
-    {
-        state.isPlaying = false;
-        if(state.animationTimer !== null)
-        {
-            clearInterval(state.animationTimer);
-            state.animationTimer = null;
-        }
-        if(playPauseIcon) playPauseIcon.className = "fa-solid fa-play mr-1";
-    }
-
-    function playAnimation() : void
-    {
-        if(state.grayScaleFrames.length <= 1) return;
-        state.isPlaying = true;
-
-        if(playPauseIcon) playPauseIcon.className = "fa-solid fa-pause mr-1 text-vespera-silverBright";
-
-        if(state.currentFrameIndex >= state.grayScaleFrames.length - 1) applyShaderToFrame(0);
-
-        state.animationTimer = window.setInterval(() =>
-        {
-           const nextIdx : number = state.currentFrameIndex + 1;
-           if(nextIdx >= state.grayScaleFrames.length) pauseAnimation();
-           else applyShaderToFrame(nextIdx);
-        }, 120);
-    }
-
-    function togglePlayPause() : void
-    {
-        if(state.isPlaying) pauseAnimation();
-        else                playAnimation();
-    }
-
-    function toggleComparison() : void
-    {
-        if(!canvasContext || !canvas) return;
-        state.isComparing = !state.isComparing;
-
-        if(state.isComparing)
-        {
-            pauseAnimation();
-            if(state.sourceImageElement)
-            {
-                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-                canvasContext.drawImage(state.sourceImageElement, 0, 0, canvas.width, canvas.height);
-                if(compareBtn) compareBtn.classList.add("bg-vespera-crimson", "text-vespera-parchment");
-            }
-        }
-        else
-        {
-            applyShaderToFrame(state.currentFrameIndex);
-            if(compareBtn) compareBtn.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
         }
     }
 
@@ -485,7 +337,10 @@ document.addEventListener("DOMContentLoaded", () : void =>
             state.sourceImageDataUrl = dataUrl;
 
             const img : HTMLImageElement = new Image();
-            img.onload = () => { state.sourceImageElement = img; };
+            img.onload = () => {
+                state.sourceImageElement = img;
+                mirror.setCatalyst(img);
+            };
             img.src    = dataUrl;
 
             if(previewImg)    previewImg.src = dataUrl;
@@ -512,6 +367,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         state.sourceImageFile    = null;
         state.sourceImageDataUrl = null;
         state.sourceImageElement = null;
+        mirror.setCatalyst(null);
 
         if(fileInput)     fileInput.value     = "";
         if(sourceIdInput) sourceIdInput.value = "";
@@ -563,8 +419,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         try
         {
-            pauseAnimation();
-            canvasStageWrap?.classList.add("synthesizing");
+            mirror.pause();
+            mirror.setSynthesizing(true);
             showLoadingOverlay({
                 title     : "Integrating Reaction-Diffusion Lattice",
                 subtitle  : "Evaluating 2D Laplacian field and non-linear morphogen kinetics..."
@@ -576,8 +432,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 body   : formData
             });
 
+            mirror.setSynthesizing(false);
             hideLoadingOverlay();
-            canvasStageWrap?.classList.remove("synthesizing");
 
             if(!res.success || !res.data) return;
 
@@ -593,43 +449,21 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             if(res.data.keyframes && res.data.keyframes.length > 0)
             {
-                emptyState?.classList.add("hidden");
                 if(modeBadge)
                 {
                     modeBadge.textContent = "Simulated";
                     modeBadge.className   = "vamp-badge vamp-badge-silver";
                 }
 
-                state.grayScaleFrames = await Promise.all(
-                    res.data.keyframes.map((b64 : string) : Promise<HTMLImageElement> =>
-                    {
-                        return new Promise((resolve) : void =>
-                        {
-                            const img : HTMLImageElement = new Image();
-                            img.onload = () : void => resolve(img);
-                            img.src    = b64;
-                        });
-                    })
-                );
-
-                if(scrubber)
-                {
-                    scrubber.max   = (state.grayScaleFrames.length - 1).toString();
-                    scrubber.value = "0";
-                }
-
-                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
-                playbackBadge?.classList.remove("hidden");
                 commitContainer?.classList.remove("hidden");
-
-                applyShaderToFrame(0);
-                playAnimation();
+                await mirror.loadFrames(res.data.keyframes);
+                mirror.play();
             }
         }
         catch(error : any)
         {
             hideLoadingOverlay();
-            canvasStageWrap?.classList.remove("synthesizing");
+            mirror.setSynthesizing(false);
             (window as any).showAlertModal?.({
                 title    : "Synthesis Ruptured",
                 message  : "An unexpected alchemical disruption collapsed the morphogenesis.",
@@ -747,15 +581,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
             event.stopPropagation();
             purgeSourceImage();
         });
-
-        // Canvas Controls
-        playPauseButton?.addEventListener("click", togglePlayPause);
-        scrubber?.addEventListener("input", () : void =>
-        {
-            pauseAnimation();
-            applyShaderToFrame(parseInt(scrubber.value));
-        });
-        compareBtn?.addEventListener("click", toggleComparison);
 
         // Synthesis
         synthesizeBtn?.addEventListener("click", executeSynthesis);

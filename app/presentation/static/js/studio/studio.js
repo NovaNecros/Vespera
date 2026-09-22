@@ -1,4 +1,5 @@
 import { apiFetch, hideLoadingOverlay, showLoadingOverlay, truncateHash, buildPaletteLut } from "../base.js";
+import { ScryingMirror } from "../partials/scrying_mirror.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("studio-main-container");
     if (!mainContainer)
@@ -31,18 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const dtInput = document.getElementById("dt-input");
     const paletteSelect = document.getElementById("palette-select");
     const userNotesInput = document.getElementById("user-notes-input");
-    const canvasStageWrap = document.getElementById("canvas-stage-wrapper");
-    const canvas = document.getElementById("synthesis-canvas");
-    const emptyState = document.getElementById("canvas-empty-state");
+    const mirror = new ScryingMirror();
     const modeBadge = document.getElementById("canvas-mode-badge");
-    const playbackBadge = document.getElementById("canvas-playback-badge");
-    const frameLabel = document.getElementById("playback-frame-label");
-    const playbackPanel = document.getElementById("playback-controls-panel");
-    const playPauseButton = document.getElementById("play-pause-btn");
-    const playPauseIcon = document.getElementById("play-pause-icon");
-    const scrubber = document.getElementById("timeline-scrubber");
-    const compareBtn = document.getElementById("toggle-view-original-btn");
-    const canvasContext = canvas ? canvas.getContext("2d") : null;
     const metricId = document.getElementById("metric-id");
     const metricTime = document.getElementById("metric-time");
     const metricHash = document.getElementById("metric-hash");
@@ -50,8 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const commitContainer = document.getElementById("commit-container");
     const commitBtn = document.getElementById("commit-btn");
     const resetParamsBtn = document.getElementById("reset-params-btn");
-    const offscreenCanvas = document.createElement("canvas");
-    const offscreenCtx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
     const defaultF = "0.0545";
     const defaultK = "0.0620";
     const defaultDu = "1.000";
@@ -66,12 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
             sourceImageFile: null,
             sourceImageDataUrl: null,
             sourceImageElement: null,
-            grayScaleFrames: [],
-            rawKeyframeBuffers: [],
-            currentFrameIndex: 0,
-            isPlaying: false,
-            animationTimer: null,
-            isComparing: false,
             paletteCatalog: [],
             activeLut: null,
         };
@@ -138,40 +121,8 @@ document.addEventListener("DOMContentLoaded", () => {
             paletteSelect.value = defaultPal ? defaultPal.id_palette.toString() : "1";
             if (defaultPal)
                 state.activeLut = buildPaletteLut(defaultPal.stops);
+            mirror.setPaletteLut(state.activeLut);
         }
-    }
-    function applyShaderToFrame(index) {
-        if (!canvas || !canvasContext || !offscreenCtx || state.grayScaleFrames.length === 0)
-            return;
-        if (index < 0 || index >= state.grayScaleFrames.length)
-            return;
-        const img = state.grayScaleFrames[index];
-        if (offscreenCanvas.width !== canvas.width || offscreenCanvas.height !== canvas.height) {
-            offscreenCanvas.width = canvas.width;
-            offscreenCanvas.height = canvas.height;
-        }
-        if (!state.activeLut) {
-            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-            canvasContext.drawImage(img, 0, 0, canvas.width, canvas.height);
-            return;
-        }
-        offscreenCtx.clearRect(0, 0, canvas.width, canvas.height);
-        offscreenCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const imgData = offscreenCtx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        const lut = state.activeLut;
-        for (let p = 0; p < data.length; p += 4) {
-            const gray = data[p];
-            data[p] = lut[gray * 3];
-            data[p + 1] = lut[gray * 3 + 1];
-            data[p + 2] = lut[gray * 3 + 2];
-        }
-        canvasContext.putImageData(imgData, 0, 0);
-        state.currentFrameIndex = index;
-        if (scrubber)
-            scrubber.value = index.toString();
-        if (frameLabel)
-            frameLabel.textContent = `Frame ${index + 1} / ${state.grayScaleFrames.length}`;
     }
     async function loadPaletteCatalog() {
         if (!paletteSelect)
@@ -196,9 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const pal = state.paletteCatalog.find((p) => p.id_palette === selectedId);
             if (pal) {
                 state.activeLut = buildPaletteLut(pal.stops);
-                if (state.grayScaleFrames.length > 0 && !state.isComparing) {
-                    applyShaderToFrame(state.currentFrameIndex);
-                }
+                mirror.setPaletteLut(state.activeLut);
             }
         });
     }
@@ -279,28 +228,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 img.src = srcImg.stream_url;
             }
             if (bundle.frames && bundle.frames.length > 0) {
-                emptyState?.classList.add("hidden");
                 if (modeBadge) {
                     modeBadge.textContent = "Rehydrated";
                     modeBadge.className = "vamp-badge vamp-badge-silver";
                 }
                 state.currentArtifactHash = bundle.artifact_hash;
-                state.grayScaleFrames = await Promise.all(bundle.frames.map((url) => {
-                    return new Promise((resolve) => {
-                        const frameImg = new Image();
-                        frameImg.crossOrigin = "anonymous";
-                        frameImg.onload = () => resolve(frameImg);
-                        frameImg.src = url;
-                    });
-                }));
-                if (scrubber) {
-                    scrubber.max = (state.grayScaleFrames.length - 1).toString();
-                    scrubber.value = "0";
-                }
-                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
-                playbackBadge?.classList.remove("hidden");
-                applyShaderToFrame(0);
-                playAnimation();
+                await mirror.loadFrames(bundle.frames);
+                mirror.play();
             }
         }
         catch (error) {
@@ -308,56 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         finally {
             hideLoadingOverlay();
-        }
-    }
-    function pauseAnimation() {
-        state.isPlaying = false;
-        if (state.animationTimer !== null) {
-            clearInterval(state.animationTimer);
-            state.animationTimer = null;
-        }
-        if (playPauseIcon)
-            playPauseIcon.className = "fa-solid fa-play mr-1";
-    }
-    function playAnimation() {
-        if (state.grayScaleFrames.length <= 1)
-            return;
-        state.isPlaying = true;
-        if (playPauseIcon)
-            playPauseIcon.className = "fa-solid fa-pause mr-1 text-vespera-silverBright";
-        if (state.currentFrameIndex >= state.grayScaleFrames.length - 1)
-            applyShaderToFrame(0);
-        state.animationTimer = window.setInterval(() => {
-            const nextIdx = state.currentFrameIndex + 1;
-            if (nextIdx >= state.grayScaleFrames.length)
-                pauseAnimation();
-            else
-                applyShaderToFrame(nextIdx);
-        }, 120);
-    }
-    function togglePlayPause() {
-        if (state.isPlaying)
-            pauseAnimation();
-        else
-            playAnimation();
-    }
-    function toggleComparison() {
-        if (!canvasContext || !canvas)
-            return;
-        state.isComparing = !state.isComparing;
-        if (state.isComparing) {
-            pauseAnimation();
-            if (state.sourceImageElement) {
-                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-                canvasContext.drawImage(state.sourceImageElement, 0, 0, canvas.width, canvas.height);
-                if (compareBtn)
-                    compareBtn.classList.add("bg-vespera-crimson", "text-vespera-parchment");
-            }
-        }
-        else {
-            applyShaderToFrame(state.currentFrameIndex);
-            if (compareBtn)
-                compareBtn.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
         }
     }
     function handleFileSelection(file) {
@@ -375,7 +259,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const dataUrl = event.target?.result;
             state.sourceImageDataUrl = dataUrl;
             const img = new Image();
-            img.onload = () => { state.sourceImageElement = img; };
+            img.onload = () => {
+                state.sourceImageElement = img;
+                mirror.setCatalyst(img);
+            };
             img.src = dataUrl;
             if (previewImg)
                 previewImg.src = dataUrl;
@@ -396,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
         state.sourceImageFile = null;
         state.sourceImageDataUrl = null;
         state.sourceImageElement = null;
+        mirror.setCatalyst(null);
         if (fileInput)
             fileInput.value = "";
         if (sourceIdInput)
@@ -439,8 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("user_notes", userNotesInput?.value || "");
         formData.append("capture_timeline", "true");
         try {
-            pauseAnimation();
-            canvasStageWrap?.classList.add("synthesizing");
+            mirror.pause();
+            mirror.setSynthesizing(true);
             showLoadingOverlay({
                 title: "Integrating Reaction-Diffusion Lattice",
                 subtitle: "Evaluating 2D Laplacian field and non-linear morphogen kinetics..."
@@ -449,8 +337,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "POST",
                 body: formData
             });
+            mirror.setSynthesizing(false);
             hideLoadingOverlay();
-            canvasStageWrap?.classList.remove("synthesizing");
             if (!res.success || !res.data)
                 return;
             state.currentArtifactHash = res.data.artifact_hash;
@@ -462,32 +350,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 metricHash.title = res.data.artifact_hash;
             }
             if (res.data.keyframes && res.data.keyframes.length > 0) {
-                emptyState?.classList.add("hidden");
                 if (modeBadge) {
                     modeBadge.textContent = "Simulated";
                     modeBadge.className = "vamp-badge vamp-badge-silver";
                 }
-                state.grayScaleFrames = await Promise.all(res.data.keyframes.map((b64) => {
-                    return new Promise((resolve) => {
-                        const img = new Image();
-                        img.onload = () => resolve(img);
-                        img.src = b64;
-                    });
-                }));
-                if (scrubber) {
-                    scrubber.max = (state.grayScaleFrames.length - 1).toString();
-                    scrubber.value = "0";
-                }
-                playbackPanel?.classList.remove("opacity-40", "pointer-events-none");
-                playbackBadge?.classList.remove("hidden");
                 commitContainer?.classList.remove("hidden");
-                applyShaderToFrame(0);
-                playAnimation();
+                await mirror.loadFrames(res.data.keyframes);
+                mirror.play();
             }
         }
         catch (error) {
             hideLoadingOverlay();
-            canvasStageWrap?.classList.remove("synthesizing");
+            mirror.setSynthesizing(false);
             window.showAlertModal?.({
                 title: "Synthesis Ruptured",
                 message: "An unexpected alchemical disruption collapsed the morphogenesis.",
@@ -581,12 +455,6 @@ document.addEventListener("DOMContentLoaded", () => {
             event.stopPropagation();
             purgeSourceImage();
         });
-        playPauseButton?.addEventListener("click", togglePlayPause);
-        scrubber?.addEventListener("input", () => {
-            pauseAnimation();
-            applyShaderToFrame(parseInt(scrubber.value));
-        });
-        compareBtn?.addEventListener("click", toggleComparison);
         synthesizeBtn?.addEventListener("click", executeSynthesis);
         commitBtn?.addEventListener("click", promptArtifactAlias);
     }

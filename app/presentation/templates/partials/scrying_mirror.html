@@ -1,0 +1,57 @@
+<!-- Vespera/app/presentation/templates/partials/scrying_mirror.html -->
+
+<div id="scrying-mirror-stage-wrapper"
+     class="scrying-mirror-stage-wrapper relative w-full aspect-square max-w-[440px] xl:max-w-[480px]
+            2xl:max-w-[520px] rounded overflow-hidden flex items-center justify-center">
+    <canvas id="scrying-mirror-canvas" width="1024" height="1024"
+            class="scrying-mirror-canvas">
+        <!-- TS -->
+    </canvas>
+
+    <!-- Empty State -->
+    <div id="scrying-mirror-empty-state"
+         class="scrying-mirror-empty-state">
+        <div class="scrying-mirror-empty-icon-wrapper">
+            <i class="fa-solid fa-biohazard"></i>
+        </div>
+        <span class="font-cinzel text-base text-vespera-parchment font-semibold">
+            Canvas in Equilibrium
+        </span>
+        <p class="font-serif text-xs text-vespera-bone max-w-xs mb-0">
+            Seed a catalyst and initiate the reaction to visualize morphogenetic formation.
+        </p>
+    </div>
+
+    <!-- Playback Badge -->
+    <div id="scrying-mirror-playback-badge"
+         class="scrying-mirror-playback-badge hidden">
+        <div class="playback-dot"></div>
+        <span id="scrying-mirror-frame-label"><!-- TS --></span>
+    </div>
+</div>
+
+<!-- Playback Controls -->
+<div id="scrying-mirror-controls-panel"
+     class="scrying-mirror-controls-panel disabled">
+    <div class="scrying-mirror-controls-row">
+        <button id="scrying-mirror-play-pause-btn" type="button"
+                class="vamp-btn vamp-btn-silver text-xs py-1 px-2.5">
+            <i id="scrying-mirror-play-pause-icon" class="fa-solid fa-play mr-1"></i>
+            Morph
+        </button>
+
+        <div class="flex-grow flex items-center">
+            <label class="w-full">
+                <input id="scrying-mirror-scrubber" type="range"
+                       min="0" max="60" step="1" value="0"
+                       class="vamp-range w-full">
+            </label>
+        </div>
+
+        <button id="scrying-mirror-compare-btn" type="button"
+                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5 scrying-mirror-compare-btn">
+            <i class="fa-solid fa-code-compare mr-1"></i>
+            Compare
+        </button>
+    </div>
+</div>

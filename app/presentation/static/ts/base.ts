@@ -203,6 +203,16 @@ export function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
     return lut;
 }
 
+export function applyPalette(data : Uint8ClampedArray, lut : Uint8ClampedArray) : void
+{
+    for(let p : number = 0; p < data.length; p += 4)
+    {
+        data[p]     = lut[data[p] * 3];
+        data[p + 1] = lut[data[p] * 3 + 1];
+        data[p + 2] = lut[data[p] * 3 + 2];
+    }
+}
+
 (window as any).getVesperaPalette        = getVesperaPalette;
 (window as any).showLoadingOverlay       = showLoadingOverlay;
 (window as any).hideLoadingOverlay       = hideLoadingOverlay;

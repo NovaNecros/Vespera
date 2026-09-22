@@ -30,8 +30,9 @@
     box-shadow       : 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
-/* Artifact Cards */
-.vault-artifact-card
+/* Image Cards */
+.vault-artifact-card,
+.vault-source-card
 {
     position         : relative;
     background-color : var(--vespera-glass-bg);
@@ -50,7 +51,13 @@
     transform    : translateY(-3px);
 }
 
-/* Zoomable Thumbnail */
+.vault-source-card:hover
+{
+    border-color : var(--vespera-silver);
+    box-shadow   : var(--vespera-shadow-ambient), var(--vespera-glow-silver);
+    transform    : translateY(-3px);
+}
+
 .vault-thumb-wrapper
 {
     position     : relative;
@@ -61,20 +68,24 @@
     cursor       : pointer;
 }
 
-.vault-thumb-img
+.vault-source-thumb-wrapper
 {
-    width      : 100%;
-    height     : 100%;
-    object-fit : cover;
-    transition : transform 0.4s ease;
+    position     : relative;
+    width        : 100%;
+    aspect-ratio : 4 / 3;
+    overflow     : hidden;
+    background   : var(--vespera-obsidian);
+    cursor       : pointer;
 }
 
-.vault-artifact-card:hover .vault-thumb-img
+.vault-artifact-card:hover .vault-thumb-img,
+.vault-source-card:hover .vault-source-thumb-img
 {
     transform : scale(1.06);
 }
 
-.vault-thumb-overlay
+.vault-thumb-overlay,
+.vault-source-thumb-overlay
 {
     position        : absolute;
     inset           : 0;
@@ -88,9 +99,19 @@
     transition      : opacity 0.25s ease;
 }
 
-.vault-thumb-wrapper:hover .vault-thumb-overlay
+.vault-thumb-wrapper:hover .vault-thumb-overlay,
+.vault-source-thumb-wrapper:hover .vault-source-thumb-overlay
 {
     opacity : 1;
+}
+
+.vault-thumb-img,
+.vault-source-thumb-img
+{
+    width      : 100%;
+    height     : 100%;
+    object-fit : cover;
+    transition : transform 0.4s ease;
 }
 
 .vault-quick-action-btn
@@ -144,71 +165,4 @@
     color        : var(--vespera-crimson-bright);
     border-color : var(--vespera-crimson);
     box-shadow   : 0 0 10px rgba(184, 10, 24, 0.60);
-}
-
-/* Source Cards */
-.vault-source-card
-{
-    position         : relative;
-    background-color : var(--vespera-glass-bg);
-    border           : 1px solid var(--vespera-border-black);
-    border-radius    : var(--vespera-radius);
-    overflow         : hidden;
-    display          : flex;
-    flex-direction   : column;
-    transition       : all 0.28s cubic-bezier(0.25, 0.80, 0.25, 1.00);
-}
-
-.vault-source-card:hover
-{
-    border-color : var(--vespera-silver);
-    box-shadow   : var(--vespera-shadow-ambient), var(--vespera-glow-silver);
-    transform    : translateY(-3px);
-}
-
-.vault-source-thumb-wrapper
-{
-    position     : relative;
-    width        : 100%;
-    aspect-ratio : 4 / 3;
-    overflow     : hidden;
-    background   : var(--vespera-obsidian);
-    cursor       : pointer;
-}
-
-.vault-source-thumb-img
-{
-    width      : 100%;
-    height     : 100%;
-    object-fit : cover;
-    transition : transform 0.4s ease;
-}
-
-.vault-source-card:hover .vault-source-thumb-img
-{
-    transform : scale(1.05);
-}
-
-.vault-source-thumb-overlay
-{
-    position        : absolute;
-    inset           : 0;
-    background      : linear-gradient(180deg, rgba(6, 6, 8, 0.20) 0%, rgba(6, 6, 8, 0.85) 100%);
-    opacity         : 0;
-    display         : flex;
-    align-items     : center;
-    justify-content : center;
-    gap             : 10px;
-    backdrop-filter : blur(2px);
-    transition      : opacity 0.25s ease;
-}
-
-.vault-source-thumb-wrapper:hover .vault-source-thumb-overlay
-{
-    opacity : 1;
-}
-
-#inspector-canvas
-{
-    image-rendering : auto;
 }

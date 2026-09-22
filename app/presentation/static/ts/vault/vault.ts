@@ -11,8 +11,9 @@ import {
     apiFetch,
     truncateHash,
     formatBytes,
-    buildPaletteLut
+    buildPaletteLut, applyPalette
 } from "../base.js";
+import { ScryingMirror } from "../partials/scrying_mirror.js";
 
 type VaultTab = "artifacts" | "catalysts";
 
@@ -37,12 +38,6 @@ interface VaultState
     // Modal
     inspectorRelId       : number            | null;
     inspectorArtifact    : SynthesisArtifact | null;
-    inspectorFrames      : HTMLImageElement[];
-    inspectorSourceImg   : HTMLImageElement  | null;
-    inspectorFrameIndex  : number;
-    inspectorIsPlaying   : boolean;
-    inspectorTimer       : number            | null;
-    inspectorIsComparing : boolean;
 }
 
 document.addEventListener("DOMContentLoaded", () : void =>
@@ -113,13 +108,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const inspFavIcon       : HTMLElement         | null = document.getElementById("inspector-favorite-icon")       as HTMLElement;
     const inspAliasHeading  : HTMLElement         | null = document.getElementById("inspector-artifact-alias")      as HTMLElement;
     const inspRenameBtn     : HTMLButtonElement   | null = document.getElementById("inspector-rename-alias-btn")    as HTMLButtonElement;
-    const inspFrameLabel    : HTMLElement         | null = document.getElementById("inspector-frame-label");
-    const inspPlayPauseBtn  : HTMLButtonElement   | null = document.getElementById("inspector-play-pause-btn")      as HTMLButtonElement;
-    const inspPlayIcon      : HTMLElement         | null = document.getElementById("inspector-play-icon");
-    const inspScrubber      : HTMLInputElement    | null = document.getElementById("inspector-timeline-scrubber")   as HTMLInputElement;
-    const inspCompareBtn    : HTMLButtonElement   | null = document.getElementById("inspector-compare-btn")         as HTMLButtonElement;
-    const inspectorCanvas   : HTMLCanvasElement   | null = document.getElementById("inspector-canvas")              as HTMLCanvasElement;
-    const offscreenCanvas   : HTMLCanvasElement          = document.createElement("canvas");
+    const mirror            : ScryingMirror              = new ScryingMirror();
 
     // Modal Metadata
     const inspFeedRate      : HTMLElement         | null = document.getElementById("inspector-feed-rate");
@@ -135,10 +124,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const inspBranchBtn     : HTMLButtonElement   | null = document.getElementById("inspector-branch-studio-btn")   as HTMLButtonElement;
     const inspDownloadBtn   : HTMLAnchorElement   | null = document.getElementById("inspector-download-btn")        as HTMLAnchorElement;
     const inspDelBtn        : HTMLButtonElement   | null = document.getElementById("inspector-delete-btn")          as HTMLButtonElement;
-
-    // Canvas Context for Preview & Offscreen Recoloring
-    const inspectorCanvasCtx : CanvasRenderingContext2D | null = inspectorCanvas ? inspectorCanvas.getContext("2d", { willReadFrequently: true }) : null;
-    const offscreenCtx       : CanvasRenderingContext2D | null = offscreenCanvas.getContext("2d", { willReadFrequently: true });
 
     let searchDebounceTimer : number | null = null;
 
@@ -164,13 +149,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             activeLut            : null,
 
             inspectorRelId       : null,
-            inspectorArtifact    : null,
-            inspectorFrames      : [],
-            inspectorSourceImg   : null,
-            inspectorFrameIndex  : 0,
-            inspectorIsPlaying   : false,
-            inspectorTimer       : null,
-            inspectorIsComparing : false
+            inspectorArtifact    : null
         };
     }
     let state : VaultState = getDefaultState();
@@ -193,104 +172,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
     }
 
     // Modal
-    function renderInspectorFrame(index : number) : void
-    {
-        if(!inspectorCanvas || !inspectorCanvasCtx || state.inspectorFrames.length === 0) return;
-        if(index < 0 || index >= state.inspectorFrames.length) return;
-
-        const img : HTMLImageElement = state.inspectorFrames[index];
-
-        if(offscreenCanvas.width !== inspectorCanvas.width || offscreenCanvas.height !== inspectorCanvas.height)
-        {
-            offscreenCanvas.width  = inspectorCanvas.width;
-            offscreenCanvas.height = inspectorCanvas.height;
-        }
-
-        if(!state.activeLut)
-        {
-            inspectorCanvasCtx.clearRect(0, 0, inspectorCanvas.width, inspectorCanvas.height);
-            inspectorCanvasCtx.drawImage(img, 0, 0, inspectorCanvas.width, inspectorCanvas.height);
-            return
-        }
-
-        offscreenCtx?.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        offscreenCtx?.drawImage(img, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-
-        const imgData : ImageData | undefined = offscreenCtx?.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        if(!imgData) return;
-
-        const data : Uint8ClampedArray = imgData.data;
-        const lut  : Uint8ClampedArray = state.activeLut;
-
-        for(let p : number = 0; p < data.length; p += 4)
-        {
-            const gray : number = data[p];
-            data[p]     = lut[gray * 3];
-            data[p + 1] = lut[gray * 3 + 1];
-            data[p + 2] = lut[gray * 3 + 2];
-        }
-
-        inspectorCanvasCtx.putImageData(imgData, 0, 0);
-        state.inspectorFrameIndex = index;
-        if(inspScrubber)   inspScrubber.value         = index.toString();
-        if(inspFrameLabel) inspFrameLabel.textContent = `Frame ${index + 1} / ${state.inspectorFrames.length}`;
-    }
-
-    function pauseInspectorAnimation() : void
-    {
-        state.inspectorIsPlaying = false;
-        if(state.inspectorTimer !== null)
-        {
-            clearInterval(state.inspectorTimer);
-            state.inspectorTimer = null;
-        }
-        if(inspPlayIcon) inspPlayIcon.className = "fa-solid fa-play mr-1.5";
-    }
-
-    function playInspectorAnimation() : void
-    {
-        if(state.inspectorFrames.length <= 1) return;
-        state.inspectorIsPlaying = true;
-        if(inspPlayIcon) inspPlayIcon.className = "fa-solid fa-pause mr-1.5 text-vespera-silverBright"
-
-        if(state.inspectorFrameIndex >= state.inspectorFrames.length - 1) renderInspectorFrame(0);
-
-        state.inspectorTimer = window.setInterval(() : void =>
-        {
-            const nextIdx : number = state.inspectorFrameIndex + 1;
-            if(nextIdx >= state.inspectorFrames.length) pauseInspectorAnimation();
-            else                                        renderInspectorFrame(nextIdx);
-        }, 120);
-    }
-
-    function toggleInspectorPlayPause() : void
-    {
-        if(state.inspectorIsPlaying) pauseInspectorAnimation();
-        else                         playInspectorAnimation();
-    }
-
-    function toggleInspectorComparison() : void
-    {
-        if(!inspectorCanvasCtx || !inspectorCanvas) return;
-        state.inspectorIsComparing = !state.inspectorIsComparing;
-
-        if(state.inspectorIsComparing)
-        {
-            pauseInspectorAnimation();
-            if(state.inspectorSourceImg)
-            {
-                inspectorCanvasCtx.clearRect(0, 0, inspectorCanvas.width, inspectorCanvas.height);
-                inspectorCanvasCtx.drawImage(state.inspectorSourceImg, 0, 0, inspectorCanvas.width, inspectorCanvas.height);
-                inspCompareBtn?.classList.add("bg-vespera-crimson", "text-vespera-parchment");
-            }
-        }
-        else
-        {
-            renderInspectorFrame(state.inspectorFrameIndex);
-            inspCompareBtn?.classList.remove("bg-vespera-crimson", "text-vespera-parchment");
-        }
-    }
-
     async function openInspectorModal(idArtifact : number, idRel? : number) : Promise<void>
     {
         try
@@ -321,11 +202,11 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 inspArtifactHash.textContent = art.artifact_hash;
                 inspArtifactHash.title       = art.artifact_hash;
             }
-            if(inspNotesTextArea) inspNotesTextArea.value      = art.user_notes || "";
+            if(inspNotesTextArea) inspNotesTextArea.value     = art.user_notes || "";
 
             const manifestPalette : ColorPalette | null = (
                 (art as any).manifestations?.[0]?.palette ||
-                (art as any).palette ||
+                (art as any).palette                      ||
                 null
             );
 
@@ -333,6 +214,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             if(manifestPalette && manifestPalette.stops) state.activeLut = buildPaletteLut(manifestPalette.stops);
             else                                         state.activeLut = null;
+            mirror.setPaletteLut(state.activeLut);
 
             if(inspDownloadBtn)
             {
@@ -356,9 +238,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(art.source_image)
             {
                 const srcUrl : string = streamSourceUrl.replace("/PLACEHOLDER", `/${art.source_image.sha256_hash}`);
-                state.inspectorSourceImg             = new Image();
-                state.inspectorSourceImg.crossOrigin = "anonymous";
-                state.inspectorSourceImg.src         = srcUrl;
+                mirror.setCatalyst(srcUrl);
             }
 
             const frameUrls : string[] = (art.frames || []).map((frame : SynthesisFrame) =>
@@ -368,35 +248,17 @@ document.addEventListener("DOMContentLoaded", () : void =>
                    .replace("/0", `/${frame.frame_index}`);
             });
 
-            state.inspectorFrames = await Promise.all(
-                frameUrls.map((url : string) : Promise<HTMLImageElement> =>
-                {
-                    return new Promise((resolve : (value : HTMLImageElement) => void) : void =>
-                    {
-                        const img : HTMLImageElement = new Image();
-                        img.crossOrigin = "anonymous";
-                        img.onload      = () : void => resolve(img);
-                        img.src         = url;
-                    });
-                })
-            );
-
-            if(inspScrubber)
-            {
-                inspScrubber.max   = Math.max(0, state.inspectorFrames.length - 1).toString();
-                inspScrubber.value = "0";
-            }
 
             (window as any).openModalWithTransition(inspectorModal);
 
-            renderInspectorFrame(0);
-            playInspectorAnimation();
+            await mirror.loadFrames(frameUrls);
+            mirror.play();
         }
         catch(error)
         {
             (window as any).showAlertModal?.({
                 title   : "Poisoned Vault",
-                message : "The seal for Artifact #${idArtifact} persists...",
+                message : `The seal for Artifact #${idArtifact} persists...`,
                 type    : "danger"
             });
         }
@@ -404,13 +266,11 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     function closeInspectorModal() : void
     {
-        pauseInspectorAnimation();
+        mirror.reset();
         (window as any).closeModalWithTransition(inspectorModal, () : void =>
         {
             state.inspectorArtifact    = null;
-            state.inspectorFrames      = [];
-            state.inspectorSourceImg   = null;
-            state.inspectorIsComparing = false;
+            state.inspectorRelId       = null;
         });
     }
 
@@ -488,13 +348,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             const data    : Uint8ClampedArray = imgData.data;
             const lut     : Uint8ClampedArray = buildPaletteLut(palette.stops);
 
-            for(let p : number = 0; p < data.length; p += 4)
-            {
-                const gray : number = data[p];
-                data[p]     = lut[gray * 3];
-                data[p + 1] = lut[gray * 3 + 1];
-                data[p + 2] = lut[gray * 3 + 2];
-            }
+            applyPalette(data, lut);
             ctx.putImageData(imgData, 0, 0);
         };
         img.src = srcUrl;
@@ -1327,13 +1181,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         // Modal
         inspectorCloseBtn?.addEventListener("click", closeInspectorModal);
-        inspPlayPauseBtn?.addEventListener("click", toggleInspectorPlayPause);
-        inspScrubber?.addEventListener("input", () =>
-        {
-            pauseInspectorAnimation();
-            renderInspectorFrame(parseInt(inspScrubber.value));
-        });
-        inspCompareBtn?.addEventListener("click", toggleInspectorComparison);
         inspFavToggleBtn?.addEventListener("click", () =>
         {
             if(state.inspectorArtifact)
