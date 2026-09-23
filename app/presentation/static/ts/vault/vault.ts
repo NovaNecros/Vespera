@@ -225,11 +225,13 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
                 if(state.inspectorRelId && dwnldManifestUrl)
                 {
-                    inspDownloadBtn.href = dwnldManifestUrl.replace("/relationship/0", `/relationship/${state.inspectorRelId}`);
+                    inspDownloadBtn.href = dwnldManifestUrl.replace(
+                        "/relationship/0", `/relationship/${state.inspectorRelId}`);
                 }
                 else
                 {
-                    inspDownloadBtn.href = streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${art.artifact_hash}`);
+                    inspDownloadBtn.href = streamArtifactUrl.replace(
+                        "/hash/PLACEHOLDER", `/hash/${art.artifact_hash}`);
                 }
 
                 inspDownloadBtn.download = downloadFilename;
@@ -237,15 +239,16 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             if(art.source_image)
             {
-                const srcUrl : string = streamSourceUrl.replace("/PLACEHOLDER", `/${art.source_image.sha256_hash}`);
+                const srcUrl : string = streamSourceUrl.replace(
+                    "/hash/PLACEHOLDER", `/hash/${art.source_image.sha256_hash}`);
                 mirror.setCatalyst(srcUrl);
             }
 
             const frameUrls : string[] = (art.frames || []).map((frame : SynthesisFrame) =>
             {
                return streamFrameUrl
-                   .replace("/PLACEHOLDER", `/${art.artifact_hash}`)
-                   .replace("/0", `/${frame.frame_index}`);
+                   .replace("/hash/PLACEHOLDER", `/hash/${art.artifact_hash}`)
+                   .replace("/frame/0", `/frame/${frame.frame_index}`);
             });
 
 
@@ -370,7 +373,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
         const bufferHTML : string[] = [];
         manifestations.forEach((item : ArtifactManifestation) =>
         {
-            const thumbUrl : string  = streamThumbUrl.replace("/PLACEHOLDER", `/${item.artifact_hash}`);
+            const thumbUrl : string  = streamThumbUrl.replace(
+                "/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`);
             const dateStr  : string  = item.created_at ? new Date(item.created_at).toLocaleString() : "-";
             const isFav    : boolean = item.is_favorite;
 
@@ -456,7 +460,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             );
             if(canvas)
             {
-                const thumbUrl : string = streamThumbUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`);
+                const thumbUrl : string = streamThumbUrl.replace(
+                    "/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`);
                 recolorThumbnailCanvas(canvas, thumbUrl, item.palette);
             }
         });
@@ -582,7 +587,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             cancelText  : "Cancel",
             onConfirm   : async () : Promise<void> =>
             {
-                const apiUrl : string = deleteSourceUrl.replace("/source/0", `/source/${idSource}`);
+                const apiUrl : string = deleteSourceUrl.replace(
+                    "/source/0", `/source/${idSource}`);
                 const res : APIResponse = await apiFetch(apiUrl, { method : "DELETE" });
                 if(!res.success) return;
                 await loadCatalysts();
@@ -777,7 +783,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
         const isArtifact = target === "artifacts";
         const baseEndpoint : string = isArtifact ?  updateArtAliasUrl : updateSrcAliasUrl;
         const replaceToken : string = isArtifact ? "artifact" : "source";
-        const apiUrl       : string = baseEndpoint.replace(`/${replaceToken}/0`, `/${replaceToken}/${targetId}`);
+        const apiUrl       : string = baseEndpoint.replace(
+            `/${replaceToken}/0`, `/${replaceToken}/${targetId}`);
 
         const res : APIResponse = await apiFetch(apiUrl,
         {
@@ -920,8 +927,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
     {
         try
         {
-            const apiUrl : string = toggleFavoriteUrl.replace("/artifact/0",
-                `/artifact/${idArtifact}`);
+            const apiUrl : string = toggleFavoriteUrl.replace(
+                "/artifact/0", `/artifact/${idArtifact}`);
 
             const res : APIResponse = await apiFetch(apiUrl, { method : "POST" });
 
@@ -956,8 +963,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             if(!state.inspectorArtifact || !inspNotesTextArea) return;
             const newNotes : string = inspNotesTextArea.value.trim();
-            const apiUrl  : string = updateNotesUrl.replace("/artifact/0",
-                `/artifact/${state.inspectorArtifact.id_artifact}`);
+            const apiUrl  : string = updateNotesUrl.replace(
+                "/artifact/0", `/artifact/${state.inspectorArtifact.id_artifact}`);
 
             const res : APIResponse = await apiFetch(apiUrl, {
                method  : "POST",
@@ -1000,7 +1007,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
             cancelText  : "Cancel",
             onConfirm   : async () : Promise<void> =>
             {
-                const apiUrl : string = deleteArtifactUrl.replace("/artifact/0", `/artifact/${id}`);
+                const apiUrl : string = deleteArtifactUrl.replace(
+                    "/artifact/0", `/artifact/${id}`);
                 const res : APIResponse = await apiFetch(apiUrl, {
                     method  : "DELETE",
                     headers : { "Content-Type" : "application/json" },

@@ -62,7 +62,7 @@
     gap             : 0.65rem;
     user-select     : none;
     pointer-events  : none;
-    background      : radial-gradient(circle at center, rgba(17, 19, 25, 0.75) 0%, rgba(6, 6, 8, 0.90) 80%);
+    background      : radial-gradient(circle at center, rgba(17, 19, 25, 0.35) 0%, rgba(6, 6, 8, 0.55) 80%);
     transition      : opacity 0.25s ease;
 }
 

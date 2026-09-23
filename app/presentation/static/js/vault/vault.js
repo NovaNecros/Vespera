@@ -158,13 +158,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 inspDownloadBtn.download = downloadFilename;
             }
             if (art.source_image) {
-                const srcUrl = streamSourceUrl.replace("/PLACEHOLDER", `/${art.source_image.sha256_hash}`);
+                const srcUrl = streamSourceUrl.replace("/hash/PLACEHOLDER", `/hash/${art.source_image.sha256_hash}`);
                 mirror.setCatalyst(srcUrl);
             }
             const frameUrls = (art.frames || []).map((frame) => {
                 return streamFrameUrl
-                    .replace("/PLACEHOLDER", `/${art.artifact_hash}`)
-                    .replace("/0", `/${frame.frame_index}`);
+                    .replace("/hash/PLACEHOLDER", `/hash/${art.artifact_hash}`)
+                    .replace("/frame/0", `/frame/${frame.frame_index}`);
             });
             window.openModalWithTransition(inspectorModal);
             await mirror.loadFrames(frameUrls);
@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
         reliquaryEmpty?.classList.add("hidden");
         const bufferHTML = [];
         manifestations.forEach((item) => {
-            const thumbUrl = streamThumbUrl.replace("/PLACEHOLDER", `/${item.artifact_hash}`);
+            const thumbUrl = streamThumbUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`);
             const dateStr = item.created_at ? new Date(item.created_at).toLocaleString() : "-";
             const isFav = item.is_favorite;
             const downloadFilename = (item.alias.match(/\.(png|jpg|jpeg|webp)$/i)

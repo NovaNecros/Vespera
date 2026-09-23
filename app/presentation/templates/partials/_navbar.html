@@ -27,16 +27,16 @@
             <span>The Studio</span>
         </a>
 
-        <a class="module-tab {% if request.path == '/vault' or request.path == '/vault/' %}active{% endif %}"
+        <a class="module-tab {% if request.path.startswith('/vault') %}active{% endif %}"
            href="{{ url_for('vault.vault') }}"
            data-target="vault">
             <i class="fa-solid fa-dungeon mr-2 text-vespera-silver"></i>
             <span>The Vault</span>
         </a>
 
-        <a class="module-tab opacity-50 cursor-not-allowed"
-           href="#"
-           title="The seal remains unbroken">
+        <a class="module-tab {% if request.path.startswith('/spectra/compendium') %}active{% endif %}"
+           href="{{ url_for('compendium.compendium') }}"
+           data-target="compendium">
             <i class="fa-solid fa-palette mr-2 text-vespera-silver"></i>
             <span>The Compendium</span>
         </a>
