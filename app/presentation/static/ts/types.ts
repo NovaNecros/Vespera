@@ -11,14 +11,18 @@ export interface APIResponse<T = any>
 }
 
 // --- DB MODELS ---
-export interface PaletteStop
+export interface RGBColor
+{
+    r : number;
+    g : number;
+    b : number;
+}
+
+export interface PaletteStop extends RGBColor
 {
     id_stop       : number;
     id_palette    : number;
     stop_position : number;
-    r             : number;
-    g             : number;
-    b             : number;
     hex           : string;
 }
 
@@ -31,6 +35,7 @@ export interface ColorPalette
     is_favorite  : boolean;
     stops        : PaletteStop[];
     created_at   : string | null;
+    user_notes?  : string;
 }
 
 export interface SourceImage
@@ -184,6 +189,19 @@ export interface SourceCatalogData
     page        : number;
     per_page    : number;
     total_pages : number;
+}
+
+// --- COMPENDIUM API CONTRACTS ---
+export interface PaletteStopPayload extends RGBColor
+{
+    stop_position : number;
+}
+
+export interface PaletteMutationPayload
+{
+    display_name : string;
+    user_notes?  : string;
+    stops        : PaletteStopPayload[];
 }
 
 // --- MODAL & OVERLAY CONTRACTS ---

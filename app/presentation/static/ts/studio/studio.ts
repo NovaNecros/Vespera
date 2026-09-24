@@ -1,11 +1,13 @@
 // Vespera/app/presentation/static/ts/studio/studio.ts
 
-import {
+import
+{
     APIResponse,
     SynthesisArtifact, ColorPalette,
     HydrationBundle, HydrationConfig, HydrationSourceImage
 } from "../types.js";
-import {
+import
+{
     apiFetch,
     hideLoadingOverlay,
     showLoadingOverlay,
@@ -187,24 +189,32 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(!res.success || !Array.isArray(res.data)) return;
 
         state.paletteCatalog    = res.data;
-        paletteSelect.innerHTML = "";
+
+        const bufferHTML : string[] = [`<option value="0">Monochrome</option>`];
 
         res.data.forEach((pal : ColorPalette) =>
         {
-            const opt : HTMLOptionElement = document.createElement("option");
-            opt.value       = pal.id_palette.toString();
-            opt.textContent = pal.display_name;
-            if(pal.name === "crimson_eclipse")
-            {
-                opt.selected    = true;
-                state.activeLut = buildPaletteLut(pal.stops);
-            }
-            paletteSelect.appendChild(opt);
+            const isSelected : boolean = pal.name === "crimson_eclipse";
+            if(isSelected) state.activeLut = buildPaletteLut(pal.stops);
+            bufferHTML.push(`
+                <option value="${pal.id_palette}"
+                        ${isSelected ? "selected" : ""}>
+                    ${pal.display_name}
+                </option>
+            `);
         });
+        paletteSelect.innerHTML = bufferHTML.join("");
 
         paletteSelect.addEventListener("change", () : void =>
         {
             const selectedId : number = parseInt(paletteSelect.value);
+            if(selectedId === 0)
+            {
+                state.activeLut = null
+                mirror.setPaletteLut(null);
+                return;
+            }
+
             const pal : ColorPalette | undefined = state.paletteCatalog.find(
                 (p : ColorPalette) => p.id_palette === selectedId);
             if(pal)
@@ -255,12 +265,20 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 if(dtInput)     dtInput.value     = cfg.dt.toFixed(2);
 
                 const targetPaletteId : number | undefined = bundle.selected_palette?.id_palette || cfg.id_palette;
-                if(paletteSelect && targetPaletteId)
+                if(paletteSelect && targetPaletteId !== undefined)
                 {
                     paletteSelect.value = targetPaletteId.toString();
-                    const pal : ColorPalette | undefined = state.paletteCatalog.find(
-                        (p : ColorPalette) => p.id_palette === targetPaletteId);
-                    if(pal) state.activeLut = buildPaletteLut(pal.stops);
+                    if(targetPaletteId === 0)
+                    {
+                        state.activeLut = null;
+                    }
+                    else
+                    {
+                        const pal : ColorPalette | undefined = state.paletteCatalog.find(
+                            (p : ColorPalette) => p.id_palette === targetPaletteId);
+                        state.activeLut = pal ? buildPaletteLut(pal.stops) : null;
+                    }
+                    mirror.setPaletteLut(state.activeLut);
                 }
             }
 

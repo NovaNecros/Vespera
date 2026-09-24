@@ -1,6 +1,6 @@
 // Vespera/app/presentation/static/ts/partials/scrying_mirror.ts
 
-import {applyPalette, buildPaletteLut} from "../base.js";
+import { applyPalette } from "../base.js";
 
 export interface ScryingMirrorOptions
 {

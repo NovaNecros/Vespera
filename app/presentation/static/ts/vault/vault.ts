@@ -1,13 +1,15 @@
 // Vespera/app/presentation/static/ts/vault/vault.ts
 
-import {
+import
+{
     APIResponse,
     SynthesisArtifact, SynthesisFrame,
     ColorPalette,
     VaultGalleryData, ArtifactManifestation,
     SourceCatalogItem, SourceCatalogData
 } from "../types.js";
-import {
+import
+{
     apiFetch,
     truncateHash,
     formatBytes,
@@ -992,7 +994,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         }
     }
 
-    async function deleteCurrentArtifact() : Promise<void>
+    function deleteCurrentArtifact() : void
     {
         if(!state.inspectorArtifact) return;
         const name : string = state.inspectorArtifact.alias;
@@ -1018,11 +1020,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 if(!res.success) return;
 
                 closeInspectorModal();
-                await loadArtifacts();
                 (window as any).showAlertModal({
                     title   : "Artifact Purged",
                     message : "The Artifact has been banished for eternity.",
-                    type    : "success"
+                    type    : "success",
+                    onConfirm : async () : Promise<void> => { await loadArtifacts(); },
+                    onCancel  : async () : Promise<void> => { await loadArtifacts(); }
                 });
             }
         });

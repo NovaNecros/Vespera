@@ -1,11 +1,12 @@
 // Vespera/app/presentation/static/ts/base.ts
 
-import {
+import
+{
     APIResponse,
     LoadingOverlayOptions,
     VesperaPalette,
-    ColorPalette,    PaletteStop,
-    HydrationBundle, HydrationConfig
+    PaletteStop,
+    RGBColor
 } from "./types.js";
 
 export function getVesperaPalette() : VesperaPalette
@@ -171,6 +172,31 @@ export function truncateHash(hash : string, chars : number = 8) : string
     return `${hash.substring(0, chars)}...${hash.substring(hash.length - chars)}`;
 }
 
+export function hexToRgb(hex : string) : RGBColor
+{
+    let cleanHex : string = hex.trim().replace("#", "");
+    if(cleanHex.length === 3)
+    {
+        cleanHex = cleanHex.split("").map((c : string) => c + c).join("");
+    }
+    const num : number = parseInt(cleanHex, 16);
+    return {
+        r : (num >> 16) & 255,
+        g : (num >> 8)  & 255,
+        b :  num        & 255
+    };
+}
+
+export function rgbToHex(color : RGBColor) : string
+{
+    const toHex = (n : number) : string =>
+    {
+        const clamped : number = Math.max(0, Math.min(255, Math.round(n)));
+        return clamped.toString(16).padStart(2, "0");
+    };
+    return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
+}
+
 export function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
 {
     const lut : Uint8ClampedArray = new Uint8ClampedArray(256 * 3);
@@ -221,4 +247,7 @@ export function applyPalette(data : Uint8ClampedArray, lut : Uint8ClampedArray) 
 (window as any).apiFetch                 = apiFetch;
 (window as any).formatBytes              = formatBytes;
 (window as any).truncateHash             = truncateHash;
+(window as any).hexToRgb                 = hexToRgb;
+(window as any).rgbToHex                 = rgbToHex;
 (window as any).buildPaletteLut          = buildPaletteLut;
+(window as any).applyPalette             = applyPalette;

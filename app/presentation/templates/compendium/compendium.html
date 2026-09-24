@@ -18,7 +18,7 @@
      data-update-palette-api-url="#"
      data-delete-palette-api-url="#"
      data-toggle-favorite-api-url="#"
-     data-enigma22-api-url="{{ url_for('enigma.api_stream_enigma22') }}">
+     data-sample-api-url="{{ url_for('enigma.api_stream_enigma22') }}">
 
     <!-- HEADER -->
     <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b
@@ -273,15 +273,21 @@
                             <i class="fa-regular fa-star mr-1"></i>
                             Favorites
                         </button>
-                        <label>
-                            <select id="sort-spectra-select"
-                                    class="vamp-select text-xs py-1 px-2 w-36">
-                                <option value="id_asc">Oldest Brewed</option>
-                                <option value="id_desc">Newest Brewed</option>
-                                <option value="name_asc">Name Inscribed</option>
-                                <option value="stops_desc">Stop Density</option>
-                            </select>
-                        </label>
+                        <div class="flex items-center gap-1.5">
+                            <label>
+                                <select id="sort-spectra-select"
+                                        class="vamp-select text-xs py-1 px-2 w-36">
+                                    <option value="id">Date Brewed</option>
+                                    <option value="name">Name</option>
+                                    <option value="stops">Stop Density</option>
+                                </select>
+                            </label>
+                            <button id="sort-direction-btn" type="button"
+                                    title="Toggle Ascending / Descending"
+                                    class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-2 border border-vespera-obsidian">
+                                <i id="sort-direction-icon" class="fa-solid fa-arrow-down-wide-short"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
