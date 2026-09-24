@@ -15,7 +15,7 @@ class ColorPalette(db.Model):
     id_palette        = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name              = db.Column(db.String(64), unique=True, nullable=False, index=True)
     display_name      = db.Column(db.String(128), nullable=False)
-    is_system         = db.Column(db.Boolean, nullable=False, default=True)
+    is_system         = db.Column(db.Boolean, nullable=False, default=False)
     is_favorite       = db.Column(db.Boolean, nullable=False, default=False)
     user_notes        = db.Column(db.String(1024), nullable=True)
     id_parent_palette = db.Column(db.Integer, db.ForeignKey("color_palette.id_palette", ondelete="SET NULL"), nullable=True)

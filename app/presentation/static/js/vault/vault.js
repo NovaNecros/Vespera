@@ -754,7 +754,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
-    async function deleteCurrentArtifact() {
+    function deleteCurrentArtifact() {
         if (!state.inspectorArtifact)
             return;
         const name = state.inspectorArtifact.alias;
@@ -776,11 +776,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!res.success)
                     return;
                 closeInspectorModal();
-                await loadArtifacts();
                 window.showAlertModal({
                     title: "Artifact Purged",
                     message: "The Artifact has been banished for eternity.",
-                    type: "success"
+                    type: "success",
+                    onConfirm: async () => { await loadArtifacts(); },
+                    onCancel: async () => { await loadArtifacts(); }
                 });
             }
         });

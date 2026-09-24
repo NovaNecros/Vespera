@@ -1,5 +1,6 @@
 # Vespera/app/core/utils/text_utils.py
 
+import re
 import unicodedata
 from typing import Optional, Any
 
@@ -22,5 +23,19 @@ def normalize_text(text : Any, case : Optional[str] = None) -> str:
             elif case_norm == "LOWER": clean_text : str = clean_text.lower()
             elif case_norm == "TITLE": clean_text : str = clean_text.title()
         return clean_text
+    except:
+        return ""
+
+def sanitize_filename(text : Any) -> str:
+    """
+    Sanitiza un nombre de archivo o registro de DB conservando solo caracteres alfanuméricos y
+    sustituyendo espacios por guiones bajos _.
+    :param text : Texto original.
+    :return     : Texto sanitizado.
+    """
+    try:
+        text_clean : str = normalize_text(text, "LOWER")
+        if not text_clean: return ""
+        return re.sub(r"[^a-z0-9_]+", "", text_clean.replace(" ", "_"))
     except:
         return ""

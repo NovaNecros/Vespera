@@ -14,10 +14,10 @@
 <div id="compendium-main-container"
      class="w-full flex flex-col gap-4"
      data-palettes-api-url="{{ url_for('compendium.api_get_palettes') }}"
-     data-create-palette-api-url="#"
-     data-update-palette-api-url="#"
-     data-delete-palette-api-url="#"
-     data-toggle-favorite-api-url="#"
+     data-create-palette-api-url="{{ url_for('compendium.api_create_palette') }}"
+     data-update-palette-api-url="{{ url_for('compendium.api_update_palette', id_palette=0) }}"
+     data-delete-palette-api-url="{{ url_for('compendium.api_delete_palette', id_palette=0) }}"
+     data-toggle-favorite-api-url="{{ url_for('compendium.api_toggle_favorite', id_palette=0) }}"
      data-sample-api-url="{{ url_for('enigma.api_stream_enigma22') }}">
 
     <!-- HEADER -->

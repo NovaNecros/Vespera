@@ -141,12 +141,12 @@ export function hexToRgb(hex) {
         b: num & 255
     };
 }
-export function rgbToHex(r, g, b) {
+export function rgbToHex(color) {
     const toHex = (n) => {
         const clamped = Math.max(0, Math.min(255, Math.round(n)));
         return clamped.toString(16).padStart(2, "0");
     };
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
 }
 export function buildPaletteLut(stops) {
     const lut = new Uint8ClampedArray(256 * 3);

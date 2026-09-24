@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const updatePaletteApiUrl : string                     = mainContainer.dataset.updatePaletteApiUrl  || "";
     const deletePaletteApiUrl : string                     = mainContainer.dataset.deletePaletteApiUrl  || "";
     const toggleFavApiUrl     : string                     = mainContainer.dataset.toggleFavoriteApiUrl || "";
-    const sampleApiUrl        : string                     = mainContainer.dataset.samplePaletteApiUrl  || "";
+    const sampleApiUrl        : string                     = mainContainer.dataset.sampleApiUrl         || "";
 
     // Editor
     const mirror              : ScryingMirror              = new ScryingMirror();
@@ -425,7 +425,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                                 ${pal.display_name}
                             </span>
                             <span class="font-mono text-[0.65rem] text-vespera-silver truncate">
-                                #{pal.id_palette} • ${pal.stops.length} Nodes
+                                #${pal.id_palette} • ${pal.stops.length} Nodes
                             </span>
                         </div>
                         <div class="flex items-center gap-1.5">
@@ -578,8 +578,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
     {
         const def : CompendiumState = getDefaultState();
         state.activePaletteId       = null;
-        state.activeName            = "New Chromatic Spectrum";
-        state.activeDisplayName     = "";
+        state.activeName            = "";
+        state.activeDisplayName     = "New Chromatic Spectrum";
         state.isSystem              = false;
         state.isFavorite            = false;
         state.stops                 = def.stops;
@@ -622,7 +622,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             (window as any).showAlertModal?.({
                 title   : "Criptochroma",
-                message : "A chromatic formula requires must be named.",
+                message : "A chromatic formula requires a name.",
                 type    : "warning"
             });
             return;
