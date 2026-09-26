@@ -86,24 +86,6 @@ def seed_configs() -> bool:
                 "iterations"   : 12000
             },
             {
-                "display_name" : "Arterial Dewdrops",
-                "feed_rate"    : 0.0367,
-                "kill_rate"    : 0.0649,
-                "diff_u"       : 1.0000,
-                "diff_v"       : 0.5000,
-                "dt"           : 1.0000,
-                "iterations"   : 14000
-            },
-            {
-                "display_name" : "Moonlight Pulse",
-                "feed_rate"    : 0.0300,
-                "kill_rate"    : 0.0620,
-                "diff_u"       : 1.0000,
-                "diff_v"       : 0.5000,
-                "dt"           : 1.0000,
-                "iterations"   : 12000
-            },
-            {
                 "display_name" : "Coven's Delirium",
                 "feed_rate"    : 0.0180,
                 "kill_rate"    : 0.0510,
@@ -113,13 +95,13 @@ def seed_configs() -> bool:
                 "iterations"   : 12000
             },
             {
-                "display_name" : "Kiss of Eternity",
+                "display_name" : "Arterial Dewdrops",
                 "feed_rate"    : 0.0300,
                 "kill_rate"    : 0.0630,
                 "diff_u"       : 1.0000,
                 "diff_v"       : 0.5000,
                 "dt"           : 1.0000,
-                "iterations"   : 19000
+                "iterations"   : 25000
             }
         ]
 

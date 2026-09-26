@@ -662,7 +662,8 @@ class VaultService:
         except Exception as e:
             raise e
 
-    def delete_source_image(self : VaultService, id_source_image : int) -> dict[str, Any]:
+    @staticmethod
+    def delete_source_image(id_source_image : int) -> dict[str, Any]:
         """
         Elimina una imagen original que ha quedado huérfana de la DB y físicamente.
         :param id_source_image : ID (PK) de la imagen original.
@@ -701,12 +702,83 @@ class VaultService:
             db.session.delete(source)
             db.session.commit()
 
-            if self.verbose:
-                print(f"[OK]{Colors.GREEN} Successfully deleted source image with ID:{Colors.RESET} #{id_source_image}")
+            print(f"[OK]{Colors.YELLOW} Successfully deleted source image with ID:{Colors.RESET} #{id_source_image}")
 
             return {
                 "success"     : True,
                 "message"     : f"Source image with ID #{id_source_image} deleted successfully.",
+                "status_code" : 200
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def delete_artifact(id_artifact : int) -> dict[str, Any]:
+        """
+        Elimina un patrón de turing de la DB y sus archivos físicos asociados.
+        Si la imagen original queda huérfana, se elimina también.
+        :param id_artifact : ID (PK) del patrón de Turing.
+        :return            : Estado de éxito de la operación.
+        """
+        try:
+            artifact : Optional[SynthesisArtifact] = (
+                db.session
+                    .query(SynthesisArtifact)
+                    .filter_by(id_artifact=id_artifact)
+                    .first()
+            )
+            if not artifact: return {
+                "success"     : False,
+                "error"       : f"Artifact with ID {id_artifact} not found.",
+                "status_code" : 404
+            }
+
+            artifact_hash   : str = artifact.artifact_hash
+            artifact_alias  : int = artifact.alias
+            source_image_id : int = artifact.id_source_image
+            source_alias    : str = artifact.source_image.alias if artifact.source_image else f"Catalyst #{source_image_id}"
+
+            remaining_manifestations : int = (
+                db.session
+                    .query(RelArtifactPalette)
+                    .filter_by(id_artifact=id_artifact)
+                    .count()
+            )
+            if remaining_manifestations > 0: return {
+                "success"     : False,
+                "error"       : f"Requested source image with ID #{id_artifact} has {remaining_manifestations} associated artifacts.",
+                "status_code" : 409
+            }
+
+            try:
+                FileRepository.delete_artifact_files(artifact_hash)
+            except Exception as ex:
+                print(f"[!] {Colors.RED}Error deleting artifact files:{Colors.RESET} {ex}")
+
+            db.session.delete(artifact)
+            db.session.commit()
+
+            remaining_artifacts : int = (
+                db.session
+                    .query(SynthesisArtifact)
+                    .filter_by(id_source_image=source_image_id)
+                    .count()
+            )
+
+            print(f"[OK]{Colors.YELLOW} ARTIFACT #{id_artifact} PURGED SUCCESSFULLY. {remaining_artifacts} REMAINING FOR CATALYST {source_alias} {Colors.RESET}")
+
+            return {
+                "success"     : True,
+                "message"     : f"Artifact {artifact_alias} purged successfully.",
+                "data"        : {
+                    "id_artifact"         : id_artifact,
+                    "artifact_alias"      : artifact_alias,
+                    "id_source_image"     : source_image_id,
+                    "source_alias"        : source_alias,
+                    "remaining_artifacts" : remaining_artifacts
+                },
                 "status_code" : 200
             }
 
@@ -725,6 +797,7 @@ class VaultService:
             rel : Optional[RelArtifactPalette] = (
                 db.session
                     .query(RelArtifactPalette)
+                    .options(db.joinedload(RelArtifactPalette.artifact))
                     .filter_by(id_rel=id_rel)
                     .first()
             )
@@ -734,94 +807,31 @@ class VaultService:
                 "status_code" : 404
             }
 
-            id_artifact : int = rel.id_artifact
-            id_palette  : int = rel.id_palette
+            id_artifact    : int = rel.id_artifact
+            id_palette     : int = rel.id_palette
+            artifact_alias : str = rel.artifact.alias if rel.artifact else f"Artifact #{id_artifact}"
+
             db.session.delete(rel)
             db.session.commit()
 
-            print(f"[OK]{Colors.YELLOW} RELATION #{id_rel} BETWEEN ARTIFACT #{id_artifact} AND PALETTE #{id_palette} DELETED{Colors.RESET}")
+            remaining_manifestations : int = (
+                db.session
+                    .query(RelArtifactPalette)
+                    .filter_by(id_artifact=id_artifact)
+                    .count()
+            )
+
+            print(f"[OK]{Colors.YELLOW} RELATION #{id_rel} BETWEEN ARTIFACT #{id_artifact} AND PALETTE #{id_palette} DELETED. {remaining_manifestations} REMAINING.{Colors.RESET}")
 
             return {
                 "success"     : True,
                 "message"     : f"Manifestation #{id_rel} purged from The Reliquary",
-                "status_code" : 200
-            }
-        except Exception as e:
-            db.session.rollback()
-            raise e
-
-    def delete_artifact(
-        self        : VaultService,
-        id_artifact : int,
-        params      : dict[str, Any]
-    ) -> dict[str, Any]:
-        """
-        Elimina un patrón de turing de la DB y sus archivos físicos asociados.
-        Si la imagen original queda huérfana, se elimina también.
-        :param id_artifact : ID (PK) del patrón de Turing.
-        :param params      : Bandera para indicar si preservar o eliminar la imagen original si queda huérfana.
-        :return            : Estado de éxito de la operación.
-        """
-        try:
-            raw_flag : Any = params.get("delete_orphaned_source", False)
-            delete_orphaned_source : bool = (
-                raw_flag if isinstance(raw_flag, bool)
-                else normalize_text(raw_flag, "LOWER") in ("true", "yes", "1")
-            )
-
-            msg_parts : list[str] = []
-
-            artifact : Optional[SynthesisArtifact] = (
-                db.session
-                    .query(SynthesisArtifact)
-                    .filter_by(id_artifact=id_artifact)
-                    .first()
-            )
-            if not artifact: return {
-                "success"     : False,
-                "error"       : f"Artifact with ID {id_artifact} not found.",
-                "status_code" : 404
-            }
-
-            artifact_hash   : str = artifact.artifact_hash
-            source_image_id : int = artifact.id_source_image
-
-            # Eliminar archivos del patrón
-            try:
-                FileRepository.delete_artifact_files(artifact_hash)
-            except Exception as ex:
-                print(f"[!] {Colors.RED}Error deleting artifact files:{Colors.RESET} {ex}")
-                msg_parts.append(f"Warning: Could not remove all artifact files.")
-
-            # Eliminar registro de la DB
-            db.session.delete(artifact)
-            db.session.commit()
-
-            if self.verbose:
-                print(f"[OK]{Colors.YELLOW} Artifact #{id_artifact} purged successfully.{Colors.RESET}")
-            msg_parts.append(f"Artifact #{id_artifact} deleted successfully.")
-
-            # Eliminar imagen original huérfana
-            if delete_orphaned_source:
-                try:
-                    remaining_siblings : int = (
-                        db.session
-                            .query(SynthesisArtifact)
-                            .filter_by(id_source_image=source_image_id)
-                            .count()
-                    )
-                    if remaining_siblings == 0:
-                        self.delete_source_image(source_image_id)
-                        msg_parts.append(f"Orphaned catalyst #{source_image_id} also purged")
-                    else:
-                        msg_parts.append(f"Catalyst #{source_image_id} was not orphaned ({remaining_siblings} children remain)")
-                except Exception as ex:
-                    print(f"[!] {Colors.RED}Unexpected error deleting source image:{Colors.RESET} {ex}")
-                    msg_parts.append(f"Unexpected error deleting source image #{source_image_id}.")
-
-            return {
-                "success"     : True,
-                "message"     : " ".join(msg_parts),
+                "data"        : {
+                    "id_rel"                  : id_rel,
+                    "id_artifact"             : id_artifact,
+                    "artifact_alias"          : artifact_alias,
+                    "remaining_manifestations": remaining_manifestations
+                },
                 "status_code" : 200
             }
 

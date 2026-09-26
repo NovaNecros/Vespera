@@ -195,6 +195,23 @@ export interface SourceCatalogData
     total_pages : number;
 }
 
+export interface DeleteManifestationData
+{
+    id_rel                   : number;
+    id_artifact              : number;
+    artifact_alias           : string;
+    remaining_manifestations : number;
+}
+
+export interface DeleteArtifactData
+{
+    id_artifact         : number;
+    artifact_alias      : string;
+    id_source_image     : number;
+    source_alias        : string;
+    remaining_artifacts : number;
+}
+
 // --- COMPENDIUM API CONTRACTS ---
 export interface PaletteStopPayload extends RGBColor
 {

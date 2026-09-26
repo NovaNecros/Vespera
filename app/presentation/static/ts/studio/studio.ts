@@ -26,6 +26,10 @@ interface StudioState
     paletteCatalog       : ColorPalette[];
     systemConfigs        : ConfigTuring[];
     activeLut            : Uint8ClampedArray | null;
+
+    rehydratedArtifactId : number            | null;
+    rehydratedPaletteId  : number            | null;
+    isNewManifestation   : boolean;
 }
 
 document.addEventListener("DOMContentLoaded", () : void =>
@@ -35,11 +39,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
     if(!mainContainer) return;
 
     // URLs
-    const generateApiUrl  : string                   = mainContainer.dataset.generateApiUrl || "";
-    const commitApiUrl    : string                   = mainContainer.dataset.commitApiUrl   || "";
-    const palettesApiUrl  : string                   = mainContainer.dataset.palettesApiUrl || "";
-    const configsApiUrl   : string                   = mainContainer.dataset.configsApiUrl  || "";
-    const hydrateApiUrl   : string                   = mainContainer.dataset.hydrateApiUrl  || "";
+    const generateApiUrl  : string                   = mainContainer.dataset.generateApiUrl  || "";
+    const commitApiUrl    : string                   = mainContainer.dataset.commitApiUrl    || "";
+    const createRelApiUrl : string                   = mainContainer.dataset.createRelApiUrl || "";
+    const palettesApiUrl  : string                   = mainContainer.dataset.palettesApiUrl  || "";
+    const configsApiUrl   : string                   = mainContainer.dataset.configsApiUrl   || "";
+    const hydrateApiUrl   : string                   = mainContainer.dataset.hydrateApiUrl   || "";
 
     // FORM
     const dropzoneEl      : HTMLElement       | null = document.getElementById("dropzone-container");
@@ -189,6 +194,26 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 state.activeLut = buildPaletteLut(pal.stops);
                 mirror.setPaletteLut(state.activeLut);
             }
+
+            if(state.rehydratedArtifactId && state.rehydratedArtifactId > 0)
+            {
+                const isDifferentPalette : boolean = selectedId !== state.rehydratedPaletteId && selectedId > 0;
+                state.isNewManifestation           = isDifferentPalette;
+
+                if(commitContainer && commitBtn)
+                {
+                    if(isDifferentPalette)
+                    {
+                        commitBtn.innerHTML = `<i class="fa-solid fa-droplet mr-2 text-vespera-crimson"></i>Seal New Manifestation`;
+                        commitBtn.title     = "Instantly bind new chromatic spectrum for the artifact.";
+                        commitContainer.classList.remove("hidden");
+                    }
+                    else
+                    {
+                        commitContainer.classList.add("hidden");
+                    }
+                }
+            }
         });
     }
 
@@ -204,6 +229,10 @@ document.addEventListener("DOMContentLoaded", () : void =>
             paletteCatalog       : [],
             systemConfigs        : [],
             activeLut            : null,
+
+            rehydratedArtifactId : null,
+            rehydratedPaletteId  : null,
+            isNewManifestation   : false
         };
     }
     const state : StudioState = setDefaultState();
@@ -221,6 +250,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         {
             numInput.value = parseFloat(slider.value).toFixed(precision);
             if(configPresetSel) configPresetSel.value = "custom";
+            invalidateRehydration();
         });
 
         // Input -> Slider
@@ -235,6 +265,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 slider.value           = clamped.toString();
             }
             if(configPresetSel) configPresetSel.value = "custom";
+            invalidateRehydration();
         });
 
         numInput.addEventListener("blur", () =>
@@ -269,7 +300,24 @@ document.addEventListener("DOMContentLoaded", () : void =>
         }
     }
 
-    // POPULATE STUDIO
+    // REHYDRATE STUDIO
+    function invalidateRehydration() : void
+    {
+        if(state.rehydratedArtifactId)
+        {
+            state.rehydratedArtifactId = null;
+            state.rehydratedPaletteId  = null;
+            state.isNewManifestation   = false;
+            commitContainer?.classList.add("hidden");
+
+            if(modeBadge)
+            {
+                modeBadge.textContent = "Modified";
+                modeBadge.className   = "vamp-badge vamp-badge-crimson-dark";
+            }
+        }
+    }
+
     async function checkUrlHydrationTarget() : Promise<void>
     {
         try
@@ -279,24 +327,20 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             if(!loadId) return;
 
-            showLoadingOverlay({
-                title    : "Summoning Ancient Formula from The Vault",
-                subtitle : `Reconstructing alchemical conditions for Artifact #${loadId}`
-            });
-
             const apiUrl : string      = hydrateApiUrl.replace("/artifact/0", `/artifact/${loadId}`);
             const res    : APIResponse<HydrationBundle> = await apiFetch<HydrationBundle>(apiUrl);
 
             if(!res.success || !res.data) return;
 
-            const bundle : HydrationBundle | null = res.data;
+            let targetPaletteId : number          | undefined = undefined;
+            const bundle        : HydrationBundle | null      = res.data;
+            const cfg           : HydrationConfig | null      = bundle.config;
 
-            const cfg : HydrationConfig | null = bundle.config;
             if(cfg)
             {
                 renderConfig(cfg);
 
-                const targetPaletteId : number | undefined = bundle.selected_palette?.id_palette || cfg.id_palette;
+                targetPaletteId = bundle.selected_palette?.id_palette || cfg.id_palette;
                 if(paletteSelect && targetPaletteId !== undefined)
                 {
                     paletteSelect.value = targetPaletteId.toString();
@@ -350,7 +394,11 @@ document.addEventListener("DOMContentLoaded", () : void =>
                     modeBadge.className   = "vamp-badge vamp-badge-silver";
                 }
 
-                state.currentArtifactHash = bundle.artifact_hash;
+                state.currentArtifactHash  = bundle.artifact_hash;
+                state.rehydratedArtifactId = bundle.id_artifact;
+                state.rehydratedPaletteId  = targetPaletteId !== undefined ? targetPaletteId : 0;
+                state.isNewManifestation   = false;
+
                 await mirror.loadFrames(bundle.frames);
                 mirror.play();
             }
@@ -358,10 +406,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         catch(error)
         {
             return console.error(error);
-        }
-        finally
-        {
-            hideLoadingOverlay();
         }
     }
 
@@ -383,6 +427,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         reader.onload = (event : ProgressEvent<FileReader>) =>
         {
+            invalidateRehydration();
             const dataUrl : string = event.target?.result as string;
             state.sourceImageDataUrl = dataUrl;
 
@@ -534,6 +579,41 @@ document.addEventListener("DOMContentLoaded", () : void =>
         }
     }
 
+    async function commitNewManifestation() : Promise<void>
+    {
+        if(!state.rehydratedArtifactId || !paletteSelect) return;
+        const selectedPaletteId : number = parseInt(paletteSelect.value);
+        if(selectedPaletteId <= 0) return;
+
+        const pal : ColorPalette | undefined = state.paletteCatalog.find(
+            (p : ColorPalette) => p.id_palette === selectedPaletteId);
+
+        const palName : string = pal?.display_name || `Spectrum #${selectedPaletteId}`;
+
+        const apiUrl : string = (
+            createRelApiUrl
+                .replace("/artifact/0", `/artifact/${state.rehydratedArtifactId}`)
+                .replace("/palette/0", `/palette/${selectedPaletteId}`)
+        );
+
+        const res : APIResponse = await apiFetch(apiUrl, {
+            method  : "POST",
+            headers : { "Content-Type": "application/json" }
+        });
+
+        if(!res.success) return;
+
+        state.rehydratedPaletteId = selectedPaletteId;
+        state.isNewManifestation  = false;
+        commitContainer?.classList.add("hidden");
+
+        (window as any).showAlertModal?.({
+            title   : "Manifestation Sealed",
+            message : `Spectrum "${palName}" has been bound to Artifact.`,
+            type    : "success"
+        });
+    }
+
     async function commitArtifact(alias : string) : Promise<void>
     {
         if(!state.currentArtifactHash) return;
@@ -602,6 +682,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
         });
     }
 
+    function handleCommitAction() : void
+    {
+        if(state.isNewManifestation && state.rehydratedArtifactId) commitNewManifestation().then();
+        else                                                       promptArtifactAlias();
+    }
+
     // LISTENERS
     function bindListeners() : void
     {
@@ -646,7 +732,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         // Synthesis
         synthesizeBtn?.addEventListener("click", executeSynthesis);
-        commitBtn?.addEventListener("click", promptArtifactAlias);
+        commitBtn?.addEventListener("click", handleCommitAction);
     }
 
     async function initStudio()

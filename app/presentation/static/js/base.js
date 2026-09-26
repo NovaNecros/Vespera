@@ -66,9 +66,14 @@ export function hideLoadingOverlay() {
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
 }
+const modalTimeouts = new WeakMap();
 export function openModalWithTransition(modalEl) {
     if (!modalEl)
         return;
+    if (modalTimeouts.has(modalEl)) {
+        clearTimeout(modalTimeouts.get(modalEl));
+        modalTimeouts.delete(modalEl);
+    }
     modalEl.classList.remove("hidden", "closing");
     modalEl.classList.add("flex");
     document.body.classList.add("overflow-hidden");
@@ -78,15 +83,23 @@ export function openModalWithTransition(modalEl) {
 export function closeModalWithTransition(modalEl, onClosed) {
     if (!modalEl)
         return;
+    if (modalTimeouts.has(modalEl)) {
+        clearTimeout(modalTimeouts.get(modalEl));
+        modalTimeouts.delete(modalEl);
+    }
     modalEl.classList.remove("active");
     modalEl.classList.add("closing");
-    setTimeout(() => {
+    const timeId = window.setTimeout(() => {
         modalEl.classList.remove("closing", "flex");
         modalEl.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
+        const hasActiveModals = document.querySelectorAll(".vespera-modal.active").length > 0;
+        if (!hasActiveModals)
+            document.body.classList.remove("overflow-hidden");
+        modalTimeouts.delete(modalEl);
         if (onClosed)
             onClosed();
     }, 260);
+    modalTimeouts.set(modalEl, timeId);
 }
 export async function apiFetch(url, options) {
     try {

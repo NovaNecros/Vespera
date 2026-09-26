@@ -114,7 +114,7 @@ def api_delete_artifact(id_artifact : int) -> dict[str, Any]:
     :param id_artifact : ID (PK) del patrón).
     :return            : Estado de éxito y detalles de la operación.
     """
-    return service.delete_artifact(id_artifact, request.get_json(silent=True) or {})
+    return service.delete_artifact(id_artifact)
 
 
 # SOURCES

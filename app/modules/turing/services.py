@@ -60,8 +60,8 @@ class TuringService:
     def delete_palette_relation(self : TuringService, id_rel : int) -> dict[str, Any]:
         return self.vault_service.delete_palette_relation(id_rel)
 
-    def delete_artifact(self : TuringService, id_artifact : int, params : dict[str, Any]) -> dict[str, Any]:
-        return self.vault_service.delete_artifact(id_artifact=id_artifact, params=params)
+    def delete_artifact(self : TuringService, id_artifact : int) -> dict[str, Any]:
+        return self.vault_service.delete_artifact(id_artifact=id_artifact)
 
     # Sources
     def get_sources_catalog(self : TuringService, params : dict[str, Any]) -> dict[str, Any]:

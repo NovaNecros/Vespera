@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const updateSrcAliasUrl = mainContainer.dataset.updateSourceAliasApiUrl || "";
     const toggleFavoriteUrl = mainContainer.dataset.toggleFavoriteApiUrl || "";
     const updateNotesUrl = mainContainer.dataset.updateNotesApiUrl || "";
+    const deleteRelApiUrl = mainContainer.dataset.deleteRelApiUrl || "";
     const deleteArtifactUrl = mainContainer.dataset.deleteArtifactApiUrl || "";
     const dwnldManifestUrl = mainContainer.dataset.downloadManifestApiUrl || "";
     const deleteSourceUrl = mainContainer.dataset.deleteSourceApiUrl || "";
@@ -105,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
             paletteCatalog: [],
             activeLut: null,
             inspectorRelId: null,
-            inspectorArtifact: null
+            inspectorArtifact: null,
         };
     }
     let state = getDefaultState();
@@ -162,6 +163,17 @@ document.addEventListener("DOMContentLoaded", () => {
             else
                 state.activeLut = null;
             mirror.setPaletteLut(state.activeLut);
+            const hasActiveManifestation = Boolean(state.inspectorRelId && state.inspectorRelId > 0);
+            if (inspDelBtn) {
+                if (hasActiveManifestation) {
+                    inspDelBtn.innerHTML = `<i class="fa-solid fa-droplet-slash mr-1.5"></i> Purge Manifestation`;
+                    inspDelBtn.title = "Grayscale Artifact will be preserved.";
+                }
+                else {
+                    inspDelBtn.innerHTML = `<i class="fa-solid fa-trash-can mr-1.5"></i> Purge Artifact`;
+                    inspDelBtn.title = "Purge physical grayscale Artifact and its morph frames.";
+                }
+            }
             if (inspDownloadBtn) {
                 const downloadFilename = (art.alias.match(/\.(png|jpg|jpeg|webp)$/i)
                     ? art.alias : `${art.alias}.png`);
@@ -433,6 +445,18 @@ document.addEventListener("DOMContentLoaded", () => {
         renderReliquaryGrid(data.items);
         updatePagination("artifacts", data.total_items, data.items.length);
     }
+    async function executeCatalystDeletion(idSource, sourceAlias) {
+        const apiUrl = deleteSourceUrl.replace("/source/0", `/source/${idSource}`);
+        const res = await apiFetch(apiUrl, { method: "DELETE" });
+        if (!res.success)
+            return;
+        await loadCatalysts();
+        window.showAlertModal({
+            title: "Catalyst Purged",
+            message: `The Catalyst ${sourceAlias} has been banished for eternity.`,
+            type: "success"
+        });
+    }
     function deleteCatalystSource(idSource, alias, artifactCount) {
         if (artifactCount > 0) {
             window.showAlertModal?.({
@@ -449,18 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
             icon: "fa-skull-crossbones",
             confirmText: "Purge",
             cancelText: "Cancel",
-            onConfirm: async () => {
-                const apiUrl = deleteSourceUrl.replace("/source/0", `/source/${idSource}`);
-                const res = await apiFetch(apiUrl, { method: "DELETE" });
-                if (!res.success)
-                    return;
-                await loadCatalysts();
-                window.showAlertModal({
-                    title: "Catalyst Purged",
-                    message: "The Catalyst has been banished for eternity.",
-                    type: "success"
-                });
-            }
+            onConfirm: async () => await executeCatalystDeletion(idSource, alias)
         });
     }
     function renderCatalystGrid(sources) {
@@ -772,6 +785,45 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
+    function navigateToCatalystInspection(sourceAlias) {
+        state.selectedSourceId = null;
+        state.searchQuery = sourceAlias;
+        state.catalystsPage = 1;
+        if (searchInput) {
+            searchInput.value = sourceAlias;
+            clearSearchBtn?.classList.remove("hidden");
+        }
+        switchToTab("catalysts");
+    }
+    async function executeArtifactDeletion(idArtifact, artifactAlias) {
+        closeInspectorModal();
+        const apiUrl = deleteArtifactUrl.replace("/artifact/0", `/artifact/${idArtifact}`);
+        const res = await apiFetch(apiUrl, { method: "DELETE" });
+        if (!res.success || !res.data)
+            return;
+        const remainingSiblings = res.data.remaining_artifacts;
+        const sourceAlias = res.data.source_alias;
+        if (remainingSiblings === 0) {
+            window.showAlertModal({
+                title: "Artifact Purged",
+                message: `Artifact "${artifactAlias}" has been banished. Catalyst "${sourceAlias}" has no remaining derived artifacts. Would you like to inspect it in the Catalyst archive to see if you want to delete it, love?`,
+                type: "info",
+                icon: "fa-images",
+                confirmText: "Inspect Catalyst",
+                cancelText: "Return to Reliquary",
+                onConfirm: async () => navigateToCatalystInspection(sourceAlias),
+                onCancel: async () => await loadArtifacts()
+            });
+        }
+        else {
+            window.showAlertModal({
+                title: "Artifact Purged",
+                message: `The Artifact "${artifactAlias}" has been banished for eternity`,
+                type: "success",
+                onCancel: async () => await loadArtifacts()
+            });
+        }
+    }
     function deleteCurrentArtifact() {
         if (!state.inspectorArtifact)
             return;
@@ -784,25 +836,59 @@ document.addEventListener("DOMContentLoaded", () => {
             icon: "fa-skull-crossbones",
             confirmText: "Purge",
             cancelText: "Cancel",
-            onConfirm: async () => {
-                const apiUrl = deleteArtifactUrl.replace("/artifact/0", `/artifact/${id}`);
-                const res = await apiFetch(apiUrl, {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ delete_orphaned_source: true })
-                });
-                if (!res.success)
-                    return;
-                closeInspectorModal();
-                window.showAlertModal({
-                    title: "Artifact Purged",
-                    message: "The Artifact has been banished for eternity.",
-                    type: "success",
-                    onConfirm: async () => { await loadArtifacts(); },
-                    onCancel: async () => { await loadArtifacts(); }
-                });
-            }
+            onConfirm: async () => await executeArtifactDeletion(id, name)
         });
+    }
+    async function executeManifestationDeletion(idRel, idArtifact, artifactAlias) {
+        closeInspectorModal();
+        const apiUrl = deleteRelApiUrl.replace("/relationship/0", `/relationship/${idRel}`);
+        const res = await apiFetch(apiUrl, { method: "DELETE" });
+        if (!res.success || !res.data)
+            return;
+        const remaining = res.data.remaining_manifestations;
+        if (remaining === 0) {
+            window.showAlertModal({
+                title: "Purge Artifact",
+                message: `This was the last chromatic manifestation of artifact "${artifactAlias}". Would you also like to purge the physical artifact and its morph frames from The Reliquary, love?`,
+                type: "warning",
+                icon: "fa-triangle-exclamation",
+                confirmText: "Purge Artifact",
+                cancelText: "Preserve Monochrome",
+                onConfirm: async () => await executeArtifactDeletion(idArtifact, artifactAlias),
+                onCancel: async () => await loadArtifacts()
+            });
+        }
+        else {
+            window.showAlertModal({
+                title: "Manifestation Purged",
+                message: `${remaining} other ${remaining === 1 ? "manifestation remains" : "manifestations remain"} for artifact "${artifactAlias}".`,
+                type: "success",
+                onCancel: async () => await loadArtifacts()
+            });
+        }
+    }
+    function deleteCurrentManifestation() {
+        if (!state.inspectorArtifact || !state.inspectorRelId || state.inspectorRelId <= 0)
+            return;
+        const idRel = state.inspectorRelId;
+        const idArtifact = state.inspectorArtifact.id_artifact;
+        const artifactAlias = state.inspectorArtifact.alias;
+        window.showAlertModal({
+            title: "Purge Manifestation",
+            message: `Are you certain you wish to purge this chromatic manifestation of "${artifactAlias}"? The physical grayscale Artifact will be preserved in The Reliquary.`,
+            type: "info",
+            icon: "fa-skull-crossbones",
+            confirmText: "Purge",
+            cancelText: "Cancel",
+            onConfirm: async () => await executeManifestationDeletion(idRel, idArtifact, artifactAlias),
+            onCancel: async () => await loadArtifacts()
+        });
+    }
+    function handleInspectorDelete() {
+        if (state.inspectorRelId && state.inspectorRelId > 0)
+            deleteCurrentManifestation();
+        else
+            deleteCurrentArtifact();
     }
     function branchInStudio(idArtifact) {
         window.location.href = `${studioTemplateUrl}?load=${idArtifact}`;
@@ -943,7 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
         inspRenameBtn?.addEventListener("click", enableInlineArtifactRename);
         inspAliasHeading?.addEventListener("dblclick", enableInlineArtifactRename);
         inspSaveNotesBtn?.addEventListener("click", saveInspectorNotes);
-        inspDelBtn?.addEventListener("click", deleteCurrentArtifact);
+        inspDelBtn?.addEventListener("click", handleInspectorDelete);
         inspBranchBtn?.addEventListener("click", () => {
             if (state.inspectorArtifact)
                 branchInStudio(state.inspectorArtifact.id_artifact);

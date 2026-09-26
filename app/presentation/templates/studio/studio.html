@@ -13,6 +13,7 @@
      class="w-full flex flex-col gap-3"
      data-generate-api-url="{{ url_for('studio.api_generate_pattern') }}"
      data-commit-api-url="{{ url_for('studio.api_commit_pattern') }}"
+     data-create-rel-api-url="{{ url_for('vault.api_create_artifact_palette_rel', id_artifact=0, id_palette=0) }}"
      data-palettes-api-url="{{ url_for('compendium.api_get_palettes') }}"
      data-configs-api-url="{{ url_for('studio.api_get_system_configs') }}"
      data-download-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
@@ -298,12 +299,12 @@
                                 Iterations
                             </label>
                             <input id="iterations-input" type="number"
-                                   min="8000" max="20000" step="500" value="12000"
+                                   min="12000" max="25000" step="500" value="12000"
                                    class="vamp-num-input">
                         </div>
                         <label>
                             <input id="iterations-slider" type="range" name="iterations"
-                                   min="8000" max="20000" step="500" value="12000"
+                                   min="12000" max="25000" step="500" value="12000"
                                    class="vamp-range">
                         </label>
                     </div>

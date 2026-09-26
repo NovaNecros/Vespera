@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     const generateApiUrl = mainContainer.dataset.generateApiUrl || "";
     const commitApiUrl = mainContainer.dataset.commitApiUrl || "";
+    const createRelApiUrl = mainContainer.dataset.createRelApiUrl || "";
     const palettesApiUrl = mainContainer.dataset.palettesApiUrl || "";
     const configsApiUrl = mainContainer.dataset.configsApiUrl || "";
     const hydrateApiUrl = mainContainer.dataset.hydrateApiUrl || "";
@@ -133,6 +134,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.activeLut = buildPaletteLut(pal.stops);
                 mirror.setPaletteLut(state.activeLut);
             }
+            if (state.rehydratedArtifactId && state.rehydratedArtifactId > 0) {
+                const isDifferentPalette = selectedId !== state.rehydratedPaletteId && selectedId > 0;
+                state.isNewManifestation = isDifferentPalette;
+                if (commitContainer && commitBtn) {
+                    if (isDifferentPalette) {
+                        commitBtn.innerHTML = `<i class="fa-solid fa-droplet mr-2 text-vespera-crimson"></i>Seal New Manifestation`;
+                        commitBtn.title = "Instantly bind new chromatic spectrum for the artifact.";
+                        commitContainer.classList.remove("hidden");
+                    }
+                    else {
+                        commitContainer.classList.add("hidden");
+                    }
+                }
+            }
         });
     }
     function setDefaultState() {
@@ -145,6 +160,9 @@ document.addEventListener("DOMContentLoaded", () => {
             paletteCatalog: [],
             systemConfigs: [],
             activeLut: null,
+            rehydratedArtifactId: null,
+            rehydratedPaletteId: null,
+            isNewManifestation: false
         };
     }
     const state = setDefaultState();
@@ -155,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
             numInput.value = parseFloat(slider.value).toFixed(precision);
             if (configPresetSel)
                 configPresetSel.value = "custom";
+            invalidateRehydration();
         });
         numInput.addEventListener("input", () => {
             const parsed = parseFloat(numInput.value);
@@ -166,6 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (configPresetSel)
                 configPresetSel.value = "custom";
+            invalidateRehydration();
         });
         numInput.addEventListener("blur", () => {
             const parsed = parseFloat(numInput.value);
@@ -194,25 +214,34 @@ document.addEventListener("DOMContentLoaded", () => {
             mirror.setPaletteLut(state.activeLut);
         }
     }
+    function invalidateRehydration() {
+        if (state.rehydratedArtifactId) {
+            state.rehydratedArtifactId = null;
+            state.rehydratedPaletteId = null;
+            state.isNewManifestation = false;
+            commitContainer?.classList.add("hidden");
+            if (modeBadge) {
+                modeBadge.textContent = "Modified";
+                modeBadge.className = "vamp-badge vamp-badge-crimson-dark";
+            }
+        }
+    }
     async function checkUrlHydrationTarget() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const loadId = urlParams.get("load");
             if (!loadId)
                 return;
-            showLoadingOverlay({
-                title: "Summoning Ancient Formula from The Vault",
-                subtitle: `Reconstructing alchemical conditions for Artifact #${loadId}`
-            });
             const apiUrl = hydrateApiUrl.replace("/artifact/0", `/artifact/${loadId}`);
             const res = await apiFetch(apiUrl);
             if (!res.success || !res.data)
                 return;
+            let targetPaletteId = undefined;
             const bundle = res.data;
             const cfg = bundle.config;
             if (cfg) {
                 renderConfig(cfg);
-                const targetPaletteId = bundle.selected_palette?.id_palette || cfg.id_palette;
+                targetPaletteId = bundle.selected_palette?.id_palette || cfg.id_palette;
                 if (paletteSelect && targetPaletteId !== undefined) {
                     paletteSelect.value = targetPaletteId.toString();
                     if (targetPaletteId === 0) {
@@ -258,15 +287,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     modeBadge.className = "vamp-badge vamp-badge-silver";
                 }
                 state.currentArtifactHash = bundle.artifact_hash;
+                state.rehydratedArtifactId = bundle.id_artifact;
+                state.rehydratedPaletteId = targetPaletteId !== undefined ? targetPaletteId : 0;
+                state.isNewManifestation = false;
                 await mirror.loadFrames(bundle.frames);
                 mirror.play();
             }
         }
         catch (error) {
             return console.error(error);
-        }
-        finally {
-            hideLoadingOverlay();
         }
     }
     function handleFileSelection(file) {
@@ -281,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
         state.sourceImageFile = file;
         const reader = new FileReader();
         reader.onload = (event) => {
+            invalidateRehydration();
             const dataUrl = event.target?.result;
             state.sourceImageDataUrl = dataUrl;
             const img = new Image();
@@ -404,6 +434,32 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
+    async function commitNewManifestation() {
+        if (!state.rehydratedArtifactId || !paletteSelect)
+            return;
+        const selectedPaletteId = parseInt(paletteSelect.value);
+        if (selectedPaletteId <= 0)
+            return;
+        const pal = state.paletteCatalog.find((p) => p.id_palette === selectedPaletteId);
+        const palName = pal?.display_name || `Spectrum #${selectedPaletteId}`;
+        const apiUrl = (createRelApiUrl
+            .replace("/artifact/0", `/artifact/${state.rehydratedArtifactId}`)
+            .replace("/palette/0", `/palette/${selectedPaletteId}`));
+        const res = await apiFetch(apiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        if (!res.success)
+            return;
+        state.rehydratedPaletteId = selectedPaletteId;
+        state.isNewManifestation = false;
+        commitContainer?.classList.add("hidden");
+        window.showAlertModal?.({
+            title: "Manifestation Sealed",
+            message: `Spectrum "${palName}" has been bound to Artifact.`,
+            type: "success"
+        });
+    }
     async function commitArtifact(alias) {
         if (!state.currentArtifactHash)
             return;
@@ -460,6 +516,12 @@ document.addEventListener("DOMContentLoaded", () => {
             onConfirm: (chosenAlias) => { commitArtifact(chosenAlias || "").then(); }
         });
     }
+    function handleCommitAction() {
+        if (state.isNewManifestation && state.rehydratedArtifactId)
+            commitNewManifestation().then();
+        else
+            promptArtifactAlias();
+    }
     function bindListeners() {
         syncControlPair(feedSlider, feedInput, 4);
         syncControlPair(killSlider, killInput, 4);
@@ -491,7 +553,7 @@ document.addEventListener("DOMContentLoaded", () => {
             purgeSourceImage();
         });
         synthesizeBtn?.addEventListener("click", executeSynthesis);
-        commitBtn?.addEventListener("click", promptArtifactAlias);
+        commitBtn?.addEventListener("click", handleCommitAction);
     }
     async function initStudio() {
         await Promise.all([

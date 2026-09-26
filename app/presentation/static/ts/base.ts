@@ -91,9 +91,18 @@ export function hideLoadingOverlay() : void
 }
 
 // MODALS
+const modalTimeouts : WeakMap<HTMLElement, number> = new WeakMap();
+
 export function openModalWithTransition(modalEl : HTMLElement | null) : void
 {
     if(!modalEl) return;
+
+    if(modalTimeouts.has(modalEl))
+    {
+        clearTimeout(modalTimeouts.get(modalEl));
+        modalTimeouts.delete(modalEl);
+    }
+
     modalEl.classList.remove("hidden", "closing");
     modalEl.classList.add("flex");
     document.body.classList.add("overflow-hidden");
@@ -105,16 +114,29 @@ export function openModalWithTransition(modalEl : HTMLElement | null) : void
 export function closeModalWithTransition(modalEl : HTMLElement | null, onClosed? : () => void) : void
 {
     if(!modalEl) return;
+
+    if(modalTimeouts.has(modalEl))
+    {
+        clearTimeout(modalTimeouts.get(modalEl));
+        modalTimeouts.delete(modalEl);
+    }
+
     modalEl.classList.remove("active");
     modalEl.classList.add("closing");
 
-    setTimeout(() : void =>
+    const timeId : number = window.setTimeout(() : void =>
     {
         modalEl.classList.remove("closing", "flex");
         modalEl.classList.add("hidden");
-        document.body.classList.remove("overflow-hidden");
+
+        const hasActiveModals : boolean = document.querySelectorAll(".vespera-modal.active").length > 0;
+        if(!hasActiveModals) document.body.classList.remove("overflow-hidden");
+
+        modalTimeouts.delete(modalEl);
         if(onClosed) onClosed();
     }, 260);
+
+    modalTimeouts.set(modalEl, timeId);
 }
 
 // FETCH API DECORATOR
