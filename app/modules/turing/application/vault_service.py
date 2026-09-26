@@ -34,10 +34,14 @@ class VaultService:
         :return       : Lista formateada de patrones encontrados.
         """
         try:
-            id_palette      : Optional[int] = int(params["id_palette"])      if params.get("id_palette")      else None
-            id_source_image : Optional[int] = int(params["id_source_image"]) if params.get("id_source_image") else None
+            id_palette      : Optional[int] = (
+                int(params["id_palette"])
+                if params.get("id_palette") is not None and str(params["id_palette"]).strip() != ""
+                else None
+            )
+            id_source_image : Optional[int] = int(params["id_source_image"])   if params.get("id_source_image") else None
             only_favorites  : bool          = normalize_text(params.get("favorites", ""), "LOWER") in ("true", "1", "yes")
-            search_query    : Optional[str] = normalize_text(params["search"]) if params.get("search") else None
+            search_query    : Optional[str] = normalize_text(params["search"]) if params.get("search")          else None
             sort_by         : str           = normalize_text(str(params.get("sort_by", "date_created")), "LOWER")
             sort_dir        : Optional[str] = normalize_text(str(params.get("sort_dir", "desc")), "LOWER")
             page            : int           = max(1, int(params.get("page", 1)))
@@ -45,15 +49,17 @@ class VaultService:
 
             query = (
                 db.session
-                    .query(RelArtifactPalette)
+                    .query(SynthesisArtifact, RelArtifactPalette)
                     .options(
-                        db.joinedload(RelArtifactPalette.artifact).joinedload(SynthesisArtifact.source_image),
-                        db.joinedload(RelArtifactPalette.artifact).joinedload(SynthesisArtifact.turing_config),
-                        db.joinedload(RelArtifactPalette.palette).joinedload(ColorPalette.stops)
+                        db.joinedload(SynthesisArtifact.source_image),
+                        db.joinedload(SynthesisArtifact.turing_config),
+                        db.joinedload(SynthesisArtifact.palette_rels)
+                            .joinedload(RelArtifactPalette.palette)
+                            .joinedload(ColorPalette.stops)
                     )
-                    .join(SynthesisArtifact, SynthesisArtifact.id_artifact == RelArtifactPalette.id_artifact)
-                    .join(ColorPalette,      ColorPalette.id_palette       == RelArtifactPalette.id_palette)
-                    .join(SourceImage,       SourceImage.id_source_image   == SynthesisArtifact.id_source_image)
+                    .join(SourceImage,             SourceImage.id_source_image    == SynthesisArtifact.id_source_image)
+                    .outerjoin(RelArtifactPalette, RelArtifactPalette.id_artifact == SynthesisArtifact.id_artifact)
+                    .outerjoin(ColorPalette,       ColorPalette.id_palette        == RelArtifactPalette.id_palette)
             )
 
             if id_source_image:
@@ -62,8 +68,9 @@ class VaultService:
             if only_favorites:
                 query = query.filter(SynthesisArtifact.is_favorite == True)
 
-            if id_palette:
-                query = query.filter(RelArtifactPalette.id_palette == id_palette)
+            if id_palette is not None:
+                if id_palette == 0 : query = query.filter(RelArtifactPalette.id_rel.is_(None))
+                else               : query = query.filter(RelArtifactPalette.id_palette == id_palette)
 
             if search_query:
                 search_term : str = f"%{search_query}%"
@@ -86,7 +93,7 @@ class VaultService:
 
             total_items : int = query.count()
 
-            rels : list[RelArtifactPalette] = (
+            rows : list[tuple[SynthesisArtifact, Optional[RelArtifactPalette]]] = (
                 query
                     .offset((page-1) * per_page)
                     .limit(per_page)
@@ -94,29 +101,27 @@ class VaultService:
             )
 
             results : list[dict[str, Any]] = []
-            for rel in rels:
-                art : SynthesisArtifact = rel.artifact
+            for art, rel in rows:
                 if not art: continue
                 results.append({
-                    "id_rel"             : rel.id_rel,
+                    "id_rel"             : rel.id_rel if rel else 0,
                     "id_artifact"        : art.id_artifact,
                     "alias"              : art.alias,
                     "artifact_hash"      : art.artifact_hash,
                     "id_source_image"    : art.id_source_image,
                     "id_parent_artifact" : art.id_parent_artifact,
                     "seed"               : art.seed,
-                    "execution_time"     : art.execution_time,
-                    "is_favorite"        : art.is_favorite,
+                    "execution_time"     : float(art.execution_time),
+                    "is_favorite"        : bool(art.is_favorite),
                     "user_notes"         : art.user_notes,
-                    "palette"            : rel.palette.to_dict()       if rel.palette       else None,
-                    "created_at"         : art.created_at.isoformat()  if art.created_at    else None,
-                    "source_image"       : art.source_image.to_dict()  if art.source_image  else None,
-                    "config"             : art.turing_config.to_dict() if art.turing_config else None
+                    "palette"            : rel.palette.to_dict()       if rel and rel.palette else None,
+                    "created_at"         : art.created_at.isoformat()  if art.created_at      else None,
+                    "source_image"       : art.source_image.to_dict()  if art.source_image    else None,
+                    "config"             : art.turing_config.to_dict() if art.turing_config   else None
                 })
 
             if self.verbose:
-            #     print(f"[OK]{Colors.GREEN} Vault gallery fetched: {len(results)}/{total_items} items{Colors.RESET}")
-                pass
+                print(f"[OK]{Colors.GREEN} Vault gallery fetched: {len(results)}/{total_items} items{Colors.RESET}")
 
             return {
                 "success"     : True,
@@ -219,7 +224,7 @@ class VaultService:
             }
 
             selected_pal : Optional[ColorPalette] = None
-            if id_palette:
+            if id_palette and id_palette > 0:
                 selected_pal : Optional[ColorPalette] = next(
                     (r.palette for r in artifact.palette_rels if r.id_palette == id_palette), None)
             if not selected_pal and artifact.palette_rels:
@@ -252,7 +257,7 @@ class VaultService:
                     "diff_v"     : float(artifact.turing_config.diff_v),
                     "dt"         : float(artifact.turing_config.dt),
                     "iterations" : artifact.turing_config.iterations,
-                    "id_palette" : selected_pal.id_palette if selected_pal else 1,
+                    "id_palette" : selected_pal.id_palette if selected_pal else 0,
                     "palette"    : selected_pal.to_dict()  if selected_pal else None
                 } if artifact.turing_config else None,
                 "frames"             : frame_stream_urls,

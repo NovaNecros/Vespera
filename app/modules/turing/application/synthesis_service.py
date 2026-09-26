@@ -35,6 +35,7 @@ class SynthesisService:
     def __init__(self : SynthesisService, verbose : bool = False) -> None:
         self.verbose : bool = verbose
 
+    # --- CONFIGS ---
     @staticmethod
     def _get_or_create_config(
         feed_rate  : float,
@@ -82,6 +83,36 @@ class SynthesisService:
         except Exception as e:
             raise e
 
+    def get_system_configs(self : SynthesisService) -> dict[str, Any]:
+        """
+        Recupera las configuraciones por defecto para la generación de patrones de Turing.
+        :return : Lista de configuraciones de la DB.
+        """
+        try:
+            configs : list[ConfigTuring] = (
+                db.session
+                    .query(ConfigTuring)
+                    .filter_by(is_system=True)
+                    .order_by(db.asc(ConfigTuring.id_config))
+                    .all()
+            )
+
+            return {
+                "success"     : True,
+                "data"        : [c.to_dict() for c in configs],
+                "status_code" : 200
+            }
+        except Exception as e:
+            print(f"[!]{Colors.RED} UNEXPECTED ERROR FETCHING SYSTEM CONFIGS:{Colors.RESET} {e}")
+            if self.verbose: traceback.print_exc()
+            return {
+                "success"     : False,
+                "error"       : str(e),
+                "status_code" : 500
+            }
+
+
+    # --- SOURCE IMAGES ---
     @staticmethod
     def _get_or_create_source_image(
         file_bytes : bytes,
@@ -117,6 +148,8 @@ class SynthesisService:
         except Exception as e:
             raise e
 
+
+    # --- ARTIFACTS ---
     def generate_synthesis(
         self               : SynthesisService,
         params             : dict[str, Any],
@@ -312,9 +345,10 @@ class SynthesisService:
                 }
             cached : dict[str, Any] = self._ephemeral_cache[artifact_hash]
 
-            id_palette : int           = int(params.get("id_palette", cached["params"]["id_palette"]))
-            user_notes : Optional[str] = str(params["user_notes"]).strip() if params.get("user_notes") else None
-            parent_id  : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
+            raw_palette_id : Any           = params.get("id_palette", cached["params"].get("id_palette", 0))
+            id_palette     : int           = int(raw_palette_id) if raw_palette_id is not None else 0
+            user_notes     : Optional[str] = str(params["user_notes"]).strip() if params.get("user_notes")         else None
+            parent_id      : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
 
             cached_source_id : Optional[int]         = cached.get("id_source_image")
             source_rec       : Optional[SourceImage] = None
@@ -376,11 +410,12 @@ class SynthesisService:
             db.session.add(artifact)
             db.session.flush()
 
-            palette_rel : RelArtifactPalette = RelArtifactPalette(
-                id_artifact = artifact.id_artifact,
-                id_palette  = id_palette
-            )
-            db.session.add(palette_rel)
+            if id_palette > 0:
+                palette_rel : RelArtifactPalette = RelArtifactPalette(
+                    id_artifact = artifact.id_artifact,
+                    id_palette  = id_palette
+                )
+                db.session.add(palette_rel)
 
             for idx, (frame_img, iter_num) in enumerate(zip(cached["frame_pils"], cached["captured_iters"])):
                 FileRepository.save_animation_frame(frame_img, artifact_hash, idx)

@@ -21,6 +21,15 @@ def studio() -> str:
     return render_template("studio/studio.html")
 
 # --- APIs ---
+@studio_bp.route("/api/turing/configs/system", methods=["GET"])
+@api_standard_endpoint
+def api_get_system_configs() -> dict[str, Any]:
+    """
+    Endpoint para obtener las configuraciones por defecto de los parámetros de Gray-Scott.
+    :return : Parámetros de las configuraciones en la DB.
+    """
+    return service.get_system_configs()
+
 @studio_bp.route("/api/generate", methods=["POST"])
 @api_standard_endpoint
 def api_generate_pattern() -> dict[str, Any]:

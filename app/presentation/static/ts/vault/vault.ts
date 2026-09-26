@@ -4,8 +4,8 @@ import
 {
     APIResponse,
     SynthesisArtifact, SynthesisFrame,
-    ColorPalette,
-    VaultGalleryData, ArtifactManifestation,
+    ColorPalette,      RelArtifactPalette,
+    VaultGalleryData,  ArtifactManifestation,
     SourceCatalogItem, SourceCatalogData
 } from "../types.js";
 import
@@ -113,6 +113,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const mirror            : ScryingMirror              = new ScryingMirror();
 
     // Modal Metadata
+    const inspPresetCont    : HTMLElement         | null = document.getElementById("inspector-preset-container")    as HTMLElement;
+    const inspPresetBadge   : HTMLElement         | null = document.getElementById("inspector-preset-badge")        as HTMLElement;
     const inspFeedRate      : HTMLElement         | null = document.getElementById("inspector-feed-rate");
     const inspKillRate      : HTMLElement         | null = document.getElementById("inspector-kill-rate");
     const inspDUDV          : HTMLElement         | null = document.getElementById("inspector-du-dv");
@@ -130,6 +132,26 @@ document.addEventListener("DOMContentLoaded", () : void =>
     let searchDebounceTimer : number | null = null;
 
     // --- FUNCTIONS ---
+    // Palettes
+    async function loadPaletteCatalog() : Promise<void>
+    {
+        const res : APIResponse<ColorPalette[]> = await apiFetch<ColorPalette[]>(palettesApiUrl);
+        if(!res.success || !Array.isArray(res.data)) return;
+
+        state.paletteCatalog = res.data;
+        if(!filterPaletteSel) return;
+
+        const bufferHTML : string[] = [
+            `<option value="">Omnichromatic</option>`,
+            `<option value="0">Monochrome</option>`
+        ];
+        res.data.forEach((pal : ColorPalette) =>
+        {
+            bufferHTML.push(`<option value="${pal.id_palette.toString()}">${pal.display_name}</option>`);
+        });
+        filterPaletteSel.innerHTML = bufferHTML.join("");
+    }
+
     // State
     function getDefaultState() : VaultState
     {
@@ -155,23 +177,6 @@ document.addEventListener("DOMContentLoaded", () : void =>
         };
     }
     let state : VaultState = getDefaultState();
-
-    // Palette
-    async function loadPaletteCatalog() : Promise<void>
-    {
-        const res : APIResponse<ColorPalette[]> = await apiFetch<ColorPalette[]>(palettesApiUrl);
-        if(!res.success || !Array.isArray(res.data)) return;
-
-        state.paletteCatalog = res.data;
-        if(!filterPaletteSel) return;
-
-        const bufferHTML : string[] = [`<option value="">Omnichromatic</options>`];
-        res.data.forEach((pal : ColorPalette) =>
-        {
-            bufferHTML.push(`<option value="${pal.id_palette.toString()}">${pal.display_name}</option>`);
-        });
-        filterPaletteSel.innerHTML = bufferHTML.join("");
-    }
 
     // Modal
     async function openInspectorModal(idArtifact : number, idRel? : number) : Promise<void>
@@ -205,14 +210,28 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 inspArtifactHash.title       = art.artifact_hash;
             }
             if(inspNotesTextArea) inspNotesTextArea.value     = art.user_notes || "";
+            if(inspPresetCont && inspPresetBadge)
+            {
+                if(art.config && art.config.display_name)
+                {
+                    inspPresetBadge.textContent = art.config.display_name;
+                    inspPresetCont.classList.remove("hidden");
+                    inspPresetCont.classList.add("flex");
+                }
+                else
+                {
+                    inspPresetCont.classList.add("hidden");
+                    inspPresetCont.classList.remove("flex");
+                }
+            }
 
             const manifestPalette : ColorPalette | null = (
-                (art as any).manifestations?.[0]?.palette ||
-                (art as any).palette                      ||
+                (art.manifestations?.find((m : RelArtifactPalette) => m.id_rel === idRel)?.palette) ||
+                (art.manifestations?.[0]?.palette)                                                  ||
                 null
             );
 
-            if(inspPaletteBadge) inspPaletteBadge.textContent = manifestPalette?.display_name || "Criptochroma";
+            if(inspPaletteBadge) inspPaletteBadge.textContent = manifestPalette?.display_name || "Monochrome";
 
             if(manifestPalette && manifestPalette.stops) state.activeLut = buildPaletteLut(manifestPalette.stops);
             else                                         state.activeLut = null;
@@ -225,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                         ? art.alias : `${art.alias}.png`
                 );
 
-                if(state.inspectorRelId && dwnldManifestUrl)
+                if(state.inspectorRelId && state.inspectorRelId > 0 && dwnldManifestUrl)
                 {
                     inspDownloadBtn.href = dwnldManifestUrl.replace(
                         "/relationship/0", `/relationship/${state.inspectorRelId}`);
@@ -385,8 +404,10 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 ? item.alias : `${item.alias}.png`
             );
 
-            const cardDownloadUrl : string = dwnldManifestUrl.replace(
-                "/relationship/0", `/relationship/${item.id_rel}`);
+            const cardDownloadUrl : string = (item.id_rel && item.id_rel > 0 ?
+                dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`) :
+                streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`)
+            );
 
             bufferHTML.push(`
                 <div class="vault-artifact-card"
@@ -444,7 +465,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                          <div class="flex items-center justify-between pt-1 border-t border-vespera-obsidian 
                                      font-mono text-[0.65rem] pointer-events-none">
                             <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5">
-                                ${item.palette?.display_name || "Raw"}
+                                ${item.palette?.display_name || "Monochrome"}
                             </span>
                             <span class="text-vespera-silver">
                                 ${dateStr}
@@ -1122,7 +1143,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             if(clearSearchBtn)   clearSearchBtn.classList.add("hidden");
             if(filterPaletteSel) filterPaletteSel.value = "";
             if(sortBySel)        sortBySel.value        = "date_created";
-            if(sortDirIcon)      sortDirIcon.className  = "fa-solid fa-arrow-up-wide-short";
+            if(sortDirIcon)      sortDirIcon.className  = "fa-solid fa-arrow-down-wide-short";
             if(filterFavBtn)     filterFavBtn.classList.remove("bg-vespera-crimson/20", "text-vespera-crimsonBright", "border-vespera-crimson");
 
             if(state.activeTab === "artifacts") loadArtifacts().then();

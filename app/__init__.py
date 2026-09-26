@@ -1,5 +1,6 @@
 # Vespera/app/__init__.py
 
+import os
 from datetime import datetime, timezone
 
 from sqlite3 import Connection as SQLite3Connection
@@ -9,7 +10,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 from app.core.extensions import db
-from app.core.config import DBSettings, Directories, Colors
+from app.core.config import DBSettings, Directories, Colors, ServerSettings
 from app.core.utils.date_utils import format_datetime
 
 @event.listens_for(Engine, "connect")
@@ -62,16 +63,20 @@ def create_app() -> Flask:
             EnigmaQuest,  RelArtifactPalette
         )
         from app.infrastructure.seed import seed_db
+
         db.create_all()
-        seed_db()
-        print(f"[*]{Colors.BLUE} DB INITIALIZED AND SEEDED AT: {Colors.RESET}{DBSettings.DB_PATH}")
+        db_seeded : bool = seed_db()
+        if db_seeded:
+            print(f"[*]{Colors.BLUE} DB INITIALIZED AND SEEDED AT: {Colors.RESET}{DBSettings.DB_PATH}")
 
     try:
+        from app.presentation.routes.home_routes       import home_bp
         from app.presentation.routes.studio_routes     import studio_bp
         from app.presentation.routes.vault_routes      import vault_bp
         from app.presentation.routes.compendium_routes import compendium_bp
         from app.presentation.routes.enigma_routes     import enigma_bp
 
+        app.register_blueprint(home_bp)
         app.register_blueprint(studio_bp)
         app.register_blueprint(vault_bp)
         app.register_blueprint(compendium_bp)

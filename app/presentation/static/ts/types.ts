@@ -51,15 +51,17 @@ export interface SourceImage
 
 export interface ConfigTuring
 {
-    id_config   : number;
-    config_hash : string;
-    feed_rate   : number;
-    kill_rate   : number;
-    diff_u      : number;
-    diff_v      : number;
-    dt          : number;
-    iterations  : number;
-    created_at  : string | null;
+    id_config    : number;
+    config_hash  : string;
+    display_name : string | null;
+    is_system    : boolean;
+    feed_rate    : number;
+    kill_rate    : number;
+    diff_u       : number;
+    diff_v       : number;
+    dt           : number;
+    iterations   : number;
+    created_at   : string | null;
 }
 
 export interface RelArtifactPalette
@@ -131,15 +133,17 @@ export interface HydrationSourceImage
 
 export interface HydrationConfig
 {
-    id_config  : number;
-    feed_rate  : number;
-    kill_rate  : number;
-    diff_u     : number;
-    diff_v     : number;
-    dt         : number;
-    iterations : number;
-    id_palette : number;
-    palette    : ColorPalette | null;
+    id_config     : number;
+    display_name? : string       | null;
+    is_system     : boolean;
+    feed_rate     : number;
+    kill_rate     : number;
+    diff_u        : number;
+    diff_v        : number;
+    dt            : number;
+    iterations    : number;
+    id_palette    : number;
+    palette       : ColorPalette | null;
 }
 
 export interface HydrationBundle

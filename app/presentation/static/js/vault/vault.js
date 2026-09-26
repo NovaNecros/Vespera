@@ -55,6 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const inspAliasHeading = document.getElementById("inspector-artifact-alias");
     const inspRenameBtn = document.getElementById("inspector-rename-alias-btn");
     const mirror = new ScryingMirror();
+    const inspPresetCont = document.getElementById("inspector-preset-container");
+    const inspPresetBadge = document.getElementById("inspector-preset-badge");
     const inspFeedRate = document.getElementById("inspector-feed-rate");
     const inspKillRate = document.getElementById("inspector-kill-rate");
     const inspDUDV = document.getElementById("inspector-du-dv");
@@ -69,6 +71,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const inspDownloadBtn = document.getElementById("inspector-download-btn");
     const inspDelBtn = document.getElementById("inspector-delete-btn");
     let searchDebounceTimer = null;
+    async function loadPaletteCatalog() {
+        const res = await apiFetch(palettesApiUrl);
+        if (!res.success || !Array.isArray(res.data))
+            return;
+        state.paletteCatalog = res.data;
+        if (!filterPaletteSel)
+            return;
+        const bufferHTML = [
+            `<option value="">Omnichromatic</option>`,
+            `<option value="0">Monochrome</option>`
+        ];
+        res.data.forEach((pal) => {
+            bufferHTML.push(`<option value="${pal.id_palette.toString()}">${pal.display_name}</option>`);
+        });
+        filterPaletteSel.innerHTML = bufferHTML.join("");
+    }
     function getDefaultState() {
         return {
             activeTab: "artifacts",
@@ -91,19 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
     let state = getDefaultState();
-    async function loadPaletteCatalog() {
-        const res = await apiFetch(palettesApiUrl);
-        if (!res.success || !Array.isArray(res.data))
-            return;
-        state.paletteCatalog = res.data;
-        if (!filterPaletteSel)
-            return;
-        const bufferHTML = [`<option value="">Omnichromatic</options>`];
-        res.data.forEach((pal) => {
-            bufferHTML.push(`<option value="${pal.id_palette.toString()}">${pal.display_name}</option>`);
-        });
-        filterPaletteSel.innerHTML = bufferHTML.join("");
-    }
     async function openInspectorModal(idArtifact, idRel) {
         try {
             const apiUrl = artifactDetailUrl.replace("/artifact/0", `/artifact/${idArtifact}`);
@@ -136,11 +141,22 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (inspNotesTextArea)
                 inspNotesTextArea.value = art.user_notes || "";
-            const manifestPalette = (art.manifestations?.[0]?.palette ||
-                art.palette ||
+            if (inspPresetCont && inspPresetBadge) {
+                if (art.config && art.config.display_name) {
+                    inspPresetBadge.textContent = art.config.display_name;
+                    inspPresetCont.classList.remove("hidden");
+                    inspPresetCont.classList.add("flex");
+                }
+                else {
+                    inspPresetCont.classList.add("hidden");
+                    inspPresetCont.classList.remove("flex");
+                }
+            }
+            const manifestPalette = ((art.manifestations?.find((m) => m.id_rel === idRel)?.palette) ||
+                (art.manifestations?.[0]?.palette) ||
                 null);
             if (inspPaletteBadge)
-                inspPaletteBadge.textContent = manifestPalette?.display_name || "Criptochroma";
+                inspPaletteBadge.textContent = manifestPalette?.display_name || "Monochrome";
             if (manifestPalette && manifestPalette.stops)
                 state.activeLut = buildPaletteLut(manifestPalette.stops);
             else
@@ -149,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (inspDownloadBtn) {
                 const downloadFilename = (art.alias.match(/\.(png|jpg|jpeg|webp)$/i)
                     ? art.alias : `${art.alias}.png`);
-                if (state.inspectorRelId && dwnldManifestUrl) {
+                if (state.inspectorRelId && state.inspectorRelId > 0 && dwnldManifestUrl) {
                     inspDownloadBtn.href = dwnldManifestUrl.replace("/relationship/0", `/relationship/${state.inspectorRelId}`);
                 }
                 else {
@@ -265,7 +281,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const isFav = item.is_favorite;
             const downloadFilename = (item.alias.match(/\.(png|jpg|jpeg|webp)$/i)
                 ? item.alias : `${item.alias}.png`);
-            const cardDownloadUrl = dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`);
+            const cardDownloadUrl = (item.id_rel && item.id_rel > 0 ?
+                dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`) :
+                streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`));
             bufferHTML.push(`
                 <div class="vault-artifact-card"
                      data-rel-id="${item.id_rel}"
@@ -322,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
                          <div class="flex items-center justify-between pt-1 border-t border-vespera-obsidian 
                                      font-mono text-[0.65rem] pointer-events-none">
                             <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5">
-                                ${item.palette?.display_name || "Raw"}
+                                ${item.palette?.display_name || "Monochrome"}
                             </span>
                             <span class="text-vespera-silver">
                                 ${dateStr}
@@ -864,7 +882,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (sortBySel)
                 sortBySel.value = "date_created";
             if (sortDirIcon)
-                sortDirIcon.className = "fa-solid fa-arrow-up-wide-short";
+                sortDirIcon.className = "fa-solid fa-arrow-down-wide-short";
             if (filterFavBtn)
                 filterFavBtn.classList.remove("bg-vespera-crimson/20", "text-vespera-crimsonBright", "border-vespera-crimson");
             if (state.activeTab === "artifacts")

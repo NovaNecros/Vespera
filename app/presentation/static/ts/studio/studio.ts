@@ -3,14 +3,13 @@
 import
 {
     APIResponse,
-    SynthesisArtifact, ColorPalette,
+    SynthesisArtifact, ColorPalette,  ConfigTuring,
     HydrationBundle, HydrationConfig, HydrationSourceImage
 } from "../types.js";
 import
 {
     apiFetch,
-    hideLoadingOverlay,
-    showLoadingOverlay,
+    hideLoadingOverlay, showLoadingOverlay,
     truncateHash,
     buildPaletteLut
 } from "../base.js";
@@ -25,20 +24,22 @@ interface StudioState
     sourceImageDataUrl   : string            | null;
     sourceImageElement   : HTMLImageElement  | null;
     paletteCatalog       : ColorPalette[];
+    systemConfigs        : ConfigTuring[];
     activeLut            : Uint8ClampedArray | null;
 }
 
 document.addEventListener("DOMContentLoaded", () : void =>
 {
     // --- VARIABLES ---
-    const mainContainer : HTMLElement | null = document.getElementById("studio-main-container");
+    const mainContainer : HTMLElement | null         = document.getElementById("studio-main-container");
     if(!mainContainer) return;
 
     // URLs
-    const generateApiUrl       : string = mainContainer.dataset.generateApiUrl       || "";
-    const commitApiUrl         : string = mainContainer.dataset.commitApiUrl         || "";
-    const palettesApiUrl       : string = mainContainer.dataset.palettesApiUrl       || "";
-    const hydrateApiUrl        : string = mainContainer.dataset.hydrateApiUrl        || "";
+    const generateApiUrl  : string                   = mainContainer.dataset.generateApiUrl || "";
+    const commitApiUrl    : string                   = mainContainer.dataset.commitApiUrl   || "";
+    const palettesApiUrl  : string                   = mainContainer.dataset.palettesApiUrl || "";
+    const configsApiUrl   : string                   = mainContainer.dataset.configsApiUrl  || "";
+    const hydrateApiUrl   : string                   = mainContainer.dataset.hydrateApiUrl  || "";
 
     // FORM
     const dropzoneEl      : HTMLElement       | null = document.getElementById("dropzone-container");
@@ -53,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const sourceStatusEl  : HTMLElement       | null = document.getElementById("source-image-status");
 
     // PARAMETERS
+    const configPresetSel : HTMLSelectElement | null = document.getElementById("config-preset-select")     as HTMLSelectElement;
     const feedSlider      : HTMLInputElement  | null = document.getElementById("feed-rate-slider")         as HTMLInputElement;
     const feedInput       : HTMLInputElement  | null = document.getElementById("feed-rate-input")          as HTMLInputElement;
     const killSlider      : HTMLInputElement  | null = document.getElementById("kill-rate-slider")         as HTMLInputElement;
@@ -83,104 +85,69 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const commitBtn       : HTMLButtonElement | null = document.getElementById("commit-btn")               as HTMLButtonElement;
     const resetParamsBtn  : HTMLButtonElement | null = document.getElementById("reset-params-btn")         as HTMLButtonElement;
 
-    // DEFAULT PARAMETERS
-    const defaultF       = "0.0545";
-    const defaultK       = "0.0620";
-    const defaultDu      = "1.000";
-    const defaultDv      = "0.500";
-    const defaultIter    = "12000";
-    const defaultDt      = "1.00";
-    const defaultPalette = "crimson_eclipse";
-
-
     // --- FUNCTIONS ---
-    // APPLICATION STATE
-    function setDefaultState() : StudioState
+    // TURING SETTINGS
+    function renderConfig(cfg : ConfigTuring | HydrationConfig)
     {
-        return {
-            currentArtifactHash  : null,
-            currentExecutionTime : 0,
-            sourceImageFile      : null,
-            sourceImageDataUrl   : null,
-            sourceImageElement   : null,
-            paletteCatalog       : [],
-            activeLut            : null,
-        };
-    }
-    const state : StudioState = setDefaultState();
+        if(feedSlider)     feedSlider.value         = cfg.feed_rate.toFixed(4);
+        if(killSlider)     killSlider.value         = cfg.kill_rate.toFixed(4);
+        if(diffUSlider)    diffUSlider.value        = cfg.diff_u.toFixed(3);
+        if(diffVSlider)    diffVSlider.value        = cfg.diff_v.toFixed(3);
+        if(iterSlider)     iterSlider.value         = cfg.iterations.toString();
+        if(dtSlider)       dtSlider.value           = cfg.dt.toFixed(2);
 
-    function syncControlPair(
-        slider     : HTMLInputElement | null,
-        numInput   : HTMLInputElement | null,
-        precision  : number
-    ) : void
-    {
-        if(!slider || !numInput) return;
+        if(feedInput)      feedInput.value          = cfg.feed_rate.toFixed(4);
+        if(killInput)      killInput.value          = cfg.kill_rate.toFixed(4);
+        if(diffUInput)     diffUInput.value         = cfg.diff_u.toFixed(3);
+        if(diffVInput)     diffVInput.value         = cfg.diff_v.toFixed(3);
+        if(iterInput)      iterInput.value          = cfg.iterations.toString();
+        if(dtInput)        dtInput.value            = cfg.dt.toFixed(2);
 
-        // Slider -> Input
-        slider.addEventListener("input", () =>
+        if(configPresetSel)
         {
-            numInput.value = parseFloat(slider.value).toFixed(precision);
-        });
-
-        // Input -> Slider
-        numInput.addEventListener("input", () =>
-        {
-            const parsed : number = parseFloat(numInput.value);
-            if(!isNaN(parsed))
-            {
-                const minVal  : number = parseFloat(slider.min);
-                const maxVal  : number = parseFloat(slider.max);
-                const clamped : number = Math.max(minVal, Math.min(maxVal, parsed));
-                slider.value           = clamped.toString();
-            }
-        });
-
-        numInput.addEventListener("blur", () =>
-        {
-            const parsed : number = parseFloat(numInput.value);
-            if(isNaN(parsed))
-            {
-                numInput.value = parseFloat(slider.value).toFixed(precision);
-            }
-            else
-            {
-                const minVal  : number = parseFloat(slider.min);
-                const maxVal  : number = parseFloat(slider.max);
-                const clamped : number = Math.max(minVal, Math.min(maxVal, parsed));
-                numInput.value = clamped.toFixed(precision);
-                slider.value   = clamped.toString();
-            }
-        });
-    }
-
-    function resetFormula() : void
-    {
-        if(feedSlider)     feedSlider.value         = defaultF;
-        if(killSlider)     killSlider.value         = defaultK;
-        if(diffUSlider)    diffUSlider.value        = defaultDu;
-        if(diffVSlider)    diffVSlider.value        = defaultDv;
-        if(iterSlider)     iterSlider.value         = defaultIter;
-        if(dtSlider)       dtSlider.value           = defaultDt;
-        if(userNotesInput) userNotesInput.value     = "";
-
-        if(feedInput)      feedInput.value          = defaultF;
-        if(killInput)      killInput.value          = defaultK;
-        if(diffUInput)     diffUInput.value         = defaultDu;
-        if(diffVInput)     diffVInput.value         = defaultDv;
-        if(iterInput)      iterInput.value          = defaultIter;
-        if(dtInput)        dtInput.value            = defaultDt;
-
-        if(paletteSelect)
-        {
-            const defaultPal : ColorPalette | undefined = state.paletteCatalog.find((p : ColorPalette) => p.name === defaultPalette);
-            paletteSelect.value = defaultPal ? defaultPal.id_palette.toString() : "1";
-            if(defaultPal) state.activeLut = buildPaletteLut(defaultPal.stops);
-            mirror.setPaletteLut(state.activeLut);
+            const matchingPreset : ConfigTuring | undefined = state.systemConfigs.find(
+                (c : ConfigTuring) => c.id_config === cfg.id_config);
+            configPresetSel.value = matchingPreset?.id_config.toString() || "custom";
         }
     }
 
+    async function loadSystemConfigs() : Promise<void>
+    {
+        if(!configPresetSel) return;
 
+        const res : APIResponse<ConfigTuring[]> = await apiFetch<ConfigTuring[]>(configsApiUrl);
+
+        if(!res.success || !Array.isArray(res.data)) return;
+
+        state.systemConfigs = res.data;
+
+        const bufferHTML : string[] = [`<option value="custom">Custom Formula</option>`];
+        res.data.forEach((cfg : ConfigTuring) =>
+        {
+            bufferHTML.push(`
+                <option value="${cfg.id_config}">
+                    ${cfg.display_name || "Formula #" + cfg.id_config}
+                </option>`);
+        });
+        configPresetSel.innerHTML = bufferHTML.join("");
+
+        const initialMatch : ConfigTuring | undefined = state.systemConfigs.find((c : ConfigTuring) => c.id_config === 1);
+        if(initialMatch) configPresetSel.value = initialMatch.id_config.toString();
+
+        configPresetSel.addEventListener("change", () : void =>
+        {
+            const selectedVal : string = configPresetSel.value;
+            if(selectedVal === "custom") return;
+
+            const selectedId : number = parseInt(selectedVal);
+            const targetCfg : ConfigTuring | undefined = state.systemConfigs.find(
+                (cfg : ConfigTuring) => cfg.id_config === selectedId);
+
+            if(targetCfg) renderConfig(targetCfg);
+        });
+    }
+
+    // PALETTES
     async function loadPaletteCatalog() : Promise<void>
     {
         if(!paletteSelect) return;
@@ -210,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             const selectedId : number = parseInt(paletteSelect.value);
             if(selectedId === 0)
             {
-                state.activeLut = null
+                state.activeLut = null;
                 mirror.setPaletteLut(null);
                 return;
             }
@@ -223,6 +190,83 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 mirror.setPaletteLut(state.activeLut);
             }
         });
+    }
+
+    // APPLICATION STATE
+    function setDefaultState() : StudioState
+    {
+        return {
+            currentArtifactHash  : null,
+            currentExecutionTime : 0,
+            sourceImageFile      : null,
+            sourceImageDataUrl   : null,
+            sourceImageElement   : null,
+            paletteCatalog       : [],
+            systemConfigs        : [],
+            activeLut            : null,
+        };
+    }
+    const state : StudioState = setDefaultState();
+
+    function syncControlPair(
+        slider     : HTMLInputElement | null,
+        numInput   : HTMLInputElement | null,
+        precision  : number
+    ) : void
+    {
+        if(!slider || !numInput) return;
+
+        // Slider -> Input
+        slider.addEventListener("input", () =>
+        {
+            numInput.value = parseFloat(slider.value).toFixed(precision);
+            if(configPresetSel) configPresetSel.value = "custom";
+        });
+
+        // Input -> Slider
+        numInput.addEventListener("input", () =>
+        {
+            const parsed : number = parseFloat(numInput.value);
+            if(!isNaN(parsed))
+            {
+                const minVal  : number = parseFloat(slider.min);
+                const maxVal  : number = parseFloat(slider.max);
+                const clamped : number = Math.max(minVal, Math.min(maxVal, parsed));
+                slider.value           = clamped.toString();
+            }
+            if(configPresetSel) configPresetSel.value = "custom";
+        });
+
+        numInput.addEventListener("blur", () =>
+        {
+            const parsed : number = parseFloat(numInput.value);
+            if(isNaN(parsed))
+            {
+                numInput.value = parseFloat(slider.value).toFixed(precision);
+            }
+            else
+            {
+                const minVal  : number = parseFloat(slider.min);
+                const maxVal  : number = parseFloat(slider.max);
+                const clamped : number = Math.max(minVal, Math.min(maxVal, parsed));
+                numInput.value = clamped.toFixed(precision);
+                slider.value   = clamped.toString();
+            }
+        });
+    }
+
+    function resetFormula() : void
+    {
+        if(state.systemConfigs.length > 0) renderConfig(state.systemConfigs[0]);
+        if(userNotesInput)                 userNotesInput.value = "";
+
+        if(paletteSelect)
+        {
+            const defaultPal : ColorPalette | undefined = state.paletteCatalog.find((p : ColorPalette) => p.id_palette === 1);
+            paletteSelect.value = defaultPal ? defaultPal.id_palette.toString() : "1";
+            if(defaultPal) state.activeLut = buildPaletteLut(defaultPal.stops);
+            mirror.setPaletteLut(state.activeLut);
+        }
     }
 
     // POPULATE STUDIO
@@ -250,19 +294,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             const cfg : HydrationConfig | null = bundle.config;
             if(cfg)
             {
-                if(feedSlider)  feedSlider.value  = cfg.feed_rate.toFixed(4);
-                if(killSlider)  killSlider.value  = cfg.kill_rate.toFixed(4);
-                if(diffUSlider) diffUSlider.value = cfg.diff_u.toFixed(3);
-                if(diffVSlider) diffVSlider.value = cfg.diff_v.toFixed(3);
-                if(iterSlider)  iterSlider.value  = cfg.iterations.toString();
-                if(dtSlider)    dtSlider.value    = cfg.dt.toFixed(2);
-
-                if(feedInput)   feedInput.value   = cfg.feed_rate.toFixed(4);
-                if(killInput)   killInput.value   = cfg.kill_rate.toFixed(4);
-                if(diffUInput)  diffUInput.value  = cfg.diff_u.toFixed(3);
-                if(diffVInput)  diffVInput.value  = cfg.diff_v.toFixed(3);
-                if(iterInput)   iterInput.value   = cfg.iterations.toString();
-                if(dtInput)     dtInput.value     = cfg.dt.toFixed(2);
+                renderConfig(cfg);
 
                 const targetPaletteId : number | undefined = bundle.selected_palette?.id_palette || cfg.id_palette;
                 if(paletteSelect && targetPaletteId !== undefined)
@@ -425,14 +457,26 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(sourceIdInput?.value)  formData.append("source_image_id",    sourceIdInput.value);
         if(parentIdInput?.value)  formData.append("parent_artifact_id", parentIdInput.value);
 
-        formData.append("feed_rate",   feedSlider?.value     ||    defaultF);
-        formData.append("kill_rate",   killSlider?.value     ||    defaultK);
-        formData.append("diff_u",      diffUSlider?.value    ||   defaultDu);
-        formData.append("diff_v",      diffVSlider?.value    ||   defaultDv);
-        formData.append("iterations",  iterSlider?.value     || defaultIter);
-        formData.append("dt",          dtSlider?.value       ||   defaultDt);
-        formData.append("id_palette",  paletteSelect?.value  ||         "1");
-        formData.append("user_notes",  userNotesInput?.value ||          "");
+        if(!feedSlider?.value  || !killSlider?.value  ||
+           !diffUSlider?.value || !diffVSlider?.value ||
+           !iterSlider?.value  || !dtSlider?.value    || !paletteSelect?.value)
+        {
+            (window as any).showAlertModal({
+                title   : "Void Formula",
+                message : "Supply a synthesis formula to generate an artifact.",
+                type    : "warning"
+            });
+            return;
+        }
+
+        formData.append("feed_rate",   feedSlider.value);
+        formData.append("kill_rate",   killSlider.value);
+        formData.append("diff_u",      diffUSlider.value);
+        formData.append("diff_v",      diffVSlider.value);
+        formData.append("iterations",  iterSlider.value);
+        formData.append("dt",          dtSlider.value );
+        formData.append("id_palette",  paletteSelect.value);
+        formData.append("user_notes",  userNotesInput?.value || "");
         formData.append("capture_timeline", "true");
 
         try
@@ -496,14 +540,14 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         showLoadingOverlay({
             title    : "Sealing Pattern into The Vault",
-            subtitle : "Persisting morphogentic artifact, parameters and animation frames..."
+            subtitle : "Persisting morphogenetic artifact, parameters and animation frames..."
         });
 
         const payload = {
             artifact_hash      : state.currentArtifactHash,
             alias              : alias,
             parent_artifact_id : parentIdInput?.value ? parseInt(parentIdInput.value) : null,
-            id_palette         : paletteSelect?.value ? parseInt(paletteSelect.value) : 1,
+            id_palette         : paletteSelect?.value ? parseInt(paletteSelect.value) : 0,
             user_notes         : userNotesInput?.value || ""
         };
 
@@ -607,7 +651,10 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     async function initStudio()
     {
-        await loadPaletteCatalog();
+        await Promise.all([
+            loadPaletteCatalog(),
+            loadSystemConfigs()
+        ]);
         bindListeners();
         await checkUrlHydrationTarget();
     }

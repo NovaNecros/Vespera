@@ -104,6 +104,8 @@ class ConfigTuring(db.Model):
 
     id_config     = db.Column(db.Integer,      primary_key=True, autoincrement=True)
     config_hash   = db.Column(db.String(64),   nullable=False, unique=True, index=True)
+    display_name  = db.Column(db.String(128),  nullable=True)
+    is_system     = db.Column(db.Boolean,      nullable=False, default=False)
     feed_rate     = db.Column(db.Numeric(8,6), nullable=False)
     kill_rate     = db.Column(db.Numeric(8,6), nullable=False)
     diff_u        = db.Column(db.Numeric(8,6), nullable=False)
@@ -118,6 +120,8 @@ class ConfigTuring(db.Model):
         return {
             "id_config"     : self.id_config,
             "config_hash"   : self.config_hash,
+            "display_name"  : self.display_name,
+            "is_system"     : self.is_system,
             "feed_rate"     : float(self.feed_rate),
             "kill_rate"     : float(self.kill_rate),
             "diff_u"        : float(self.diff_u),
@@ -166,6 +170,7 @@ class SynthesisArtifact(db.Model):
             "source_image"       : self.source_image.to_dict()  if self.source_image  else None,
             "config"             : self.turing_config.to_dict() if self.turing_config else None,
             "frames"             : [frame.to_dict() for frame in self.frames] if self.frames else [],
+            "manifestations"     : [rel.to_dict() for rel in self.palette_rels] if self.palette_rels else []
         }
 
 class SynthesisFrame(db.Model):
@@ -178,7 +183,7 @@ class SynthesisFrame(db.Model):
     id_artifact = db.Column(db.Integer, db.ForeignKey("synthesis_artifact.id_artifact", ondelete="CASCADE"), nullable=False, index=True)
     frame_index = db.Column(db.Integer, nullable=False)
     iteration   = db.Column(db.Integer, nullable=False)
-    frame_hash  = db.Column(db.String(64), nullable=False)
+    frame_hash  = db.Column(db.String(64), nullable=False, index=True)
     created_at  = db.Column(db.DateTime, nullable=False, default=db.func.now())
 
     artifact = db.relationship("SynthesisArtifact", back_populates="frames")
@@ -202,7 +207,7 @@ class EnigmaQuest(db.Model):
     id_quest           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     solution_id        = db.Column(db.Integer, db.ForeignKey("synthesis_artifact.id_artifact", ondelete="SET NULL"), nullable=True)
     solution_config_id = db.Column(db.Integer, db.ForeignKey("config_turing.id_config", ondelete="RESTRICT"), nullable=False)
-    hint_image_hash    = db.Column(db.String(64), nullable=True)
+    hint_image_hash    = db.Column(db.String(64), nullable=True, index=True)
     is_unlocked        = db.Column(db.Boolean, nullable=False, default=False)
     unlocked_at        = db.Column(db.DateTime, nullable=True)
 

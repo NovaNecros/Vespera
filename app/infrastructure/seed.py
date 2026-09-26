@@ -1,18 +1,19 @@
 # Vespera/app/infrastructure/seed.py
 
-from typing import Any
+from typing import Any, Optional
 import traceback
 
 from app.core.extensions import db
 from app.core.config import Colors
-from app.infrastructure.models import ColorPalette, PaletteStop
+from app.core.utils.cryptography_utils import compute_params_hash
+from app.infrastructure.models import ColorPalette, PaletteStop, ConfigTuring
 
-def seed_palettes() -> None:
+def seed_palettes() -> bool:
     """
     Si la tabla de paletas está vacía, inserta los valores por defecto.
     """
     try:
-        if db.session.query(ColorPalette).count() > 0: return
+        if db.session.query(ColorPalette).filter_by(is_system=True).count() > 0: return False
 
         system_palettes : dict[str, dict[str, Any]] = {
             "crimson_eclipse"    : {
@@ -25,76 +26,17 @@ def seed_palettes() -> None:
                     (1.00, (159, 165, 181))  # Pale Silver Highlight
                 ],
             },
-            "carmillas_solstice" : {
-                "display_name" : "Carmilla's Solstice",
+            "brat"               : {
+                "display_name" : "BRAT",
                 "stops"        : [
-                    (0.00, (  6,   4,   8)),
-                    (0.25, ( 84,  18,  22)),
-                    (0.50, (170,  24,  44)),
-                    (0.78, (224, 142,  58)),
-                    (1.00, (252, 238, 204))
-                ]
-            },
-            "ophelias_drowning"  : {
-                "display_name" : "Ophelia's Drowning",
-                "stops"        : [
-                    (0.00, (  3,  10,  14)),
-                    (0.28, ( 12,  58,  66)),
-                    (0.58, ( 26, 124, 138)),
-                    (0.82, ( 94, 198, 182)),
-                    (1.00, (222, 246, 238))
-                ]
-            },
-            "nocturnal_coven"    : {
-                "display_name" : "Nocturnal Coven",
-                "stops"        : [
-                    (0.00, ( 12,   4,  18)),
-                    (0.26, ( 64,  14,  88)),
-                    (0.54, (138,  28, 178)),
-                    (0.80, (216,  68, 204)),
-                    (1.00, (244, 218, 252))
-                ]
-            },
-            "witchfire_moss"     : {
-                "display_name" : "Witchfire Moss",
-                "stops"        : [
-                    (0.00, (  4,  12,   8)),
-                    (0.28, ( 18,  64,  32)),
-                    (0.58, ( 42, 148,  68)),
-                    (0.82, (142, 222,  94)),
-                    (1.00, (224, 252, 212))
-                ]
-            },
-            "moonlit_mausoleum"  : {
-                "display_name" : "Moonlit Mausoleum",
-                "stops"        : [
-                    (0.00, ( 10,  12,  18)),
-                    (0.30, ( 42,  48,  68)),
-                    (0.60, (104, 114, 138)),
-                    (0.84, (182, 188, 204)),
-                    (1.00, (242, 245, 252))
-                ]
-            },
-            "velvet_dusk"        : {
-                "display_name" : "Velvet Dusk",
-                "stops"        : [
-                    (0.00, ( 16,   6,  12)),
-                    (0.28, ( 76,  20,  48)),
-                    (0.56, (146,  52,  84)),
-                    (0.80, (218, 124, 122)),
-                    (1.00, (250, 226, 214))
-                ]
-            },
-            "hecates_nebula"     : {
-                "display_name" : "Hecate's Nebula",
-                "stops"        : [
-                    (0.00, (  8,   6,  16)),
-                    (0.24, ( 32,  28,  92)),
-                    (0.52, (108,  36, 138)),
-                    (0.78, (198,  48, 124)),
-                    (1.00, (254, 218, 164))
+                    (0.00, (  8,  12,   4)),
+                    (0.25, ( 46,  78,   6)),
+                    (0.50, (138, 206,   0)), # Brat Oficial :b
+                    (0.75, (192, 245,  38)),
+                    (1.00, (240, 255, 214))
                 ]
             }
+
         }
 
         for name, config in system_palettes.items():
@@ -104,7 +46,7 @@ def seed_palettes() -> None:
                 name         = name,
                 display_name = display_name,
                 is_system    = True,
-                is_favorite  = (name == "crimson_eclipse")
+                is_favorite  = (name == "brat")
             )
             db.session.add(palette)
             db.session.flush()
@@ -120,16 +62,119 @@ def seed_palettes() -> None:
                 db.session.add(palette_stop)
 
         db.session.commit()
+        return True
+
     except Exception as e:
         db.session.rollback()
         raise e
 
-def seed_db() -> None:
+def seed_configs() -> bool:
+    """
+    Si la tabla de configuraciones está vacía, se insertan las configuraciones por defecto.
+    """
+    try:
+        if db.session.query(ConfigTuring).filter_by(is_system=True).count() > 0: return False
+
+        system_configs : list[dict[str, Any]] = [
+            {
+                "display_name" : "Carmilla's Labyrinth",
+                "feed_rate"    : 0.0545,
+                "kill_rate"    : 0.0620,
+                "diff_u"       : 1.0000,
+                "diff_v"       : 0.5000,
+                "dt"           : 1.0000,
+                "iterations"   : 12000
+            },
+            {
+                "display_name" : "Arterial Dewdrops",
+                "feed_rate"    : 0.0367,
+                "kill_rate"    : 0.0649,
+                "diff_u"       : 1.0000,
+                "diff_v"       : 0.5000,
+                "dt"           : 1.0000,
+                "iterations"   : 14000
+            },
+            {
+                "display_name" : "Moonlight Pulse",
+                "feed_rate"    : 0.0300,
+                "kill_rate"    : 0.0620,
+                "diff_u"       : 1.0000,
+                "diff_v"       : 0.5000,
+                "dt"           : 1.0000,
+                "iterations"   : 12000
+            },
+            {
+                "display_name" : "Coven's Delirium",
+                "feed_rate"    : 0.0180,
+                "kill_rate"    : 0.0510,
+                "diff_u"       : 1.0000,
+                "diff_v"       : 0.5000,
+                "dt"           : 1.0000,
+                "iterations"   : 12000
+            },
+            {
+                "display_name" : "Kiss of Eternity",
+                "feed_rate"    : 0.0300,
+                "kill_rate"    : 0.0630,
+                "diff_u"       : 1.0000,
+                "diff_v"       : 0.5000,
+                "dt"           : 1.0000,
+                "iterations"   : 19000
+            }
+        ]
+
+        for cfg in system_configs:
+            config_hash : str = compute_params_hash(
+                feed_rate  = cfg["feed_rate"],
+                kill_rate  = cfg["kill_rate"],
+                diff_u     = cfg["diff_u"],
+                diff_v     = cfg["diff_v"],
+                dt         = cfg["dt"],
+                iterations = cfg["iterations"]
+            )
+
+            existing_cfg : Optional[ConfigTuring] = (
+                db.session
+                    .query(ConfigTuring)
+                    .filter_by(config_hash=config_hash)
+                    .first()
+            )
+
+            if existing_cfg:
+                existing_cfg.is_system    = True
+                existing_cfg.display_name = cfg["display_name"]
+            else:
+                new_cfg : ConfigTuring = ConfigTuring(
+                    config_hash  = config_hash,
+                    display_name = cfg["display_name"],
+                    is_system    = True,
+                    feed_rate    = cfg["feed_rate"],
+                    kill_rate    = cfg["kill_rate"],
+                    diff_u       = cfg["diff_u"],
+                    diff_v       = cfg["diff_v"],
+                    dt           = cfg["dt"],
+                    iterations   = cfg["iterations"],
+                )
+                db.session.add(new_cfg)
+
+        db.session.commit()
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        raise e
+
+def seed_db() -> bool:
     """
     Llena los valores por defecto en la base de datos.
     """
     try:
-        seed_palettes()
+        palettes_seeded : bool = seed_palettes()
+        configs_seeded  : bool = seed_configs()
+
+        if palettes_seeded or configs_seeded: return True
+        return False
+
     except Exception as e:
         print(f"[!]{Colors.RED} UNEXPECTED ERROR SEEDING DB: {Colors.RESET}{e}")
         traceback.print_exc()

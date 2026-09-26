@@ -11,13 +11,17 @@ from app.modules.turing.application.vault_service     import VaultService
 
 class TuringService:
     """
-    Servicio que centraliza y orquesta el módulo de síntesis de patrones de Turing.
+    Servicio que centraliza y orquesta los módulos de síntesis y almacenamiento de patrones de Turing.
     """
 
     def __init__(self : TuringService, verbose : bool = True) -> None:
         self.synthesis_service : SynthesisService = SynthesisService(verbose=verbose)
         self.vault_service     : VaultService     = VaultService(verbose=verbose)
+        self.verbose           : bool             = verbose
 
+    # --- CONFIGS ---
+    def get_system_configs(self : TuringService) -> dict[str, Any]:
+        return self.synthesis_service.get_system_configs()
 
     # --- SYNTHESIS ---
     def generate_synthesis(self : TuringService, params : dict[str, Any], source_image : Optional[FileStorage]) -> dict[str, Any]:

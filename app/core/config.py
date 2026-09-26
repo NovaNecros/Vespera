@@ -15,7 +15,7 @@ class ServerSettings:
     """
     HOST  : str  = "0.0.0.0"
     PORT  : int  = 3009
-    DEBUG : bool = True
+    DEBUG : bool = False
 
 class DBSettings:
     """
