@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     const studioTemplateUrl = mainContainer.dataset.studioTemplateUrl || "";
     const palettesApiUrl = mainContainer.dataset.palettesApiUrl || "";
+    const configsApiUrl = mainContainer.dataset.configsApiUrl || "";
     const galleryApiUrl = mainContainer.dataset.galleryApiUrl || "";
     const sourcesApiUrl = mainContainer.dataset.sourcesApiUrl || "";
     const artifactDetailUrl = mainContainer.dataset.artifactDetailApiUrl || "";
@@ -30,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("vault-search-input");
     const clearSearchBtn = document.getElementById("clear-search-btn");
     const filterPaletteSel = document.getElementById("filter-palette-select");
+    const filterConfigSel = document.getElementById("filter-config-select");
+    const toggleMonoBtn = document.getElementById("toggle-monochrome-view-btn");
     const filterFavBtn = document.getElementById("filter-favorites-btn");
     const sortBySel = document.getElementById("sort-by-select");
     const sortDirBtn = document.getElementById("sort-direction-btn");
@@ -88,6 +91,24 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         filterPaletteSel.innerHTML = bufferHTML.join("");
     }
+    async function loadSystemConfigs() {
+        if (!filterConfigSel)
+            return;
+        const res = await apiFetch(configsApiUrl);
+        if (!res.success || !Array.isArray(res.data))
+            return;
+        state.systemConfigs = res.data;
+        const bufferHTML = [`<option value="">All</option>`];
+        res.data.forEach((cfg) => {
+            bufferHTML.push(`
+                <option value="${cfg.id_config.toString()}">
+                    ${cfg.display_name || "Formula #" + cfg.id_config}
+                </option>
+            `);
+        });
+        bufferHTML.push(`<option value="custom">Custom Formulae</option>`);
+        filterConfigSel.innerHTML = bufferHTML.join("");
+    }
     function getDefaultState() {
         return {
             activeTab: "artifacts",
@@ -99,11 +120,14 @@ document.addEventListener("DOMContentLoaded", () => {
             catalystsTotalPages: 1,
             searchQuery: "",
             selectedPaletteId: "",
+            selectedConfigId: "",
+            viewMonochrome: false,
             filterFavorites: false,
             sortBy: "date_created",
             sortDir: "desc",
             selectedSourceId: null,
             paletteCatalog: [],
+            systemConfigs: [],
             activeLut: null,
             inspectorRelId: null,
             inspectorArtifact: null,
@@ -156,12 +180,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const manifestPalette = ((art.manifestations?.find((m) => m.id_rel === idRel)?.palette) ||
                 (art.manifestations?.[0]?.palette) ||
                 null);
-            if (inspPaletteBadge)
-                inspPaletteBadge.textContent = manifestPalette?.display_name || "Monochrome";
-            if (manifestPalette && manifestPalette.stops)
+            if (inspPaletteBadge) {
+                inspPaletteBadge.textContent = (state.viewMonochrome ? "Monochrome" :
+                    (manifestPalette?.display_name || "Monochrome"));
+            }
+            if (!state.viewMonochrome && manifestPalette && manifestPalette.stops) {
                 state.activeLut = buildPaletteLut(manifestPalette.stops);
-            else
+            }
+            else {
                 state.activeLut = null;
+            }
             mirror.setPaletteLut(state.activeLut);
             const hasActiveManifestation = Boolean(state.inspectorRelId && state.inspectorRelId > 0);
             if (inspDelBtn) {
@@ -194,8 +222,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     .replace("/hash/PLACEHOLDER", `/hash/${art.artifact_hash}`)
                     .replace("/frame/0", `/frame/${frame.frame_index}`);
             });
+            const frameIters = (art.frames || []).map((frame) => {
+                return frame.iteration;
+            });
             window.openModalWithTransition(inspectorModal);
-            await mirror.loadFrames(frameUrls);
+            await mirror.loadFrames(frameUrls, frameIters);
             mirror.play();
         }
         catch (error) {
@@ -296,6 +327,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const cardDownloadUrl = (item.id_rel && item.id_rel > 0 ?
                 dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`) :
                 streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`));
+            const configBadgeHTML = (item.config && item.config.is_system && item.config.display_name ? `
+                <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5 truncate max-w-[130px]"
+                      title="${item.config.display_name}">
+                    ${item.config.display_name}
+                </span>
+            ` : "");
             bufferHTML.push(`
                 <div class="vault-artifact-card"
                      data-rel-id="${item.id_rel}"
@@ -338,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="p-2.5 flex flex-col gap-1.5 flex-grow justify-between bg-vespera-charcoal/80"
                          data-rel-id="${item.id_rel}"
                          data-artifact-id="${item.id_artifact}">
-                         <div class="flex flex-col pointer-events-none">
+                        <div class="flex flex-col pointer-events-none">
                             <span class="font-cinzel text-xs text-vespera-parchment font-bold truncate"
                                   title="${item.alias}">
                                 ${item.alias}      
@@ -347,16 +384,20 @@ document.addEventListener("DOMContentLoaded", () => {
                                   title="${item.artifact_hash}">
                                 #${item.id_artifact} • ${truncateHash(item.artifact_hash, 5)}
                             </span>
-                         </div>
-                         
-                         <div class="flex items-center justify-between pt-1 border-t border-vespera-obsidian 
-                                     font-mono text-[0.65rem] pointer-events-none">
+                        </div>
+                        
+                        <div class="flex items-center justify-between gap-1 flex-wrap pt-1 border-t
+                                    border-vespera-obsidian font-mono text[0.65rem] pointer-events-none">
                             <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5">
-                                ${item.palette?.display_name || "Monochrome"}
+                                ${state.viewMonochrome ? 'Monochrome' : (item.palette?.display_name || "Monochrome")}
                             </span>
-                            <span class="text-vespera-silver">
-                                ${dateStr}
-                            </span>
+                            ${configBadgeHTML}
+                            
+                        </div>
+                        <div class="vault-card-footer-timestamp pointer-events-none"
+                              title="Sealed on: ${dateStr}">
+                              <i class="fa-regular fa-clock mr-1 text-vespera-silver"></i>
+                              <span>${dateStr}</span>
                         </div>
                     </div>     
                  </div>`);
@@ -366,7 +407,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const canvas = artifactsGrid.querySelector(`canvas[data-rel-id="${item.id_rel}"]`);
             if (canvas) {
                 const thumbUrl = streamThumbUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`);
-                recolorThumbnailCanvas(canvas, thumbUrl, item.palette);
+                const activePalette = state.viewMonochrome ? null : item.palette;
+                recolorThumbnailCanvas(canvas, thumbUrl, activePalette);
             }
         });
         const cards = artifactsGrid.querySelectorAll(".vault-artifact-card");
@@ -397,8 +439,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     async function fetchArtifactsData(page) {
         try {
+            const rawConfig = state.selectedConfigId;
+            const parsedConfig = (rawConfig === "custom" ? "custom" :
+                rawConfig !== "" ? parseInt(rawConfig) : null);
             const payload = {
                 id_palette: state.selectedPaletteId ? parseInt(state.selectedPaletteId) : null,
+                id_config: parsedConfig,
                 id_source_image: state.selectedSourceId,
                 favorites: state.filterFavorites,
                 search: state.searchQuery,
@@ -630,10 +676,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const baseEndpoint = isArtifact ? updateArtAliasUrl : updateSrcAliasUrl;
         const replaceToken = isArtifact ? "artifact" : "source";
         const apiUrl = baseEndpoint.replace(`/${replaceToken}/0`, `/${replaceToken}/${targetId}`);
+        const payload = { alias: trimmed };
         const res = await apiFetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ alias: trimmed })
+            body: JSON.stringify(payload)
         });
         return res.success;
     }
@@ -735,9 +782,9 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const apiUrl = toggleFavoriteUrl.replace("/artifact/0", `/artifact/${idArtifact}`);
             const res = await apiFetch(apiUrl, { method: "POST" });
-            if (!res.success && !res.data)
+            if (!res.success || !res.data)
                 throw new Error(res.error || "Error changing favorite status");
-            const isFav = !!res.data.is_favorite;
+            const isFav = res.data.is_favorite;
             if (pinEl)
                 pinEl.classList.toggle("active", isFav);
             if (state.inspectorArtifact && state.inspectorArtifact.id_artifact === idArtifact) {
@@ -762,14 +809,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             const newNotes = inspNotesTextArea.value.trim();
             const apiUrl = updateNotesUrl.replace("/artifact/0", `/artifact/${state.inspectorArtifact.id_artifact}`);
+            const payload = { user_notes: newNotes };
             const res = await apiFetch(apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ notes: newNotes })
+                body: JSON.stringify(payload)
             });
-            if (!res.success)
+            if (!res.success || !res.data)
                 throw new Error(res.error || "Unknown error");
-            state.inspectorArtifact.user_notes = newNotes;
+            state.inspectorArtifact.user_notes = res.data.user_notes || "";
             window.showAlertModal?.({
                 title: "Inscription Saved",
                 message: "Your observations have been preserved in The Grimoire.",
@@ -934,11 +982,19 @@ document.addEventListener("DOMContentLoaded", () => {
             state.reliquaryPage = 1;
             loadArtifacts().then();
         });
+        filterConfigSel?.addEventListener("change", () => {
+            state.selectedConfigId = filterConfigSel.value;
+            state.reliquaryPage = 1;
+            loadArtifacts().then();
+        });
+        toggleMonoBtn?.addEventListener("click", () => {
+            state.viewMonochrome = !state.viewMonochrome;
+            toggleMonoBtn.classList.toggle("active", state.viewMonochrome);
+            loadArtifacts().then();
+        });
         filterFavBtn?.addEventListener("click", () => {
             state.filterFavorites = !state.filterFavorites;
-            filterFavBtn.classList.toggle("bg-vespera-crimson/20", state.filterFavorites);
-            filterFavBtn.classList.toggle("text-vespera-crimsonBright", state.filterFavorites);
-            filterFavBtn.classList.toggle("border-vespera-crimson", state.filterFavorites);
+            filterFavBtn.classList.toggle("active", state.filterFavorites);
             state.reliquaryPage = 1;
             loadArtifacts().then();
         });
@@ -965,12 +1021,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 clearSearchBtn.classList.add("hidden");
             if (filterPaletteSel)
                 filterPaletteSel.value = "";
+            if (filterConfigSel)
+                filterConfigSel.value = "";
+            if (toggleMonoBtn)
+                toggleMonoBtn.classList.remove("active");
+            if (filterFavBtn)
+                filterFavBtn.classList.remove("bg-vespera-crimson/20", "text-vespera-crimsonBright", "border-vespera-crimson");
             if (sortBySel)
                 sortBySel.value = "date_created";
             if (sortDirIcon)
                 sortDirIcon.className = "fa-solid fa-arrow-down-wide-short";
-            if (filterFavBtn)
-                filterFavBtn.classList.remove("bg-vespera-crimson/20", "text-vespera-crimsonBright", "border-vespera-crimson");
             if (state.activeTab === "artifacts")
                 loadArtifacts().then();
             else
@@ -1045,7 +1105,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
     async function initVault() {
-        await loadPaletteCatalog();
+        await Promise.all([loadPaletteCatalog(), loadSystemConfigs()]);
         bindListeners();
         await loadArtifacts();
     }

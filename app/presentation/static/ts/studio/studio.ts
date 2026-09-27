@@ -2,9 +2,10 @@
 
 import
 {
-    APIResponse,
-    SynthesisArtifact, ColorPalette,  ConfigTuring,
-    HydrationBundle, HydrationConfig, HydrationSourceImage
+    APIResponse,       RelArtifactPalette,
+    SynthesisArtifact, ColorPalette,    ConfigTuring,
+    HydrationBundle,   HydrationConfig, HydrationSourceImage,
+    SynthesisGenerateData, SynthesisCommitPayload
 } from "../types.js";
 import
 {
@@ -399,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 state.rehydratedPaletteId  = targetPaletteId !== undefined ? targetPaletteId : 0;
                 state.isNewManifestation   = false;
 
-                await mirror.loadFrames(bundle.frames);
+                await mirror.loadFrames(bundle.frames, bundle.frame_iterations);
                 mirror.play();
             }
         }
@@ -533,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 subtitle  : "Evaluating 2D Laplacian field and non-linear morphogen kinetics..."
             });
 
-            const res : APIResponse = await apiFetch(generateApiUrl,
+            const res : APIResponse<SynthesisGenerateData> = await apiFetch<SynthesisGenerateData>(generateApiUrl,
             {
                 method : "POST",
                 body   : formData
@@ -563,7 +564,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 }
 
                 commitContainer?.classList.remove("hidden");
-                await mirror.loadFrames(res.data.keyframes);
+                await mirror.loadFrames(res.data.keyframes, res.data.captured_iters);
                 mirror.play();
             }
         }
@@ -596,7 +597,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 .replace("/palette/0", `/palette/${selectedPaletteId}`)
         );
 
-        const res : APIResponse = await apiFetch(apiUrl, {
+        const res : APIResponse<RelArtifactPalette> = await apiFetch<RelArtifactPalette>(apiUrl, {
             method  : "POST",
             headers : { "Content-Type": "application/json" }
         });
@@ -623,7 +624,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             subtitle : "Persisting morphogenetic artifact, parameters and animation frames..."
         });
 
-        const payload = {
+        const payload : SynthesisCommitPayload = {
             artifact_hash      : state.currentArtifactHash,
             alias              : alias,
             parent_artifact_id : parentIdInput?.value ? parseInt(parentIdInput.value) : null,

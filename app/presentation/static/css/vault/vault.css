@@ -139,6 +139,23 @@
     box-shadow   : var(--vespera-glow-crimson-int);
 }
 
+.vault-card-footer-timestamp
+{
+    width         : 100%;
+    border-top    : 1px solid var(--vespera-obsidian);
+    padding-top   : 0.35rem;
+    margin-top    : 0.25rem;
+    font-family   : "Fira Code", monospace;
+    font-size     : 0.62rem;
+    color         : var(--vespera-silver);
+    white-space   : nowrap;
+    overflow      : hidden;
+    text-overflow : ellipsis;
+    display       : flex;
+    align-items   : center;
+    gap           : 0.35rem;
+}
+
 /* Favorite */
 .vault-fav-pin
 {

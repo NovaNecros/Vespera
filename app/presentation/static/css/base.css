@@ -289,7 +289,14 @@ header
     color        : var(--vespera-parchment);
     box-shadow   : 0 0 12px rgba(128, 0, 8, 0.35);
     transform    : translateY(-2px);
+}
 
+.vamp-btn-ghost.active
+{
+    background-color : rgba(159, 165, 181, 0.20);
+    border-color     : var(--vespera-silver);
+    color            : var(--vespera-silver-bright);
+    box-shadow       : 0 0 10px rgba(159, 165, 181, 0.35);
 }
 
 /* Form Controls */

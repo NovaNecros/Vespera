@@ -7,12 +7,14 @@ from pathlib import Path
 from PIL import Image
 from typing import Optional, Any, Union
 
+from sqlalchemy.exc import IntegrityError
+
 from app.core.extensions import db
 from app.core.config import Colors
 from app.core.utils.text_utils import normalize_text
 from app.infrastructure.models import (
-    SourceImage,  SynthesisArtifact,
-    ColorPalette, RelArtifactPalette
+    SourceImage,  SynthesisArtifact,  SynthesisFrame,
+    ColorPalette, RelArtifactPalette, ConfigTuring
 )
 
 from app.infrastructure.files_repo import FileRepository
@@ -34,11 +36,22 @@ class VaultService:
         :return       : Lista formateada de patrones encontrados.
         """
         try:
-            id_palette      : Optional[int] = (
+            id_palette : Optional[int] = (
                 int(params["id_palette"])
                 if params.get("id_palette") is not None and str(params["id_palette"]).strip() != ""
                 else None
             )
+
+            raw_config       : Any  = params.get("id_cofig")
+            is_custom_config : bool = str(raw_config).strip().lower() == "custom"
+
+            id_config : Optional[int] = (
+                int(raw_config)
+                if raw_config is not None
+                and normalize_text(str(params["id_config"]), "LOWER") not in ("", "custom")
+                else None
+            )
+
             id_source_image : Optional[int] = int(params["id_source_image"])   if params.get("id_source_image") else None
             only_favorites  : bool          = normalize_text(params.get("favorites", ""), "LOWER") in ("true", "1", "yes")
             search_query    : Optional[str] = normalize_text(params["search"]) if params.get("search")          else None
@@ -58,6 +71,7 @@ class VaultService:
                             .joinedload(ColorPalette.stops)
                     )
                     .join(SourceImage,             SourceImage.id_source_image    == SynthesisArtifact.id_source_image)
+                    .outerjoin(ConfigTuring,       ConfigTuring.id_config         == SynthesisArtifact.id_config)
                     .outerjoin(RelArtifactPalette, RelArtifactPalette.id_artifact == SynthesisArtifact.id_artifact)
                     .outerjoin(ColorPalette,       ColorPalette.id_palette        == RelArtifactPalette.id_palette)
             )
@@ -71,6 +85,11 @@ class VaultService:
             if id_palette is not None:
                 if id_palette == 0 : query = query.filter(RelArtifactPalette.id_rel.is_(None))
                 else               : query = query.filter(RelArtifactPalette.id_palette == id_palette)
+
+            if is_custom_config:
+                query = query.filter(ConfigTuring.is_system == False)
+            elif id_config:
+                query = query.filter(SynthesisArtifact.id_config == id_config)
 
             if search_query:
                 search_term : str = f"%{search_query}%"
@@ -230,10 +249,12 @@ class VaultService:
             if not selected_pal and artifact.palette_rels:
                 selected_pal : ColorPalette = artifact.palette_rels[0].palette
 
-            frame_stream_urls : list[str] = [
+            sorted_frames     : list[SynthesisFrame] = sorted(artifact.frames, key=lambda f : f.frame_index)
+            frame_stream_urls : list[str]            = [
                 f"/vault/api/stream/artifact/hash/{artifact.artifact_hash}/frame/{frame.frame_index}"
                 for frame in sorted(artifact.frames, key=lambda f : f.frame_index)
             ]
+            frame_iterations  : list[int]            = [frame.iteration for frame in sorted_frames]
 
             bundle : dict[str, Any] = {
                 "id_artifact"        : artifact.id_artifact,
@@ -261,6 +282,7 @@ class VaultService:
                     "palette"    : selected_pal.to_dict()  if selected_pal else None
                 } if artifact.turing_config else None,
                 "frames"             : frame_stream_urls,
+                "frame_iterations"   : frame_iterations,
                 "frame_count"        : len(frame_stream_urls)
             }
 
@@ -444,10 +466,19 @@ class VaultService:
             status_code    : int = 200
             message        : str = "No changes were made."
             if new_alias != original_alias:
-                row.alias = new_alias
-                db.session.commit()
-                message     : str = f"{normalized_type.capitalize()} #{target_id} alias updated successfully."
-                status_code : int = 201
+                try:
+                    row.alias = new_alias
+                    db.session.commit()
+                    message     : str = f"{normalized_type.capitalize()} #{target_id} alias updated successfully."
+                    status_code : int = 201
+                except IntegrityError:
+                    db.session.rollback()
+                    entity_type : str = "an artifact" if normalized_type == "artifact" else "a catalyst"
+                    return {
+                        "success"     : False,
+                        "error"       : f"{entity_type.capitalize()} is already taken by {entity_type}, love. Please try another name.",
+                        "status_code" : 409
+                    }
 
             return {
                 "success"     : True,
@@ -736,7 +767,7 @@ class VaultService:
             }
 
             artifact_hash   : str = artifact.artifact_hash
-            artifact_alias  : int = artifact.alias
+            artifact_alias  : str = artifact.alias
             source_image_id : int = artifact.id_source_image
             source_alias    : str = artifact.source_image.alias if artifact.source_image else f"Catalyst #{source_image_id}"
 
@@ -748,7 +779,7 @@ class VaultService:
             )
             if remaining_manifestations > 0: return {
                 "success"     : False,
-                "error"       : f"Requested source image with ID #{id_artifact} has {remaining_manifestations} associated artifacts.",
+                "error"       : f"Requested source image with ID #{id_artifact} has {remaining_manifestations} associated manifestations.",
                 "status_code" : 409
             }
 

@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 state.rehydratedArtifactId = bundle.id_artifact;
                 state.rehydratedPaletteId = targetPaletteId !== undefined ? targetPaletteId : 0;
                 state.isNewManifestation = false;
-                await mirror.loadFrames(bundle.frames);
+                await mirror.loadFrames(bundle.frames, bundle.frame_iterations);
                 mirror.play();
             }
         }
@@ -421,7 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     modeBadge.className = "vamp-badge vamp-badge-silver";
                 }
                 commitContainer?.classList.remove("hidden");
-                await mirror.loadFrames(res.data.keyframes);
+                await mirror.loadFrames(res.data.keyframes, res.data.captured_iters);
                 mirror.play();
             }
         }

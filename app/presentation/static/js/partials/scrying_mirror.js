@@ -7,6 +7,8 @@ export class ScryingMirror {
     emptyState = null;
     playbackBadge = null;
     frameLabel = null;
+    iterationBadge = null;
+    iterationLabel = null;
     controlsPanel = null;
     playPauseBtn = null;
     playPauseIcon = null;
@@ -15,6 +17,7 @@ export class ScryingMirror {
     offscreenCanvas = document.createElement("canvas");
     offscreenCtx = null;
     frames = [];
+    iterations = [];
     catalystImg = null;
     activeLut = null;
     currentFrame = 0;
@@ -35,6 +38,8 @@ export class ScryingMirror {
         this.emptyState = this.root.querySelector("#scrying-mirror-empty-state");
         this.playbackBadge = this.root.querySelector("#scrying-mirror-playback-badge");
         this.frameLabel = this.root.querySelector("#scrying-mirror-frame-label");
+        this.iterationBadge = this.root.querySelector("#scrying-mirror-iteration-badge");
+        this.iterationLabel = this.root.querySelector("#scrying-mirror-iteration-label");
         this.controlsPanel = this.root.querySelector("#scrying-mirror-controls-panel");
         this.playPauseBtn = this.root.querySelector("#scrying-mirror-play-pause-btn");
         this.playPauseIcon = this.root.querySelector("#scrying-mirror-play-pause-icon");
@@ -73,9 +78,10 @@ export class ScryingMirror {
             this.catalystImg = catalyst;
         }
     }
-    async loadFrames(frameSources) {
+    async loadFrames(frameSources, iterations) {
         this.pause();
         this.frames = [];
+        this.iterations = [...iterations];
         if (frameSources.length === 0) {
             this.reset();
             return;
@@ -96,6 +102,7 @@ export class ScryingMirror {
         }
         this.emptyState?.classList.add("hidden");
         this.playbackBadge?.classList.remove("hidden");
+        this.iterationBadge?.classList.remove("hidden");
         this.controlsPanel?.classList.remove("disabled");
         this.renderFrame(0);
     }
@@ -127,6 +134,8 @@ export class ScryingMirror {
             this.scrubber.value = index.toString();
         if (this.frameLabel)
             this.frameLabel.textContent = `Frame ${index + 1} / ${this.frames.length}`;
+        if (this.iterationLabel)
+            this.iterationLabel.textContent = `Step ${this.iterations[index].toLocaleString()}`;
         if (this.onFrameRender)
             this.onFrameRender(index, this.frames.length);
     }
@@ -167,6 +176,7 @@ export class ScryingMirror {
         this.isComparing = !this.isComparing;
         if (this.isComparing) {
             this.pause();
+            this.iterationBadge?.classList.add("hidden");
             if (this.catalystImg) {
                 this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 this.canvasCtx.drawImage(this.catalystImg, 0, 0, this.canvas.width, this.canvas.height);
@@ -182,17 +192,19 @@ export class ScryingMirror {
         this.stageWrapper?.classList.toggle("synthesizing", active);
     }
     reset() {
-        this.pause();
-        this.frames = [];
-        this.catalystImg = null;
-        this.currentFrame = 0;
-        this.isComparing = false;
+        this.emptyState?.classList.remove("hidden");
+        this.playbackBadge?.classList.add("hidden");
+        this.iterationBadge?.classList.add("hidden");
+        this.controlsPanel?.classList.add("disabled");
+        this.compareBtn?.classList.remove("active");
         if (this.canvas && this.canvasCtx) {
             this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
-        this.emptyState?.classList.remove("hidden");
-        this.playbackBadge?.classList.add("hidden");
-        this.controlsPanel?.classList.add("disabled");
-        this.compareBtn?.classList.remove("active");
+        this.pause();
+        this.frames = [];
+        this.iterations = [];
+        this.catalystImg = null;
+        this.currentFrame = 0;
+        this.isComparing = false;
     }
 }

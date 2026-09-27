@@ -81,12 +81,12 @@
     box-shadow      : 0 0 12px rgba(128, 0, 8, 0.35);
 }
 
-/* Playback Badge */
-.scrying-mirror-playback-badge
+/* Frame / Iteration Counter Badges */
+.scrying-mirror-playback-badge,
+.scrying-mirror-iteration-badge
 {
     position                : absolute;
     top                     : 0.5rem;
-    left                    : 0.5rem;
     z-index                 : 15;
     background-color        : rgba(6, 6, 8, 0.85);
     backdrop-filter         : blur(8px);
@@ -103,6 +103,16 @@
     display                 : flex;
     align-items             : center;
     gap                     : 0.35rem;
+}
+
+.scrying-mirror-playback-badge
+{
+    left : 0.5rem;
+}
+
+.scrying-mirror-iteration-badge
+{
+    right : 0.5rem;
 }
 
 .scrying-mirror-playback-badge .playback-dot
@@ -152,7 +162,8 @@
 
 /* Hidden Animation Controls */
 .animation-controls-hidden .scrying-mirror-controls-panel,
-.animation-controls-hidden .scrying-mirror-playback-badge
+.animation-controls-hidden .scrying-mirror-playback-badge,
+.animation-controls-hidden .scrying-mirror-iteration-badge
 {
     display : none !important;
 }

@@ -7,6 +7,8 @@ from typing import Any, Optional
 import numpy as np
 from PIL import Image
 
+from sqlalchemy.exc import IntegrityError
+
 from app.core.extensions import db
 from app.core.config import Colors
 from app.core.utils.text_utils import sanitize_filename, normalize_text
@@ -157,14 +159,22 @@ class PaletteService:
             for s in stops_raw:
                 stop : PaletteStop = PaletteStop(
                     id_palette    = palette.id_palette,
-                    stop_position = float(s["stop_position"]),
-                    r             = int(s["r"]),
-                    g             = int(s["g"]),
-                    b             = int(s["b"])
+                    stop_position = max(0.0, min(float(s["stop_position"]), 1.0)),
+                    r             = max(0, min(int(s["r"]), 255)),
+                    g             = max(0, min(int(s["g"]), 255)),
+                    b             = max(0, min(int(s["b"]), 255))
                 )
                 db.session.add(stop)
 
-            db.session.commit()
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return {
+                    "success"     : False,
+                    "error"       : f"The name '{display_name}' is already taken, love. Please try another one.",
+                    "status_code" : 409
+                }
             self.invalidate_lut_cache(palette.id_palette)
 
             print(f"[OK]{Colors.GREEN} SUCCESSFULLY CREATED PALETTE: {Colors.RESET}{palette.name}")
@@ -212,6 +222,7 @@ class PaletteService:
             status_code    : int       = 200
             msg_parts      : list[str] = []
             stops_modified : bool      = False
+            display_name   : str       = ""
 
             if "display_name" in params:
                 display_name   : str = normalize_text(params["display_name"])
@@ -253,7 +264,15 @@ class PaletteService:
                     msg_parts.append("Palette updated.")
 
             if status_code == 201:
-                db.session.commit()
+                try:
+                    db.session.commit()
+                except IntegrityError:
+                    db.session.rollback()
+                    return {
+                        "success"     : False,
+                        "error"       : f"The name '{display_name}' is already taken, love. Please try another one.",
+                        "status_code" : 409
+                    }
                 if stops_modified:
                     self.invalidate_lut_cache(palette.id_palette)
 

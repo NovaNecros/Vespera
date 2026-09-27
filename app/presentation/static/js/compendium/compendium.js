@@ -477,15 +477,16 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         const sortedStops = [...state.stops].sort((a, b) => a.stop_position - b.stop_position);
+        const stopsPayload = sortedStops.map((s) => ({
+            stop_position: s.stop_position,
+            r: s.r,
+            g: s.g,
+            b: s.b
+        }));
         const payload = {
             display_name: title,
             user_notes: userNotesInput?.value.trim() || "",
-            stops: sortedStops.map((s) => ({
-                stop_position: s.stop_position,
-                r: s.r,
-                g: s.g,
-                b: s.b
-            }))
+            stops: stopsPayload
         };
         const isUpdate = state.activePaletteId !== null && !state.isSystem;
         const apiUrl = (isUpdate ?
@@ -509,13 +510,13 @@ document.addEventListener("DOMContentLoaded", () => {
     async function togglePaletteFavorite(idPalette) {
         const apiUrl = toggleFavApiUrl.replace("/palette/0", `/palette/${idPalette}`);
         const res = await apiFetch(apiUrl, { method: "POST" });
-        if (!res.success)
+        if (!res.success || !res.data)
             return;
         const pal = state.paletteCatalog.find((p) => p.id_palette === idPalette);
         if (pal)
-            pal.is_favorite = !pal.is_favorite;
+            pal.is_favorite = res.data.is_favorite;
         if (state.activePaletteId === idPalette)
-            state.isFavorite = !state.isFavorite;
+            state.isFavorite = res.data.is_favorite;
         renderSpectraGrid();
     }
     function purgeCustomSpectrum(idPalette, name) {
@@ -615,7 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     async function initCompendium() {
         try {
-            await mirror.loadFrames([sampleApiUrl]);
+            await mirror.loadFrames([sampleApiUrl], []);
         }
         catch (error) {
             console.warn("Sample Pattern could not be preloaded into the Scrying Mirror:", error);

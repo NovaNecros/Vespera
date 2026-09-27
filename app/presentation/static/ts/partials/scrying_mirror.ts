@@ -11,32 +11,35 @@ export interface ScryingMirrorOptions
 export class ScryingMirror
 {
     // Main Components
-    private root          : HTMLElement              | Document;
-    private stageWrapper  : HTMLElement              | null = null;
-    private canvas        : HTMLCanvasElement        | null = null;
-    private canvasCtx     : CanvasRenderingContext2D | null = null;
-    private emptyState    : HTMLElement              | null = null;
-    private playbackBadge : HTMLElement              | null = null;
-    private frameLabel    : HTMLElement              | null = null;
-    private controlsPanel : HTMLElement              | null = null;
-    private playPauseBtn  : HTMLButtonElement        | null = null;
-    private playPauseIcon : HTMLElement              | null = null;
-    private scrubber      : HTMLInputElement         | null = null;
-    private compareBtn    : HTMLButtonElement        | null = null;
+    private root            : HTMLElement              | Document;
+    private stageWrapper    : HTMLElement              | null = null;
+    private canvas          : HTMLCanvasElement        | null = null;
+    private canvasCtx       : CanvasRenderingContext2D | null = null;
+    private emptyState      : HTMLElement              | null = null;
+    private playbackBadge   : HTMLElement              | null = null;
+    private frameLabel      : HTMLElement              | null = null;
+    private iterationBadge  : HTMLElement              | null = null;
+    private iterationLabel  : HTMLElement              | null = null;
+    private controlsPanel   : HTMLElement              | null = null;
+    private playPauseBtn    : HTMLButtonElement        | null = null;
+    private playPauseIcon   : HTMLElement              | null = null;
+    private scrubber        : HTMLInputElement         | null = null;
+    private compareBtn      : HTMLButtonElement        | null = null;
 
     // Offscreen Buffer
     private offscreenCanvas : HTMLCanvasElement               = document.createElement("canvas");
     private offscreenCtx    : CanvasRenderingContext2D | null = null;
 
     // State
-    private frames         : HTMLImageElement[]        = [];
-    private catalystImg    : HTMLImageElement   | null = null;
-    private activeLut      : Uint8ClampedArray  | null = null;
-    private currentFrame   : number                    = 0;
-    private isPlaying      : boolean                   = false;
-    private isComparing    : boolean                   = false;
-    private animationTimer : number             | null = null;
-    private readonly tickIntervalMs : number                    = 120;
+    private frames          : HTMLImageElement[]              = [];
+    private iterations      : number[]                        = [];
+    private catalystImg     : HTMLImageElement         | null = null;
+    private activeLut       : Uint8ClampedArray        | null = null;
+    private currentFrame    : number                          = 0;
+    private isPlaying       : boolean                         = false;
+    private isComparing     : boolean                         = false;
+    private animationTimer  : number                   | null = null;
+    private readonly tickIntervalMs : number                  = 120;
 
     // Callback
     public onFrameRender : ((index : number, total : number) => void) | null = null;
@@ -52,16 +55,18 @@ export class ScryingMirror
 
     private bindDomElements() : void
     {
-        this.stageWrapper  = this.root.querySelector("#scrying-mirror-stage-wrapper");
-        this.canvas        = this.root.querySelector("#scrying-mirror-canvas");
-        this.emptyState    = this.root.querySelector("#scrying-mirror-empty-state");
-        this.playbackBadge = this.root.querySelector("#scrying-mirror-playback-badge");
-        this.frameLabel    = this.root.querySelector("#scrying-mirror-frame-label");
-        this.controlsPanel = this.root.querySelector("#scrying-mirror-controls-panel");
-        this.playPauseBtn  = this.root.querySelector("#scrying-mirror-play-pause-btn");
-        this.playPauseIcon = this.root.querySelector("#scrying-mirror-play-pause-icon");
-        this.scrubber      = this.root.querySelector("#scrying-mirror-scrubber");
-        this.compareBtn    = this.root.querySelector("#scrying-mirror-compare-btn");
+        this.stageWrapper   = this.root.querySelector("#scrying-mirror-stage-wrapper");
+        this.canvas         = this.root.querySelector("#scrying-mirror-canvas");
+        this.emptyState     = this.root.querySelector("#scrying-mirror-empty-state");
+        this.playbackBadge  = this.root.querySelector("#scrying-mirror-playback-badge");
+        this.frameLabel     = this.root.querySelector("#scrying-mirror-frame-label");
+        this.iterationBadge = this.root.querySelector("#scrying-mirror-iteration-badge");
+        this.iterationLabel = this.root.querySelector("#scrying-mirror-iteration-label");
+        this.controlsPanel  = this.root.querySelector("#scrying-mirror-controls-panel");
+        this.playPauseBtn   = this.root.querySelector("#scrying-mirror-play-pause-btn");
+        this.playPauseIcon  = this.root.querySelector("#scrying-mirror-play-pause-icon");
+        this.scrubber       = this.root.querySelector("#scrying-mirror-scrubber");
+        this.compareBtn     = this.root.querySelector("#scrying-mirror-compare-btn");
 
         if(this.canvas) this.canvasCtx = this.canvas.getContext("2d", { willReadFrequently : true });
         this.offscreenCtx     = this.offscreenCanvas.getContext("2d", { willReadFrequently : true });
@@ -108,10 +113,14 @@ export class ScryingMirror
     }
 
     // Animation
-    public async loadFrames(frameSources : (string | HTMLImageElement)[]) : Promise<void>
+    public async loadFrames(
+        frameSources : (string | HTMLImageElement)[],
+        iterations   : number[]
+    ) : Promise<void>
     {
         this.pause();
-        this.frames = [];
+        this.frames     = [];
+        this.iterations = [...iterations];
 
         if(frameSources.length === 0)
         {
@@ -141,6 +150,7 @@ export class ScryingMirror
 
         this.emptyState?.classList.add("hidden");
         this.playbackBadge?.classList.remove("hidden");
+        this.iterationBadge?.classList.remove("hidden");
         this.controlsPanel?.classList.remove("disabled");
 
         this.renderFrame(0);
@@ -177,10 +187,11 @@ export class ScryingMirror
             this.canvasCtx.putImageData(imgData, 0, 0);
         }
 
-        this.currentFrame = index;
-        if(this.scrubber)      this.scrubber.value = index.toString();
-        if(this.frameLabel)    this.frameLabel.textContent = `Frame ${index + 1} / ${this.frames.length}`;
-        if(this.onFrameRender) this.onFrameRender(index, this.frames.length);
+        this.currentFrame                                       = index;
+        if(this.scrubber)       this.scrubber.value             = index.toString();
+        if(this.frameLabel)     this.frameLabel.textContent     = `Frame ${index + 1} / ${this.frames.length}`;
+        if(this.iterationLabel) this.iterationLabel.textContent = `Step ${this.iterations[index].toLocaleString()}`;
+        if(this.onFrameRender)  this.onFrameRender(index, this.frames.length);
     }
 
     public play() : void
@@ -226,6 +237,7 @@ export class ScryingMirror
         if(this.isComparing)
         {
             this.pause();
+            this.iterationBadge?.classList.add("hidden");
             if(this.catalystImg)
             {
                 this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -248,20 +260,22 @@ export class ScryingMirror
 
     public reset() : void
     {
-        this.pause();
-        this.frames       = [];
-        this.catalystImg  = null;
-        this.currentFrame = 0;
-        this.isComparing  = false;
+        this.emptyState?.classList.remove("hidden");
+        this.playbackBadge?.classList.add("hidden");
+        this.iterationBadge?.classList.add("hidden");
+        this.controlsPanel?.classList.add("disabled");
+        this.compareBtn?.classList.remove("active");
 
         if(this.canvas && this.canvasCtx)
         {
             this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        this.emptyState?.classList.remove("hidden");
-        this.playbackBadge?.classList.add("hidden");
-        this.controlsPanel?.classList.add("disabled");
-        this.compareBtn?.classList.remove("active");
+        this.pause();
+        this.frames       = [];
+        this.iterations   = [];
+        this.catalystImg  = null;
+        this.currentFrame = 0;
+        this.isComparing  = false;
     }
 }

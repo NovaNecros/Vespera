@@ -17,6 +17,7 @@
      class="w-full flex flex-col gap-4"
      data-studio-template-url="{{ url_for('studio.studio') }}"
      data-palettes-api-url="{{ url_for('compendium.api_get_palettes') }}"
+     data-configs-api-url="{{ url_for('studio.api_get_system_configs') }}"
      data-gallery-api-url="{{ url_for('vault.api_get_vault_gallery') }}"
      data-artifact-detail-api-url="{{ url_for('vault.api_get_artifact', id_artifact=0) }}"
      data-update-artifact-alias-api-url="{{ url_for('vault.api_update_artifact_alias', id_artifact=0) }}"
@@ -83,38 +84,43 @@
     </header>
 
     <!-- CONTROL PANEL -->
-    <section class="filigree-card p-3.5 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
+    <section class="filigree-card p-4 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
                     shadow-ambient">
         <div class="filigree-corner-tl"></div>
         <div class="filigree-corner-tr"></div>
         <div class="filigree-corner-bl"></div>
         <div class="filigree-corner-br"></div>
 
-        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div class="flex flex-col xl:flex-row items-stretch xl:items-end justify-between gap-4 lg:gap-8">
             <!-- Search Bar -->
-            <div class="relative flex-grow max-w-xl">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2
+            <div class="flex flex-col gap-2 flex-grow max-w-xl">
+                <label for="vault-search-input"
+                       class="font-cinzel text-xs text-vespera-silver">
+                    Inscription Query
+                </label>
+                <div class="relative w-full">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2
                           text-vespera-silver text-xs">
-                </i>
-                <label>
+                    </i>
                     <input id="vault-search-input" type="text"
                            class="vamp-input pl-9 pr-8 text-xs py-2 w-full border border-vespera-obsidian
                                   focus:border-vespera-silver"
                            placeholder="Inscribe what you wish to find...">
-                </label>
-                <button id="clear-search-btn" type="button"
-                        class="absolute right-3 top-1/2 -translate-y-1/2 text-vespera-boneSilent
-                               hover:text-vespera-parchment text-xs hidden">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+
+                    <button id="clear-search-btn" type="button"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-vespera-boneSilent
+                                   hover:text-vespera-parchment text-xs hidden">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="flex items-center gap-2.5 flex-wrap">
+            <div class="flex items-center gap-4 lg:gap-6 flex-wrap">
                 <!-- Palette Filter -->
                 <div id="filter-palette-wrapper"
-                     class="flex items-center gap-1.5">
+                     class="flex flex-col gap-2">
                     <label for="filter-palette-select"
-                           class="font-cinzel text-xs text-vespera-silver hidden sm:inline">
+                           class="font-cinzel text-xs text-vespera-silver">
                         Spectrum
                     </label>
                     <select id="filter-palette-select"
@@ -123,41 +129,73 @@
                     </select>
                 </div>
 
-                <!-- Favorite Filter -->
-                <button id="filter-favorites-btn" type="button"
-                        class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-3 border border-vespera-obsidian">
-                    <i class="fa-regular fa-star mr-1 text-vespera-silver"></i>
-                    Favorites
-                </button>
-
-                <!-- Sorting -->
-                <div class="flex items-center gap-1.5">
-                    <label for="sort-by-select"
-                           class="font-cinzel text-xs text-vespera-silver hidden sm:inline">
-                        Sort:
+                <!-- System Parameter Settings Filter -->
+                <div id="filter-config-wrapper"
+                     class="flex flex-col gap-2">
+                    <label for="filter-config-select"
+                           class="font-cinzel text-xs text-vespera-silver">
+                        Formula
                     </label>
-                    <select id="sort-by-select"
-                            class="vamp-select text-xs py-1.5 px-2.5 w-36">
-                        <option value="date_created">Date Sealed</option>
-                        <option value="synthesis_time">Morph Duration</option>
-                        <option value="alias">Alias Inscribed</option>
+                    <select id="filter-config-select"
+                            class="vamp-select text-xs py-1.5 px-2.5 w-40">
+                        <!-- TS -->
                     </select>
                 </div>
 
-                <!-- Sort Direction -->
-                <button id="sort-direction-btn" type="button"
-                        title="Toggle Ascending / Descending"
-                        class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-2.5 border border-vespera-obsidian">
-                    <i id="sort-direction-icon" class="fa-solid fa-arrow-down-wide-short"></i>
-                </button>
+                <!-- Sorting -->
+                <div id="sort-controls-wrapper"
+                     class="flex flex-col gap-2">
+                    <label for="sort-by-select"
+                               class="font-cinzel text-xs text-vespera-silver">
+                        Sort By
+                    </label>
+                    <div class="flex items-center gap-1.5">
+                        <select id="sort-by-select"
+                                class="vamp-select text-xs py-1.5 px-2.5 w-40">
+                            <option value="date_created">Date Sealed</option>
+                            <option value="synthesis_time">Morph Duration</option>
+                            <option value="alias">Alias Inscribed</option>
+                        </select>
+
+                        <!-- Sort Direction -->
+                        <button id="sort-direction-btn" type="button"
+                                title="Toggle Ascending / Descending"
+                                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5
+                                       border border-vespera-obsidian h-[30px]">
+                            <i id="sort-direction-icon" class="fa-solid fa-arrow-down-wide-short"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 justify-end">
+                    <!-- Favorite Filter -->
+                    <button id="filter-favorites-btn" type="button"
+                            class="vamp-btn vamp-btn-ghost text-[0.7rem] py-1 px-2.5 gap-1.5 w-40
+                                   border border-vespera-obsidian flex items-center justify-start">
+                        <i class="fa-regular fa-star"></i>
+                        <span>Favorites</span>
+                    </button>
+
+                    <!-- Monochrome Toggle -->
+                    <button id="toggle-monochrome-view-btn" type="button"
+                            class="vamp-btn vamp-btn-ghost text-[0.7rem] py-1 px-2.5 gap-1.5 w-40
+                                   border border-vespera-obsidian flex items-center justify-start"
+                            title="Toggle raw grayscale artifacts">
+                        <i class="fa-solid fa-circle-half-stroke"></i>
+                        <span>Monochrome</span>
+                    </button>
+                </div>
 
                 <!-- Reset Filters -->
-                <button id="reset-filters-btn" type="button"
-                        title="Reset search, filters and sorting"
-                        class="vamp-btn vamp-btn-ghost text-xs py-1.5 px-2.5 border border-vespera-obsidian
-                               text-vespera-boneSilent hover:text-vespera-crimson">
-                    <i class="fa-solid fa-arrow-rotate-left"></i>
-                </button>
+                <div class="flex flex-col justify-end">
+                    <button id="reset-filters-btn" type="button"
+                            title="Reset search, filters and sorting"
+                            class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5 border border-vespera-obsidian
+                                   text-vespera-boneSilent hover:text-vespera-crimson h-[30px]">
+                        <i class="fa-solid fa-arrow-rotate-left"></i>
+                    </button>
+                </div>
+
             </div>
         </div>
     </section>

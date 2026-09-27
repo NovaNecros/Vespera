@@ -7,10 +7,10 @@ from typing import Any, Optional, Union
 from pathlib import Path
 import traceback
 from time import perf_counter
-
 from PIL import Image
 
 from werkzeug.datastructures import FileStorage
+from sqlalchemy.exc import IntegrityError
 
 from app.core.extensions import db
 from app.core.config import TuringSettings, RNGSettings, Colors
@@ -290,6 +290,7 @@ class SynthesisService:
                     "artifact_hash"  : artifact_hash,
                     "execution_time" : execution_time,
                     "keyframes"      : keyframes_b64,
+                    "captured_iters" : captured_iters,
                     "frame_count"    : len(keyframes_b64),
                     "is_committed"   : False
                 },
@@ -429,7 +430,15 @@ class SynthesisService:
                 )
                 db.session.add(frame_record)
 
-            db.session.commit()
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return {
+                    "success"     : False,
+                    "error"       : f"The name '{artifact_alias}' is already taken by another artifact, love. Please try another name.",
+                    "status_code" : 409
+                }
 
             # Limpiar Caché
             del self._ephemeral_cache[artifact_hash]

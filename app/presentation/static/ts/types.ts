@@ -1,15 +1,5 @@
 // Vespera/app/presentation/static/ts/types.ts
 
-// --- API CONTRACTS ---
-export interface APIResponse<T = any>
-{
-    success     : boolean;
-    data?       : T;
-    error?      : string;
-    message?    : string;
-    status_code : number;
-}
-
 // --- DB MODELS ---
 export interface RGBColor
 {
@@ -120,7 +110,17 @@ export interface SynthesisArtifact
     manifestations?    : RelArtifactPalette[];
 }
 
-// --- HYDRATION CONTRACTS ---
+
+// --- API CONTRACTS ---
+export interface APIResponse<T = any>
+{
+    success     : boolean;
+    data?       : T;
+    error?      : string;
+    message?    : string;
+    status_code : number;
+}
+
 export interface HydrationSourceImage
 {
     id_source_image : number;
@@ -157,10 +157,23 @@ export interface HydrationBundle
     source_image       : HydrationSourceImage | null;
     config             : HydrationConfig      | null;
     frames             : string[];
+    frame_iterations   : number[];
     frame_count        : number;
 }
 
-// --- VAULT PAYLOADS ---
+export interface VaultGalleryPayload
+{
+    id_palette      : number | null;
+    id_config       : number | "custom" | null;
+    id_source_image : number | null;
+    favorites       : boolean;
+    search          : string;
+    sort_by         : string;
+    sort_dir        : "asc"  | "desc";
+    page            : number;
+    per_page        : number;
+}
+
 export interface VaultGalleryData
 {
     items       : ArtifactManifestation[];
@@ -170,7 +183,13 @@ export interface VaultGalleryData
     total_pages : number;
 }
 
-// --- VAULT API RESPONSES ---
+export interface SourceCatalogPayload
+{
+    search   : string;
+    page     : number;
+    per_page : number;
+}
+
 export interface SourceCatalogItem
 {
     id_source_image   : number;
@@ -195,6 +214,55 @@ export interface SourceCatalogData
     total_pages : number;
 }
 
+export interface AliasUpdatePayload
+{
+    alias : string;
+}
+
+export interface AliasUpdateData
+{
+    target_type    : string;
+    target_id      : number;
+    original_alias : string;
+    new_alias      : string;
+}
+
+export interface NotesUpdatePayload
+{
+    user_notes : string;
+}
+
+export interface NotesUpdateData
+{
+    id_artifact : number;
+    user_notes  : string | null;
+}
+
+export interface FavoriteToggleData
+{
+    id_artifact : number;
+    is_favorite : boolean;
+}
+
+export interface SynthesisGenerateData
+{
+    artifact_hash  : string;
+    execution_time : number;
+    keyframes      : string[];
+    captured_iters : number[];
+    frame_count    : number;
+    is_committed   : boolean;
+}
+
+export interface SynthesisCommitPayload
+{
+    artifact_hash      : string;
+    alias              : string;
+    parent_artifact_id : number | null;
+    id_palette         : number;
+    user_notes         : string | null;
+}
+
 export interface DeleteManifestationData
 {
     id_rel                   : number;
@@ -212,7 +280,6 @@ export interface DeleteArtifactData
     remaining_artifacts : number;
 }
 
-// --- COMPENDIUM API CONTRACTS ---
 export interface PaletteStopPayload extends RGBColor
 {
     stop_position : number;
@@ -225,7 +292,8 @@ export interface PaletteMutationPayload
     stops        : PaletteStopPayload[];
 }
 
-// --- MODAL & OVERLAY CONTRACTS ---
+
+// --- PARTIAL ELEMENT CONTRACTS ---
 export type AlertType = "danger" | "error" | "warning" | "success" | "info";
 
 export interface AlertModalOptions
@@ -251,7 +319,8 @@ export interface LoadingOverlayOptions
     subtitle? : string;
 }
 
-// --- PALETTE ---
+
+// --- SYSTEM PALETTE ---
 export interface VesperaPalette
 {
     smokeCenter     : string;

@@ -4,7 +4,8 @@ import
 {
     APIResponse,  RGBColor,
     ColorPalette, PaletteStop,
-    PaletteMutationPayload
+    PaletteMutationPayload,
+    PaletteStopPayload
 } from "../types.js";
 import
 {
@@ -640,16 +641,18 @@ document.addEventListener("DOMContentLoaded", () : void =>
         const sortedStops : PaletteStopDraft[] = [...state.stops].sort(
             (a : PaletteStopDraft, b : PaletteStopDraft) => a.stop_position - b.stop_position);
 
+        const stopsPayload : PaletteStopPayload[] = sortedStops.map((s : PaletteStopDraft) : PaletteStopPayload => ({
+            stop_position : s.stop_position,
+            r             : s.r,
+            g             : s.g,
+            b             : s.b
+        }));
+
         const payload : PaletteMutationPayload = {
             display_name : title,
             user_notes   : userNotesInput?.value.trim() || "",
-            stops        : sortedStops.map((s : PaletteStopDraft) => ({
-                stop_position : s.stop_position,
-                r             : s.r,
-                g             : s.g,
-                b             : s.b
-            }))
-        };
+            stops        : stopsPayload
+        }
 
         const isUpdate : boolean = state.activePaletteId !== null && !state.isSystem;
         const apiUrl   : string  = (isUpdate ?
@@ -678,13 +681,16 @@ document.addEventListener("DOMContentLoaded", () : void =>
     async function togglePaletteFavorite(idPalette : number) : Promise<void>
     {
         const apiUrl : string = toggleFavApiUrl.replace("/palette/0", `/palette/${idPalette}`);
-        const res    : APIResponse = await apiFetch(apiUrl, { method : "POST" });
-        if(!res.success) return;
+        const res    : APIResponse<ColorPalette> = await apiFetch<ColorPalette>(apiUrl, { method : "POST" });
 
-        const pal = state.paletteCatalog.find((p) => p.id_palette === idPalette);
-        if(pal) pal.is_favorite = !pal.is_favorite;
+        if(!res.success || !res.data) return;
 
-        if(state.activePaletteId === idPalette) state.isFavorite = !state.isFavorite;
+        const pal : ColorPalette | undefined = state.paletteCatalog.find(
+            (p : ColorPalette) => p.id_palette === idPalette);
+
+        if(pal) pal.is_favorite = res.data.is_favorite;
+
+        if(state.activePaletteId === idPalette) state.isFavorite = res.data.is_favorite;
         renderSpectraGrid();
     }
 
@@ -700,7 +706,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
             onConfirm   : async () : Promise<void> =>
             {
                 const apiUrl : string = deletePaletteApiUrl.replace("/palette/0", `/palette/${idPalette}`);
-                const res    : APIResponse = await apiFetch(apiUrl, { method : "DELETE" });
+                const res    : APIResponse<void> = await apiFetch<void>(apiUrl, { method : "DELETE" });
                 if(!res.success) return;
 
                 if(state.activePaletteId === idPalette) resetAltarToDefault();
@@ -807,7 +813,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     {
         try
         {
-            await mirror.loadFrames([sampleApiUrl]);
+            await mirror.loadFrames([sampleApiUrl], []);
         }
         catch(error)
         {
