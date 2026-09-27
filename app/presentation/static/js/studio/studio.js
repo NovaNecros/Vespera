@@ -1,4 +1,5 @@
-import { apiFetch, hideLoadingOverlay, showLoadingOverlay, truncateHash, buildPaletteLut } from "../base.js";
+import { apiFetch, truncateHash, buildPaletteLut } from "../base.js";
+import { hideLoadingOverlay, showLoadingOverlay } from "../partials/_overlay.js";
 import { ScryingMirror } from "../partials/scrying_mirror.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("studio-main-container");

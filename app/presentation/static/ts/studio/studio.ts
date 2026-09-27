@@ -9,10 +9,10 @@ import
 import
 {
     apiFetch,
-    hideLoadingOverlay, showLoadingOverlay,
     truncateHash,
     buildPaletteLut
 } from "../base.js";
+import { hideLoadingOverlay, showLoadingOverlay } from "../partials/_overlay.js";
 import { ScryingMirror } from "../partials/scrying_mirror.js";
 
 // Interfaces

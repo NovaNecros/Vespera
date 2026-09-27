@@ -21,7 +21,7 @@
      data-sample-api-url="{{ url_for('enigma.api_stream_enigma22') }}">
 
     <!-- HEADER -->
-    <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b
+    <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border-b
                    border-vespera-obsidian pb-3">
         <div class="flex flex-col items-start justify-between gap-0">
             <div class="flex items-center">
@@ -50,7 +50,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         <!-- EDITOR -->
-        <div class="lg:col-span-7 flex flex-col gap-4">
+        <div class="lg:col-span-9 flex flex-col gap-4">
             <div class="filigree-card p-5 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
                         shadow-ambient flex flex-col gap-4">
                 <div class="filigree-corner-tl"></div>
@@ -70,17 +70,12 @@
                     </div>
                     <span id="altar-mode-badge"
                           class="vamp-badge vamp-badge-silver text-[0.65rem]">
-                        Custom Inscription
+                        <!-- TS -->
                     </span>
                 </div>
 
-                <!-- Preview -->
-                <div class="flex flex-col items-center justify-center w-full">
-                    {% include "partials/scrying_mirror.html" %}
-                </div>
-
                 <!-- Gradient Ribbon -->
-                <div class="flex flex-col gap-1.5 pt-2 border-t border-vespera-obsidian">
+                <div class="flex flex-col gap-1.5">
                     <div class="flex items-center justify-between font-cinzel text-xs text-vespera-parchment">
                         <span>
                             <i class="fa-solid fa-palette mr-1 text-vespera-crimson"></i>
@@ -101,14 +96,14 @@
 
                 <!-- Stop Toolbar -->
                 <div id="active-stop-panel"
-                     class="p-3 bg-vespera-surface border border-vespera-obsidian rounded-sm flex flex-col gap-3">
-                    <div class="flex items-center justify-between border-b border-vespera-obsidian pb-1.5">
+                     class="p-2.5 bg-vespera-surface border border-vespera-obsidian rounded-sm flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between border-b border-vespera-obsidian pb-1">
                         <span class="font-cinzel text-xs text-vespera-silver font-bold uppercase tracking-wider">
                             <i class="fa-solid fa-eye-dropper mr-1.5 text-vespera-silver"></i>
                             Active Node Coordinates
                         </span>
                         <button id="delete-stop-btn" type="button"
-                                class="text-vespera-crimson hover:text-vespera-crimsonDark font-cinzel text-[0.65rem]
+                                class="text-vespera-crimsonBright hover:text-vespera-crimson font-cinzel text-[0.65rem]
                                        uppercase transition-colors disabled:opacity-30 disabled:pointer-events-none">
                             <i class="fa-solid fa-trash-can mr-1"></i>
                             Remove Node
@@ -158,80 +153,91 @@
                                 RGB Values
                             </span>
                             <span id="stop-rgb-label">
-                                rgb(128, 0, 8)
+                                <!-- TS -->
                             </span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
-                <div class="flex items-center justify-between gap-2 flex-wrap pt-1">
-                    <span class="font-cinzel text-xs text-vespera-silver">
-                        Modifiers:
-                    </span>
-                    <div class="flex items-center gap-2">
-                        <button id="mod-invert-btn" type="button"
-                                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5"
-                                title="Invert normalized stop coordinates (1.0 - t)">
-                            <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i>
-                            Invert
-                        </button>
-                        <button id="mod-distribute-btn" type="button"
-                                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5"
-                                title="Evenly distribute stops along the track">
-                            <i class="fa-solid fa-arrows-left-right-to-line mr-1"></i>
-                            Distribute
-                        </button>
-                        <button id="mod-shift-btn" type="button"
-                                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5"
-                                title="Cycle color positions forward">
-                            <i class="fa-solid fa-rotate mr-1"></i>
-                            Cycle
-                        </button>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch pt-3 border-t border-vespera-obsidian">
+                    <!-- Preview -->
+                    <div class="md:col-span-5 flex flex-col items-center justify-center w-full
+                                scrying-mirror-mini animation-controls-hidden">
+                        {% include "partials/scrying_mirror.html" %}
                     </div>
-                </div>
 
-                <!-- Metadata Form -->
-                <div class="flex flex-col gap-3 pt-2 border-t border-vespera-obsidian">
-                    <div class="flex flex-col gap-1">
-                        <label for="spectrum-display-name-input"
-                               class="font-cinzel text-xs text-vespera-parchment">
-                            Spectrum Inscription Title
-                        </label>
-                        <input id="spectrum-display-name-input" type="text"
-                               placeholder="e.g. Sanguis Nocturna..."
-                               class="vamp-input text-xs">
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label for="spectrum-notes-input"
-                               class="font-cinzel text-xs text-vespera-parchment">
-                            Grimoire Observations (Optional)
-                        </label>
-                        <textarea id="spectrum-notes-input" rows="2"
-                                  placeholder="Harmonic properties, alchemical variants..."
-                                  class="vamp-textarea text-xs resize-none"></textarea>
-                    </div>
-                </div>
+                    <div class="md:col-span-7 flex flex-col justify-between h-full gap-3.5">
+                        <!-- Quick Actions -->
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <span class="font-cinzel text-xs text-vespera-silver">
+                                Modifiers:
+                            </span>
+                             <div class="flex items-center gap-2">
+                                <button id="mod-invert-btn" type="button"
+                                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5"
+                                        title="Invert normalized stop coordinates (1.0 - t)">
+                                    <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i>
+                                    Invert
+                                </button>
+                                <button id="mod-distribute-btn" type="button"
+                                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5"
+                                        title="Evenly distribute stops along the track">
+                                    <i class="fa-solid fa-arrows-left-right-to-line mr-1"></i>
+                                    Distribute
+                                </button>
+                                <button id="mod-shift-btn" type="button"
+                                        class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5"
+                                        title="Cycle color positions forward">
+                                    <i class="fa-solid fa-rotate mr-1"></i>
+                                    Cycle
+                                </button>
+                            </div>
+                        </div>
 
-                <!-- Action Controls -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-vespera-obsidian">
-                    <button id="save-spectrum-btn" type="button"
-                            class="vamp-btn vamp-btn-crimson w-full py-2 text-xs font-bold tracking-widest">
-                        <i class="fa-solid fa-feather mr-2"></i>
-                        Inscribe Spectrum
-                    </button>
-                    <button id="branch-spectrum-btn" type="button"
-                            class="vamp-btn vamp-btn-silver w-full py-2 text-xs font-bold tracking-widest
-                                   disabled:opacity-30 disabled:pointer-events-none">
-                        <i class="fa-solid fa-code-branch mr-2"></i>
-                        Branch Variant
-                    </button>
+                        <!-- Metadata Form -->
+                        <div class="flex flex-col gap-2.5 pt-1 border-t border-vespera-obsidian flex-grow">
+                            <div class="flex flex-col gap-1">
+                                <label for="spectrum-display-name-input"
+                                       class="font-cinzel text-xs text-vespera-parchment">
+                                    Spectrum Inscription Title
+                                </label>
+                                <input id="spectrum-display-name-input" type="text"
+                                       placeholder="e.g. Sanguis Nocturna..."
+                                       class="vamp-input text-xs py-1.5">
+                            </div>
+                            <div class="flex flex-col gap-1 flex-grow">
+                                <label for="spectrum-notes-input"
+                                       class="font-cinzel text-xs text-vespera-parchment">
+                                    Grimoire Observations (Optional)
+                                </label>
+                                <textarea id="spectrum-notes-input"
+                                          placeholder="Harmonic properties, alchemical variants..."
+                                          class="vamp-textarea text-xs resize-none flex-grow
+                                                 w-full min-h-[72px] leading-relaxed"></textarea>
+                            </div>
+                        </div>
+
+                         <!-- Action Controls -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-vespera-obsidian">
+                            <button id="save-spectrum-btn" type="button"
+                                    class="vamp-btn vamp-btn-crimson w-full py-2 text-xs font-bold tracking-widest">
+                                <i class="fa-solid fa-feather mr-1.5"></i>
+                                Inscribe Spectrum
+                            </button>
+                            <button id="branch-spectrum-btn" type="button"
+                                    class="vamp-btn vamp-btn-silver w-full py-2 text-xs font-bold tracking-widest
+                                           disabled:opacity-30 disabled:pointer-events-none">
+                                <i class="fa-solid fa-code-branch mr-1.5"></i>
+                                Branch Variant
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- BROWSER -->
-        <div class="lg:col-span-5 flex flex-col gap-4">
+        <div class="lg:col-span-3 flex flex-col gap-3">
             <div class="filigree-card p-5 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
                         shadow-ambient flex flex-col gap-3.5 h-full">
                 <div class="filigree-corner-tl"></div>
@@ -293,13 +299,13 @@
 
                 <!-- Spectra Cards -->
                 <div id="spectra-cards-container"
-                     class="flex-grow overflow-y-auto pr-1 flex flex-col gap-3 max-h-[640px]">
+                     class="flex-grow overflow-y-auto pr-1 flex flex-col gap-5 max-h-[580px]">
                     <!-- TS -->
                 </div>
 
                 <!-- Empty State -->
                 <div id="spectra-empty-state"
-                     class="flex flex-col items-center justify-center p-8 text-center gap-2 hidden my-auto">
+                     class="flex flex-col items-center justify-center p-8 text-center gap-2 hidden">
                     <i class="fa-solid fa-palette text-2xl text-vespera-crimson"></i>
                     <span class="font-cinzel text-sm text-vespera-parchment font-semibold">
                         No Spectra Inscribed

@@ -3,12 +3,12 @@
 import
 {
     APIResponse,
-    LoadingOverlayOptions,
     VesperaPalette,
     PaletteStop,
     RGBColor
 } from "./types.js";
 
+// SYSTEM PALETTE
 export function getVesperaPalette() : VesperaPalette
 {
     const style : CSSStyleDeclaration = getComputedStyle(document.documentElement);
@@ -66,29 +66,6 @@ export function getVesperaPalette() : VesperaPalette
     };
 }
 
-// LOADING OVERLAY
-export function showLoadingOverlay(options? : LoadingOverlayOptions) : void
-{
-    const overlay : HTMLElement | null = document.getElementById("loading-overlay");
-    const titleEl : HTMLElement | null = document.getElementById("overlay-title");
-    const subEl   : HTMLElement | null = document.getElementById("overlay-subtitle");
-
-    if(!overlay) return;
-
-    if(titleEl && options?.title)    titleEl.textContent = options.title;
-    if(subEl   && options?.subtitle) subEl.innerHTML     = options.subtitle;
-
-    overlay.classList.remove("hidden");
-    overlay.classList.add("flex");
-}
-
-export function hideLoadingOverlay() : void
-{
-    const overlay : HTMLElement | null = document.getElementById("loading-overlay");
-    if(!overlay) return;
-    overlay.classList.add("hidden");
-    overlay.classList.remove("flex");
-}
 
 // MODALS
 const modalTimeouts : WeakMap<HTMLElement, number> = new WeakMap();
@@ -139,6 +116,7 @@ export function closeModalWithTransition(modalEl : HTMLElement | null, onClosed?
     modalTimeouts.set(modalEl, timeId);
 }
 
+
 // FETCH API DECORATOR
 export async function apiFetch<T = any>(url : string, options? : RequestInit) : Promise<APIResponse<T>>
 {
@@ -175,6 +153,7 @@ export async function apiFetch<T = any>(url : string, options? : RequestInit) : 
     }
 }
 
+
 // --- UTILS ---
 export function formatBytes(bytes : number) : string
 {
@@ -194,6 +173,7 @@ export function truncateHash(hash : string, chars : number = 8) : string
     return `${hash.substring(0, chars)}...${hash.substring(hash.length - chars)}`;
 }
 
+// Color Utils
 export function hexToRgb(hex : string) : RGBColor
 {
     let cleanHex : string = hex.trim().replace("#", "");
@@ -262,8 +242,6 @@ export function applyPalette(data : Uint8ClampedArray, lut : Uint8ClampedArray) 
 }
 
 (window as any).getVesperaPalette        = getVesperaPalette;
-(window as any).showLoadingOverlay       = showLoadingOverlay;
-(window as any).hideLoadingOverlay       = hideLoadingOverlay;
 (window as any).openModalWithTransition  = openModalWithTransition;
 (window as any).closeModalWithTransition = closeModalWithTransition;
 (window as any).apiFetch                 = apiFetch;

@@ -95,8 +95,7 @@
                 if (options.confirmText) {
                     confirmBtn.innerHTML = `
                         <i class="fa-solid fa-feather mr-1.5"></i>
-                        ${options.confirmText}
-                    `;
+                        ${options.confirmText}`;
                 }
             }
             else {

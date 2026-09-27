@@ -209,15 +209,27 @@
                 </div>
 
                 <!-- Presets -->
-                <div class="flex flex-col gap-1 pb-1 border-b border-vespera-obsidian">
-                    <label for="config-preset-select"
-                           class="font-cinzel text-xs text-vespera-parchment">
-                        Formula Preset
-                    </label>
-                    <select id="config-preset-select"
-                            class="vamp-select text-xs">
-                        <!-- TS -->
-                    </select>
+                <div class="grid grid-cols-2 gap-3 border-b border-vespera-obsidian pb-1">
+                    <div class="flex flex-col gap-1">
+                        <label for="config-preset-select"
+                               class="font-cinzel text-xs text-vespera-parchment">
+                            Formula Preset
+                        </label>
+                        <select id="config-preset-select"
+                                class="vamp-select text-xs">
+                            <!-- TS -->
+                        </select>
+                    </div>
+                    <!-- Palette -->
+                    <div class="flex flex-col gap-1">
+                        <label for="palette-select"
+                               class="font-cinzel text-xs text-vespera-parchment">
+                            Chromatic Spectrum
+                        </label>
+                        <select id="palette-select" name="color_palette" class="vamp-select text-xs">
+                            <!-- TS -->
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Feed & Kill Rates -->
@@ -299,12 +311,12 @@
                                 Iterations
                             </label>
                             <input id="iterations-input" type="number"
-                                   min="12000" max="25000" step="500" value="12000"
+                                   min="6000" max="24000" step="600" value="12000"
                                    class="vamp-num-input">
                         </div>
                         <label>
                             <input id="iterations-slider" type="range" name="iterations"
-                                   min="12000" max="25000" step="500" value="12000"
+                                   min="6000" max="24000" step="600" value="12000"
                                    class="vamp-range">
                         </label>
                     </div>
@@ -324,17 +336,6 @@
                                    class="vamp-range">
                         </label>
                     </div>
-                </div>
-
-                <!-- Palette -->
-                <div class="flex flex-col gap-1 pt-1">
-                    <label for="palette-select"
-                           class="font-cinzel text-xs text-vespera-parchment">
-                        Chromatic Spectrum
-                    </label>
-                    <select id="palette-select" name="color_palette" class="vamp-select text-xs">
-                        <!-- TS -->
-                    </select>
                 </div>
             </div>
 

@@ -416,10 +416,11 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             bufferHTML.push(`
                 <div class="spectrum-card ${isSelected ? 'active-editor' : ''}"
-                     data-palette-id="${pal.id_palette}">
+                     data-palette-id="${pal.id_palette}"
+                     title="${isSys ? 'Branch Palette' : 'Edit Palette'}">
                     <div class="spectrum-ribbon-preview" style="background : ${gradientCSS};"></div>
                     <div class="spectrum-card-header">
-                        <div class="flex flex-col truncate">
+                        <div class="flex flex-col truncate pointer-events-none">
                             <span class="font-cinzel text-xs text-vespera-parchment font-bold truncate"
                                   title="${pal.display_name}">
                                 ${pal.display_name}
@@ -430,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                         </div>
                         <div class="flex items-center gap-1.5">
                             <span class="vamp-badge ${isSys ? 'vamp-badge-silver' : 'vamp-badge-crimson-bright'}
-                                         text-[0.6rem] px-1.5 py-0.5">
+                                         text-[0.6rem] px-1.5 py-0.5 pointer-events-none">
                                 ${isSys ? 'Sacred' : 'Inscribed'}
                             </span>
                             <button type="button" 
@@ -441,39 +442,37 @@ document.addEventListener("DOMContentLoaded", () : void =>
                                     title="Toggle Favorite">
                                 <i class="${isFav ? 'fa-solid fa-star' : 'fa-regular fa-star'}"></i>         
                             </button>
-                        </div>
-                    </div>
-                    <div class="px-3 pb-2.5 pt-1 flex items-center justify-between border-t border-vespera-obsidian">
-                        <button type="button"
-                                class="vamp-btn vamp-btn-ghost text-[0.65rem] py-0.5 px-2 action-load-altar"
-                                data-palette-id="${pal.id_palette}">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>
-                            Load to Altar        
-                        </button>
-                        <div class="flex items-center gap-1">
                             <button type="button"
                                     class="vamp-btn vamp-btn-ghost text-[0.65rem] py-0.5 px-2 action-branch-spectrum"
                                     data-palette-id="${pal.id_palette}"
                                     title="Branch variant of this spectrum">
-                                <i class="fa-solid fa-code-branch"></i>        
+                                <i class="fa-solid fa-code-branch"></i>
                             </button>
                             ${!isSys ? `
                                 <button type="button"
-                                        class="text-xs text-vespera-crimson hover:text-vespera-crimsonBright 
+                                        class="text-xs text-vespera-crimson hover:text-vespera-crimsonBright
                                                p-1 action-purge-spectrum"
                                         data-palette-id="${pal.id_palette}"
                                         data-palette-name="${pal.display_name}"
                                         title="Purge ${pal.display_name}">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
-                            ` : ""}            
+                            ` : ""}
                         </div>
                     </div>
-                </div>
-            `);
+                </div>`);
         });
-
         spectraContainer.innerHTML = bufferHTML.join("");
+
+        spectraContainer.querySelectorAll(".spectrum-card").forEach((cardEl : Element) =>
+        {
+            cardEl.addEventListener("click", (event : Event) =>
+            {
+                if((event.target as HTMLElement).closest("button")) return;
+                const idPalette : number = parseInt((cardEl as HTMLElement).dataset.paletteId || "0");
+                loadPaletteIntoAltar(idPalette);
+            });
+        });
 
         spectraContainer.querySelectorAll(".action-load-altar").forEach((btn : Element) =>
         {
@@ -539,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(altarModeBadge)
         {
             altarModeBadge.textContent = pal.is_system ? "Sacred Formula" : `Inscribed #${pal.id_palette}`;
-            altarModeBadge.className   = `vamp-badge ${pal.is_system ? "vamp-badge-silver" : "vamp-badge-crimson-bright"} text-[0.65rem]`;
+            altarModeBadge.className   = `vamp-badge ${pal.is_system ? "vamp-badge-silver" : "vamp-badge-crimson-dark"} text-[0.65rem]`;
         }
 
         if(branchSpectrumBtn) branchSpectrumBtn.disabled = false;

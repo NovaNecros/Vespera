@@ -46,26 +46,6 @@ export function getVesperaPalette() {
         glowAmethyst: style.getPropertyValue("--vespera-glow-amethyst").trim() || "0 0 20px rgba(152, 56, 184, 0.35)"
     };
 }
-export function showLoadingOverlay(options) {
-    const overlay = document.getElementById("loading-overlay");
-    const titleEl = document.getElementById("overlay-title");
-    const subEl = document.getElementById("overlay-subtitle");
-    if (!overlay)
-        return;
-    if (titleEl && options?.title)
-        titleEl.textContent = options.title;
-    if (subEl && options?.subtitle)
-        subEl.innerHTML = options.subtitle;
-    overlay.classList.remove("hidden");
-    overlay.classList.add("flex");
-}
-export function hideLoadingOverlay() {
-    const overlay = document.getElementById("loading-overlay");
-    if (!overlay)
-        return;
-    overlay.classList.add("hidden");
-    overlay.classList.remove("flex");
-}
 const modalTimeouts = new WeakMap();
 export function openModalWithTransition(modalEl) {
     if (!modalEl)
@@ -191,8 +171,6 @@ export function applyPalette(data, lut) {
     }
 }
 window.getVesperaPalette = getVesperaPalette;
-window.showLoadingOverlay = showLoadingOverlay;
-window.hideLoadingOverlay = hideLoadingOverlay;
 window.openModalWithTransition = openModalWithTransition;
 window.closeModalWithTransition = closeModalWithTransition;
 window.apiFetch = apiFetch;

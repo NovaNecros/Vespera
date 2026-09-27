@@ -101,7 +101,7 @@ def seed_configs() -> bool:
                 "diff_u"       : 1.0000,
                 "diff_v"       : 0.5000,
                 "dt"           : 1.0000,
-                "iterations"   : 25000
+                "iterations"   : 24000
             }
         ]
 
