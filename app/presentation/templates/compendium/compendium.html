@@ -237,16 +237,16 @@
         </div>
 
         <!-- BROWSER -->
-        <div class="lg:col-span-3 flex flex-col gap-3">
+        <div class="lg:col-span-3 flex flex-col gap-3 min-h-0">
             <div class="filigree-card p-5 bg-vespera-charcoal border border-vespera-obsidian rounded-vespera
-                        shadow-ambient flex flex-col gap-3.5 h-full">
+                        shadow-ambient flex flex-col gap-3.5 h-full min-h-0">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
                 <!-- Subheader -->
-                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2">
+                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2 shrink-0">
                     <div class="flex items-center gap-2">
                         <span class="brand-sigil w-6 h-6 text-xs">
                             <i class="fa-solid fa-book-skull"></i>
@@ -262,7 +262,7 @@
                 </div>
 
                 <!-- Search & Filters -->
-                <div class="flex flex-col gap-2.5">
+                <div class="flex flex-col gap-2.5 shrink-0">
                     <div class="relative w-full">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2
                                   text-vespera-silver text-xs"></i>
@@ -299,7 +299,8 @@
 
                 <!-- Spectra Cards -->
                 <div id="spectra-cards-container"
-                     class="flex-grow overflow-y-auto pr-1 flex flex-col gap-5 max-h-[580px]">
+                     class="spectra-cards-container flex-grow overflow-y-auto flex flex-col gap-3
+                            min-h-0 max-h-[580px]">
                     <!-- TS -->
                 </div>
 

@@ -293,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const isSys = pal.is_system;
             const isSelected = pal.id_palette === state.activePaletteId;
             bufferHTML.push(`
-                <div class="spectrum-card ${isSelected ? 'active-editor' : ''}"
+                <div class="spectrum-card shrink-0 ${isSelected ? 'active-editor' : ''}"
                      data-palette-id="${pal.id_palette}"
                      title="${isSys ? 'Branch Palette' : 'Edit Palette'}">
                     <div class="spectrum-ribbon-preview" style="background : ${gradientCSS};"></div>
@@ -616,7 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     async function initCompendium() {
         try {
-            await mirror.loadFrames([sampleApiUrl], []);
+            await mirror.loadFrames([sampleApiUrl], [12000]);
         }
         catch (error) {
             console.warn("Sample Pattern could not be preloaded into the Scrying Mirror:", error);

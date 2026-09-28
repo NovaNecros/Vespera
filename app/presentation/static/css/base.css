@@ -13,6 +13,8 @@
 html
 {
     scroll-behavior : smooth;
+    scrollbar-width : thin;
+    scrollbar-color : var(--vespera-bone-silent) var(--vespera-obsidian);
 }
 
 body
@@ -64,7 +66,7 @@ header
     z-index  : 10;
 }
 
-/* Scrollbar */
+/* Global Scrollbar */
 ::-webkit-scrollbar
 {
     width  : 7px;
@@ -79,8 +81,8 @@ header
 
 ::-webkit-scrollbar-thumb
 {
-    background    : linear-gradient(180deg, var(--vespera-pewter) 0%, var(--vespera-crimson) 50%, var(--vespera-wine) 100%);
-    border-radius : 4px;
+    background    : linear-gradient(180deg, var(--vespera-pewter) 0%, var(--vespera-wine) 50%, var(--vespera-crimson-dark) 100%);
+    border-radius : var(--vespera-radius-sm);
     border        : 1px solid rgba(0, 0, 0, 0.6);
 }
 
@@ -88,6 +90,63 @@ header
 {
     background : linear-gradient(180deg, var(--vespera-silver) 0%, var(--vespera-crimson-bright) 50%, var(--vespera-crimson) 100%);
     box-shadow : var(--vespera-glow-crimson);
+}
+
+/* Internal Card Scrollbars */
+.filigree-card,
+.filigree-card *,
+.vespera-card,
+.vespera-card *,
+.vespera-glass,
+.vespera-glass *,
+.vespera-modal-content,
+.vespera-modal-content *,
+.vamp-textarea
+{
+    scrollbar-width : thin;
+    scrollbar-color : var(--vespera-iron) transparent;
+}
+
+.filigree-card         ::-webkit-scrollbar,
+.vespera-card          ::-webkit-scrollbar,
+.vespera-glass         ::-webkit-scrollbar,
+.vespera-modal-content ::-webkit-scrollbar,
+.vamp-textarea         ::-webkit-scrollbar
+{
+    width  : 4px;
+    height : 4px;
+}
+
+.filigree-card         ::-webkit-scrollbar-track,
+.vespera-card          ::-webkit-scrollbar-track,
+.vespera-glass         ::-webkit-scrollbar-track,
+.vespera-modal-content ::-webkit-scrollbar-track,
+.vamp-textarea         ::-webkit-scrollbar-track
+{
+    background    : transparent;
+    border-radius : var(--vespera-radius-sm);
+}
+
+.filigree-card         ::-webkit-scrollbar-thumb,
+.vespera-card          ::-webkit-scrollbar-thumb,
+.vespera-glass         ::-webkit-scrollbar-thumb,
+.vespera-modal-content ::-webkit-scrollbar-thumb,
+.vamp-textarea         ::-webkit-scrollbar-thumb
+{
+    background    : var(--vespera-iron);
+    border-radius : var(--vespera-radius-sm);
+    border        : 1px solid rgba(5, 5, 8, 0.6);
+    transition    : background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filigree-card         ::-webkit-scrollbar-thumb:hover,
+.vespera-card          ::-webkit-scrollbar-thumb:hover,
+.vespera-glass         ::-webkit-scrollbar-thumb:hover,
+.vespera-modal-content ::-webkit-scrollbar-thumb:hover,
+.vamp-textarea         ::-webkit-scrollbar-thumb:hover
+{
+    background : var(--vespera-crimson);
+    box-shadow : 0 0 6px var(--vespera-crimson-glow);
 }
 
 /* Ornamental Dividers */

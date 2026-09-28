@@ -104,13 +104,14 @@
 /* Spectra Cards */
 .spectrum-card
 {
-    position         : relative;
+    display          : flex;
+    flex-direction   : column;
+    flex-shrink      : 0;
+    min-height       : 64px;
     background-color : var(--vespera-glass-bg);
     border           : 1px solid var(--vespera-border-black);
     border-radius    : var(--vespera-radius);
     overflow         : hidden;
-    display          : flex;
-    flex-direction   : column;
     cursor           : pointer;
     transition       : all 0.25s cubic-bezier(0.25, 0.80, 0.25, 1.00);
 }
@@ -143,4 +144,9 @@
     align-items     : center;
     justify-content : space-between;
     gap             : 0.5rem;
+}
+
+.spectra-cards-container
+{
+    padding-right   : 0.35rem;
 }

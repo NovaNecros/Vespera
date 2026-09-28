@@ -102,7 +102,10 @@ export class ScryingMirror {
         }
         this.emptyState?.classList.add("hidden");
         this.playbackBadge?.classList.remove("hidden");
-        this.iterationBadge?.classList.remove("hidden");
+        if (this.iterations.length > 0)
+            this.iterationBadge?.classList.remove("hidden");
+        else
+            this.iterationBadge?.classList.add("hidden");
         this.controlsPanel?.classList.remove("disabled");
         this.renderFrame(0);
     }
@@ -134,8 +137,13 @@ export class ScryingMirror {
             this.scrubber.value = index.toString();
         if (this.frameLabel)
             this.frameLabel.textContent = `Frame ${index + 1} / ${this.frames.length}`;
-        if (this.iterationLabel)
-            this.iterationLabel.textContent = `Step ${this.iterations[index].toLocaleString()}`;
+        const iterStep = this.iterations[index];
+        if (this.iterationLabel && iterStep !== undefined && iterStep !== null) {
+            this.iterationLabel.textContent = `Step ${iterStep.toLocaleString()}`;
+        }
+        else {
+            this.iterationLabel?.classList.add("hidden");
+        }
         if (this.onFrameRender)
             this.onFrameRender(index, this.frames.length);
     }
