@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const streamThumbUrl = mainContainer.dataset.streamThumbApiUrl || "";
     const streamSourceUrl = mainContainer.dataset.streamSourceApiUrl || "";
     const streamFrameUrl = mainContainer.dataset.streamFrameApiUrl || "";
+    const enigmaApiUrl = mainContainer.dataset.enigmaApiUrl || "";
     const tabReliquaryBtn = document.getElementById("tab-reliquary-button");
     const tabCatalystsBtn = document.getElementById("tab-catalysts-btn");
     const badgeTotalArt = document.getElementById("badge-total-artifacts");
@@ -80,6 +81,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!res.success || !Array.isArray(res.data))
             return;
         state.paletteCatalog = res.data;
+        const bratPal = state.paletteCatalog.find((p) => p.name === "brat");
+        const bratLut = bratPal ? buildPaletteLut(bratPal.stops) : null;
+        mirror.setEnigmaTarget(enigmaApiUrl, bratLut);
         if (!filterPaletteSel)
             return;
         const bufferHTML = [
@@ -205,7 +209,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (inspDownloadBtn) {
                 const downloadFilename = (art.alias.match(/\.(png|jpg|jpeg|webp)$/i)
                     ? art.alias : `${art.alias}.png`);
-                if (state.inspectorRelId && state.inspectorRelId > 0 && dwnldManifestUrl) {
+                const isColoredDownload = (!state.viewMonochrome &&
+                    Boolean(state.inspectorRelId && state.inspectorRelId > 0 && dwnldManifestUrl));
+                if (isColoredDownload) {
                     inspDownloadBtn.href = dwnldManifestUrl.replace("/relationship/0", `/relationship/${state.inspectorRelId}`);
                 }
                 else {
@@ -324,7 +330,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const isFav = item.is_favorite;
             const downloadFilename = (item.alias.match(/\.(png|jpg|jpeg|webp)$/i)
                 ? item.alias : `${item.alias}.png`);
-            const cardDownloadUrl = (item.id_rel && item.id_rel > 0 ?
+            const isColoredDownload = (!state.viewMonochrome &&
+                Boolean(item.id_rel && item.id_rel > 0 && dwnldManifestUrl));
+            const cardDownloadUrl = (isColoredDownload ?
                 dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`) :
                 streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`));
             const configBadgeHTML = (item.config && item.config.is_system && item.config.display_name ? `

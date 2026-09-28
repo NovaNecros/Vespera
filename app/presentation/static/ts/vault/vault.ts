@@ -76,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const streamThumbUrl    : string = mainContainer.dataset.streamThumbApiUrl         || "";
     const streamSourceUrl   : string = mainContainer.dataset.streamSourceApiUrl        || "";
     const streamFrameUrl    : string = mainContainer.dataset.streamFrameApiUrl         || "";
+    const enigmaApiUrl      : string = mainContainer.dataset.enigmaApiUrl              || "";
 
     // Tabs & Sections
     const tabReliquaryBtn   : HTMLButtonElement   | null = document.getElementById("tab-reliquary-button")          as HTMLButtonElement;
@@ -151,6 +152,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(!res.success || !Array.isArray(res.data)) return;
 
         state.paletteCatalog = res.data;
+
+        const bratPal : ColorPalette | undefined = state.paletteCatalog.find(
+            (p : ColorPalette) => p.name === "brat");
+        const bratLut : Uint8ClampedArray | null = bratPal ? buildPaletteLut(bratPal.stops) : null;
+        mirror.setEnigmaTarget(enigmaApiUrl, bratLut);
+
         if(!filterPaletteSel) return;
 
         const bufferHTML : string[] = [
@@ -310,7 +317,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
                         ? art.alias : `${art.alias}.png`
                 );
 
-                if(state.inspectorRelId && state.inspectorRelId > 0 && dwnldManifestUrl)
+                const isColoredDownload : boolean = (
+                    !state.viewMonochrome &&
+                    Boolean(state.inspectorRelId && state.inspectorRelId > 0 && dwnldManifestUrl)
+                );
+
+                if(isColoredDownload)
                 {
                     inspDownloadBtn.href = dwnldManifestUrl.replace(
                         "/relationship/0", `/relationship/${state.inspectorRelId}`);
@@ -474,7 +486,12 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 ? item.alias : `${item.alias}.png`
             );
 
-            const cardDownloadUrl : string = (item.id_rel && item.id_rel > 0 ?
+            const isColoredDownload : boolean = (
+                !state.viewMonochrome &&
+                Boolean(item.id_rel && item.id_rel > 0 && dwnldManifestUrl)
+            );
+
+            const cardDownloadUrl : string = (isColoredDownload ?
                 dwnldManifestUrl.replace("/relationship/0", `/relationship/${item.id_rel}`) :
                 streamArtifactUrl.replace("/hash/PLACEHOLDER", `/hash/${item.artifact_hash}`)
             );

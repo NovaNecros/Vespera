@@ -13,9 +13,11 @@ class ServerSettings:
     """
     Configuración del servidor web local.
     """
-    HOST  : str  = "0.0.0.0"
-    PORT  : int  = 3009
-    DEBUG : bool = False
+    HOST                 : str  = "0.0.0.0"
+    PORT                 : int  = 3009
+    DEBUG                : bool = False
+    MAX_CONTENT_LENGTH   : int  = 256 * 1024 * 1024
+    MAX_FORM_MEMORY_SIZE : int  = 256 * 1024 * 1024
 
 class DBSettings:
     """

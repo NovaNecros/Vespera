@@ -19,6 +19,8 @@ export class ScryingMirror {
     frames = [];
     iterations = [];
     catalystImg = null;
+    enigmaImg = null;
+    enigmaLut = null;
     activeLut = null;
     currentFrame = 0;
     isPlaying = false;
@@ -66,27 +68,68 @@ export class ScryingMirror {
     setCatalyst(catalyst) {
         if (!catalyst) {
             this.catalystImg = null;
+            if (this.frames.length > 0 && this.iterations[0] === 0) {
+                this.frames.shift();
+                this.iterations.shift();
+                if (this.scrubber)
+                    this.scrubber.max = Math.max(0, this.frames.length - 1).toString();
+                this.renderFrame(0);
+            }
             return;
         }
         if (typeof catalyst === "string") {
             const img = new Image();
             img.crossOrigin = "anonymous";
-            img.onload = () => { this.catalystImg = img; };
+            img.onload = () => {
+                this.catalystImg = img;
+                this.injectCatalystAsFrameZero(img);
+            };
             img.src = catalyst;
         }
         else {
             this.catalystImg = catalyst;
+            this.injectCatalystAsFrameZero(catalyst);
+        }
+    }
+    injectCatalystAsFrameZero(img) {
+        if (this.frames.length === 0)
+            return;
+        if (this.iterations[0] === 0) {
+            this.frames[0] = img;
+        }
+        else {
+            this.frames.unshift(img);
+            this.iterations.unshift(0);
+            if (this.scrubber)
+                this.scrubber.max = Math.max(0, this.frames.length - 1).toString();
+        }
+        this.renderFrame(this.currentFrame);
+    }
+    setEnigmaTarget(target, lut = null) {
+        this.enigmaLut = lut;
+        if (!target) {
+            this.enigmaImg = null;
+            return;
+        }
+        if (typeof target === "string") {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => { this.enigmaImg = img; };
+            img.src = target;
+        }
+        else {
+            this.enigmaImg = target;
         }
     }
     async loadFrames(frameSources, iterations) {
         this.pause();
         this.frames = [];
-        this.iterations = [...iterations];
-        if (frameSources.length === 0) {
+        this.iterations = [];
+        if (frameSources.length === 0 && !this.catalystImg) {
             this.reset();
             return;
         }
-        this.frames = await Promise.all(frameSources.map((source) => {
+        const loadedFrames = await Promise.all(frameSources.map((source) => {
             if (typeof source !== "string")
                 return Promise.resolve(source);
             return new Promise((resolve) => {
@@ -96,6 +139,14 @@ export class ScryingMirror {
                 img.src = source;
             });
         }));
+        if (this.catalystImg) {
+            this.frames = [this.catalystImg, ...loadedFrames];
+            this.iterations = [0, ...iterations];
+        }
+        else {
+            this.frames = [...loadedFrames];
+            this.iterations = [...iterations];
+        }
         if (this.scrubber) {
             this.scrubber.max = Math.max(0, this.frames.length - 1).toString();
             this.scrubber.value = "0";
@@ -115,11 +166,12 @@ export class ScryingMirror {
         if (index < 0 || index >= this.frames.length)
             return;
         const img = this.frames[index];
+        const isFrameZero = (index === 0 && this.iterations[0] == 0 && this.catalystImg !== null);
         if (this.offscreenCanvas.width !== this.canvas.width || this.offscreenCanvas.height !== this.canvas.height) {
             this.offscreenCanvas.width = this.canvas.width;
             this.offscreenCanvas.height = this.canvas.height;
         }
-        if (!this.activeLut) {
+        if (isFrameZero || !this.activeLut) {
             this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.canvasCtx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
         }
@@ -136,7 +188,7 @@ export class ScryingMirror {
         if (this.scrubber)
             this.scrubber.value = index.toString();
         if (this.frameLabel)
-            this.frameLabel.textContent = `Frame ${index + 1} / ${this.frames.length}`;
+            this.frameLabel.textContent = `Frame ${index} / ${this.frames.length}`;
         const iterStep = this.iterations[index];
         if (this.iterationLabel && iterStep !== undefined && iterStep !== null) {
             this.iterationLabel.textContent = `Step ${iterStep.toLocaleString()}`;
@@ -185,9 +237,18 @@ export class ScryingMirror {
         if (this.isComparing) {
             this.pause();
             this.iterationBadge?.classList.add("hidden");
-            if (this.catalystImg) {
-                this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.canvasCtx.drawImage(this.catalystImg, 0, 0, this.canvas.width, this.canvas.height);
+            if (this.enigmaImg) {
+                if (!this.enigmaLut) {
+                    this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.canvasCtx.drawImage(this.enigmaImg, 0, 0, this.canvas.width, this.canvas.height);
+                }
+                else if (this.offscreenCtx) {
+                    this.offscreenCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.offscreenCtx.drawImage(this.enigmaImg, 0, 0, this.canvas.width, this.canvas.height);
+                    const imgData = this.offscreenCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                    applyPalette(imgData.data, this.enigmaLut);
+                    this.canvasCtx.putImageData(imgData, 0, 0);
+                }
                 this.compareBtn?.classList.add("active");
             }
         }

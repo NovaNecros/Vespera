@@ -198,34 +198,6 @@ class SynthesisFrame(db.Model):
             "created_at"  : self.created_at.isoformat() if self.created_at else None
         }
 
-class EnigmaQuest(db.Model):
-    """
-    Estado y configuración del enigma de cum :p
-    """
-    __tablename__ : str = "enigma_quest"
-
-    id_quest           = db.Column(db.Integer,    primary_key=True, autoincrement=True)
-    solution_id        = db.Column(db.Integer,    db.ForeignKey("synthesis_artifact.id_artifact", ondelete="SET NULL"), nullable=True)
-    solution_config_id = db.Column(db.Integer,    db.ForeignKey("config_turing.id_config", ondelete="RESTRICT"),        nullable=False)
-    hint_image_hash    = db.Column(db.String(64), nullable=True,    index=True)
-    is_unlocked        = db.Column(db.Boolean,    nullable=False,   default=False)
-    unlocked_at        = db.Column(db.DateTime,   nullable=True)
-
-    solution_artifact = db.relationship("SynthesisArtifact", foreign_keys=[solution_id])
-    solution_config   = db.relationship("ConfigTuring",      foreign_keys=[solution_config_id])
-
-    def to_dict(self : EnigmaQuest) -> dict[str, Any]:
-        return {
-            "id_quest"           : self.id_quest,
-            "solution_id"        : self.solution_id,
-            "solution_config_id" : self.solution_config_id,
-            "hint_image_hash"    : self.hint_image_hash,
-            "is_unlocked"        : self.is_unlocked,
-            "unlocked_at"        : self.unlocked_at.isoformat()     if self.unlocked_at       else None,
-            "solution_artifact"  : self.solution_artifact.to_dict() if self.solution_artifact else None,
-            "solution_config"    : self.solution_config.to_dict()   if self.solution_config   else None
-        }
-
 class RelArtifactPalette(db.Model):
     """
     Relación entre un patrón de Turing y sus paletas de colores.
@@ -248,4 +220,42 @@ class RelArtifactPalette(db.Model):
             "id_palette"  : self.id_palette,
             "palette"     : self.palette.to_dict()      if self.palette    else None,
             "created_at"  : self.created_at.isoformat() if self.created_at else None
+        }
+
+class EnigmaQuest(db.Model):
+    """
+    Estado y configuración del enigma de cum :p
+    """
+    __tablename__ : str = "enigma_quest"
+
+    id_quest            = db.Column(db.Integer,     primary_key=True, autoincrement=True)
+    unlocked_at         = db.Column(db.DateTime,    nullable=True)
+    is_active           = db.Column(db.Boolean,    nullable=False,   default=False)
+    hint_img_filename   = db.Column(db.String(255), nullable=False)
+    hint_img_hash       = db.Column(db.String(64),  nullable=True,    index=True)
+    hint_img_config_id  = db.Column(db.Integer,     db.ForeignKey("config_turing.id_config", ondelete="RESTRICT"),        nullable=False)
+    hint_img_palette_id = db.Column(db.Integer,     db.ForeignKey("color_palette.id_palette", ondelete="RESTRICT"),       nullable=False)
+    solution_id         = db.Column(db.Integer,     db.ForeignKey("synthesis_artifact.id_artifact", ondelete="SET NULL"), nullable=True)
+    solution_hash       = db.Column(db.String(128), nullable=True,    index=True) # SHA-512
+    solved_at           = db.Column(db.DateTime,    nullable=True)
+
+    solution_artifact = db.relationship("SynthesisArtifact", foreign_keys=[solution_id])
+    hint_img_config   = db.relationship("ConfigTuring",      foreign_keys=[hint_img_config_id])
+    hint_img_palette  = db.relationship("ColorPalette",      foreign_keys=[hint_img_palette_id])
+
+    def to_dict(self : EnigmaQuest) -> dict[str, Any]:
+        return {
+            "id_quest"            : self.id_quest,
+            "unlocked_at"         : self.unlocked_at.isoformat() if self.unlocked_at           else None,
+            "is_active"           : self.is_active,
+            "hint_img_filename"   : self.hint_img_filename,
+            "hint_img_hash"       : self.hint_img_hash,
+            "hint_img_config_id"  : self.hint_img_config_id,
+            "hint_img_palette_id" : self.hint_img_palette_id,
+            "solution_id"         : self.solution_id,
+            "solution_hash"       : self.solution_hash,
+            "solved_at"           : self.solved_at.isoformat()       if self.solved_at         else None,
+            "solution_artifact"   : self.solution_artifact.to_dict() if self.solution_artifact else None,
+            "hint_img_config"     : self.hint_img_config.to_dict()   if self.hint_img_config   else None,
+            "hint_img_palette"    : self.hint_img_palette.to_dict()  if self.hint_img_palette  else None
         }

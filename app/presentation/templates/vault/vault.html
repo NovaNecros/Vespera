@@ -32,7 +32,8 @@
      data-stream-artifact-api-url="{{ url_for('vault.api_stream_artifact_image', artifact_hash='PLACEHOLDER') }}"
      data-stream-thumb-api-url="{{ url_for('vault.api_stream_thumbnail_image', artifact_hash='PLACEHOLDER') }}"
      data-stream-source-api-url="{{ url_for('vault.api_stream_source_image', source_hash='PLACEHOLDER') }}"
-     data-stream-frame-api-url="{{ url_for('vault.api_stream_frame_image', artifact_hash='PLACEHOLDER', frame_index=0) }}">
+     data-stream-frame-api-url="{{ url_for('vault.api_stream_frame_image', artifact_hash='PLACEHOLDER', frame_index=0) }}"
+     data-enigma-api-url="{{ url_for('enigma.api_stream_enigma22') }}">
 
     <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b
                    border-vespera-obsidian pb-3">

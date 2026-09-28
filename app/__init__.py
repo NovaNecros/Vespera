@@ -42,8 +42,9 @@ def create_app() -> Flask:
 
     app.config["SQLALCHEMY_DATABASE_URI"]        = DBSettings.DB_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False # Para ahorrar recursos, sino es muy lento.
-    app.config["MAX_CONTENT_LENGTH"]             = 32 * 1024 * 1024
-    app.secret_key                               = "VESPERA_GOTHIC_TURING_SECRET_20043009"
+    app.config["MAX_CONTENT_LENGTH"]             = ServerSettings.MAX_CONTENT_LENGTH
+    app.config["MAX_FORM_MEMORY_SIZE"]           = ServerSettings.MAX_FORM_MEMORY_SIZE
+    app.secret_key                               = "ABIBI_ES_UNA_BOBA_30092004"
 
     db.init_app(app)
 

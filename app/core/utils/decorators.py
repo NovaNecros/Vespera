@@ -6,6 +6,7 @@ from functools import wraps
 import traceback
 
 from flask import jsonify, Response, abort, send_file
+from werkzeug.exceptions import HTTPException
 
 from app.core.config import Colors
 
@@ -50,6 +51,19 @@ def api_standard_endpoint(f : Callable) -> Callable:
             }), res.get("status_code", 500)
 
             return jsonify(res), res.get("status_code", 200)
+        except HTTPException as http_ex:
+            error_message : str = (
+                "Payload exceeds the permissible capacity (256 MB)."
+                if http_ex.code == 413
+                else str(http_ex.description)
+            )
+            print(f"[!]{Colors.RED} HTTP {http_ex.code} error in controller {f.__name__}:{Colors.RESET} {error_message}")
+            return jsonify({
+                "success"     : False,
+                "error"       : error_message,
+                "status_code" : int(http_ex.code or 500)
+            }), int(http_ex.code or 500)
+
         except Exception as e:
             print(f"[!]{Colors.RED} Unexpected error in controller {f.__name__}{Colors.RESET}: {e}")
             traceback.print_exc()

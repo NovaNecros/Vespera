@@ -34,6 +34,8 @@ export class ScryingMirror
     private frames          : HTMLImageElement[]              = [];
     private iterations      : number[]                        = [];
     private catalystImg     : HTMLImageElement         | null = null;
+    private enigmaImg       : HTMLImageElement         | null = null;
+    private enigmaLut       : Uint8ClampedArray        | null = null;
     private activeLut       : Uint8ClampedArray        | null = null;
     private currentFrame    : number                          = 0;
     private isPlaying       : boolean                         = false;
@@ -90,12 +92,19 @@ export class ScryingMirror
         if(this.frames.length > 0 && !this.isComparing) this.renderFrame(this.currentFrame);
     }
 
-    // Catalyst Handling
+    // Catalyst
     public setCatalyst(catalyst : HTMLImageElement | string | null) : void
     {
         if(!catalyst)
         {
             this.catalystImg = null;
+            if(this.frames.length > 0 && this.iterations[0] === 0)
+            {
+                this.frames.shift();
+                this.iterations.shift();
+                if(this.scrubber) this.scrubber.max = Math.max(0, this.frames.length-1).toString();
+                this.renderFrame(0);
+            }
             return;
         }
 
@@ -103,12 +112,57 @@ export class ScryingMirror
         {
             const img : HTMLImageElement = new Image();
             img.crossOrigin              = "anonymous";
-            img.onload                   = () : void => { this.catalystImg = img; };
+            img.onload                   = () : void =>
+            {
+                this.catalystImg = img;
+                this.injectCatalystAsFrameZero(img);
+            };
             img.src                      = catalyst;
         }
         else
         {
             this.catalystImg = catalyst;
+            this.injectCatalystAsFrameZero(catalyst);
+        }
+    }
+
+    private injectCatalystAsFrameZero(img : HTMLImageElement) : void
+    {
+        if(this.frames.length === 0) return;
+
+        if(this.iterations[0] === 0)
+        {
+            this.frames[0] = img;
+        }
+        else
+        {
+            this.frames.unshift(img);
+            this.iterations.unshift(0);
+            if(this.scrubber) this.scrubber.max = Math.max(0, this.frames.length - 1).toString();
+        }
+        this.renderFrame(this.currentFrame);
+    }
+
+    // Enigma
+    public setEnigmaTarget(target : HTMLImageElement | string | null, lut : Uint8ClampedArray | null = null) : void
+    {
+        this.enigmaLut = lut;
+        if(!target)
+        {
+            this.enigmaImg = null;
+            return;
+        }
+
+        if(typeof target === "string")
+        {
+            const img : HTMLImageElement = new Image();
+            img.crossOrigin              = "anonymous";
+            img.onload                   = () : void => { this.enigmaImg = img; };
+            img.src                      = target;
+        }
+        else
+        {
+            this.enigmaImg = target;
         }
     }
 
@@ -120,15 +174,15 @@ export class ScryingMirror
     {
         this.pause();
         this.frames     = [];
-        this.iterations = [...iterations];
+        this.iterations = [];
 
-        if(frameSources.length === 0)
+        if(frameSources.length === 0 && !this.catalystImg)
         {
             this.reset();
             return;
         }
 
-        this.frames = await Promise.all(
+        const loadedFrames = await Promise.all(
             frameSources.map((source : string | HTMLImageElement) : Promise<HTMLImageElement> =>
             {
                 if(typeof source !== "string") return Promise.resolve(source);
@@ -141,6 +195,17 @@ export class ScryingMirror
                 });
             })
         );
+
+        if(this.catalystImg)
+        {
+            this.frames     = [this.catalystImg, ...loadedFrames];
+            this.iterations = [0, ...iterations];
+        }
+        else
+        {
+            this.frames     = [...loadedFrames];
+            this.iterations = [...iterations];
+        }
 
         if(this.scrubber)
         {
@@ -162,7 +227,8 @@ export class ScryingMirror
         if(!this.canvas || !this.canvasCtx || this.frames.length === 0) return;
         if(index < 0 || index >= this.frames.length) return;
 
-        const img : HTMLImageElement = this.frames[index];
+        const img         : HTMLImageElement = this.frames[index];
+        const isFrameZero : boolean          = (index === 0 && this.iterations[0] == 0 && this.catalystImg !== null);
 
         if(this.offscreenCanvas.width !== this.canvas.width || this.offscreenCanvas.height !== this.canvas.height)
         {
@@ -170,7 +236,7 @@ export class ScryingMirror
             this.offscreenCanvas.height = this.canvas.height;
         }
 
-        if(!this.activeLut)
+        if(isFrameZero || !this.activeLut)
         {
             this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.canvasCtx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
@@ -180,17 +246,17 @@ export class ScryingMirror
             this.offscreenCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.offscreenCtx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
 
-            const imgData : ImageData = this.offscreenCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            const data : Uint8ClampedArray = imgData.data;
-            const lut  : Uint8ClampedArray = this.activeLut;
+            const imgData : ImageData         = this.offscreenCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            const data    : Uint8ClampedArray = imgData.data;
+            const lut     : Uint8ClampedArray = this.activeLut;
 
             applyPalette(data, lut);
             this.canvasCtx.putImageData(imgData, 0, 0);
         }
 
-        this.currentFrame                                       = index;
-        if(this.scrubber)       this.scrubber.value             = index.toString();
-        if(this.frameLabel)     this.frameLabel.textContent     = `Frame ${index + 1} / ${this.frames.length}`;
+        this.currentFrame                               = index;
+        if(this.scrubber)   this.scrubber.value         = index.toString();
+        if(this.frameLabel) this.frameLabel.textContent = `Frame ${index} / ${this.frames.length}`;
 
         const iterStep : number | undefined = this.iterations[index];
         if(this.iterationLabel && iterStep !== undefined && iterStep !== null)
@@ -249,10 +315,23 @@ export class ScryingMirror
         {
             this.pause();
             this.iterationBadge?.classList.add("hidden");
-            if(this.catalystImg)
+            if(this.enigmaImg)
             {
-                this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.canvasCtx.drawImage(this.catalystImg, 0, 0, this.canvas.width, this.canvas.height);
+                if(!this.enigmaLut)
+                {
+                    this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.canvasCtx.drawImage(this.enigmaImg, 0, 0, this.canvas.width, this.canvas.height);
+                }
+                else if(this.offscreenCtx)
+                {
+                    this.offscreenCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.offscreenCtx.drawImage(this.enigmaImg, 0, 0, this.canvas.width, this.canvas.height);
+
+                    const imgData : ImageData = this.offscreenCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+                    applyPalette(imgData.data, this.enigmaLut);
+                    this.canvasCtx.putImageData(imgData, 0, 0);
+                }
                 this.compareBtn?.classList.add("active");
             }
         }

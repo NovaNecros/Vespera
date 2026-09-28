@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const palettesApiUrl = mainContainer.dataset.palettesApiUrl || "";
     const configsApiUrl = mainContainer.dataset.configsApiUrl || "";
     const hydrateApiUrl = mainContainer.dataset.hydrateApiUrl || "";
+    const enigmaApiUrl = mainContainer.dataset.enigmaApiUrl || "";
     const dropzoneEl = document.getElementById("dropzone-container");
     const fileInput = document.getElementById("source-file-input");
     const sourceIdInput = document.getElementById("source-image-id-input");
@@ -123,6 +124,17 @@ document.addEventListener("DOMContentLoaded", () => {
             `);
         });
         paletteSelect.innerHTML = bufferHTML.join("");
+        if (state.activeLut) {
+            mirror.setPaletteLut(state.activeLut);
+        }
+        else if (state.paletteCatalog.length > 0) {
+            const defaultPal = state.paletteCatalog[0];
+            state.activeLut = buildPaletteLut(defaultPal.stops);
+            mirror.setPaletteLut(state.activeLut);
+        }
+        const bratPal = state.paletteCatalog.find((p) => p.name === "brat");
+        const bratLut = bratPal ? buildPaletteLut(bratPal.stops) : null;
+        mirror.setEnigmaTarget(enigmaApiUrl, bratLut);
         paletteSelect.addEventListener("change", () => {
             const selectedId = parseInt(paletteSelect.value);
             if (selectedId === 0) {
@@ -420,6 +432,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     modeBadge.textContent = "Simulated";
                     modeBadge.className = "vamp-badge vamp-badge-silver";
                 }
+                if (state.activeLut)
+                    mirror.setPaletteLut(state.activeLut);
                 commitContainer?.classList.remove("hidden");
                 await mirror.loadFrames(res.data.keyframes, res.data.captured_iters);
                 mirror.play();

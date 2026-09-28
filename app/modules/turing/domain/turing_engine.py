@@ -167,17 +167,19 @@ class TuringEngine:
             # Ley de potencias con parámetro > 1 para capturar más frames al inicio donde se nota más el cambio
             if capture_timeline and self.frame_count > 1:
                 raw_steps     : np.ndarray = np.linspace(0.0, 1.0, self.frame_count) ** self.frame_dist_exp
-                capture_steps : set[int]   = {int(s*(self.iterations-1)) for s in raw_steps}
-                capture_steps.add(0)
-                capture_steps.add(self.iterations-1)
+                capture_steps : set[int]   = {max(1, int(s*(self.iterations-1)) + 1) for s in raw_steps}
+                capture_steps.add(1)
+                capture_steps.add(self.iterations)
 
             # Integración determinista usando Euler explicito con condiciones de frontera periódicas wrap.
             for step in tqdm(range(self.iterations), desc="Integrating Gray-Scott Equations"):
-                if capture_timeline and step in capture_steps:
+                current_iter : int = step + 1
+
+                if capture_timeline and current_iter in capture_steps:
                     frame_pil, frame_b64 = self._render_frame(v)
                     frame_images.append(frame_pil)
                     keyframes_b64.append(frame_b64)
-                    captured_iters.append(step)
+                    captured_iters.append(current_iter)
 
                 # Evaluar Laplaciano usando convolución discreta
                 lap_u : np.ndarray = convolve(u, kernel, mode="wrap")

@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const palettesApiUrl  : string                   = mainContainer.dataset.palettesApiUrl  || "";
     const configsApiUrl   : string                   = mainContainer.dataset.configsApiUrl   || "";
     const hydrateApiUrl   : string                   = mainContainer.dataset.hydrateApiUrl   || "";
+    const enigmaApiUrl    : string                   = mainContainer.dataset.enigmaApiUrl    || "";
 
     // FORM
     const dropzoneEl      : HTMLElement       | null = document.getElementById("dropzone-container");
@@ -177,6 +178,22 @@ document.addEventListener("DOMContentLoaded", () : void =>
             `);
         });
         paletteSelect.innerHTML = bufferHTML.join("");
+
+        if(state.activeLut)
+        {
+            mirror.setPaletteLut(state.activeLut);
+        }
+        else if(state.paletteCatalog.length > 0)
+        {
+            const defaultPal : ColorPalette = state.paletteCatalog[0];
+            state.activeLut = buildPaletteLut(defaultPal.stops);
+            mirror.setPaletteLut(state.activeLut);
+        }
+
+        const bratPal : ColorPalette | undefined = state.paletteCatalog.find(
+            (p : ColorPalette) => p.name === "brat");
+        const bratLut : Uint8ClampedArray | null = bratPal ? buildPaletteLut(bratPal.stops) : null;
+        mirror.setEnigmaTarget(enigmaApiUrl, bratLut);
 
         paletteSelect.addEventListener("change", () : void =>
         {
@@ -562,6 +579,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                     modeBadge.textContent = "Simulated";
                     modeBadge.className   = "vamp-badge vamp-badge-silver";
                 }
+
+                if(state.activeLut) mirror.setPaletteLut(state.activeLut);
 
                 commitContainer?.classList.remove("hidden");
                 await mirror.loadFrames(res.data.keyframes, res.data.captured_iters);

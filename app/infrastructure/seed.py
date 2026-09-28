@@ -1,12 +1,14 @@
 # Vespera/app/infrastructure/seed.py
 
 from typing import Any, Optional
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import traceback
 
 from app.core.extensions import db
 from app.core.config import Colors
 from app.core.utils.cryptography_utils import compute_params_hash
-from app.infrastructure.models import ColorPalette, PaletteStop, ConfigTuring
+from app.infrastructure.models import ColorPalette, PaletteStop, ConfigTuring, EnigmaQuest
 
 def seed_palettes() -> bool:
     """
@@ -83,7 +85,7 @@ def seed_configs() -> bool:
                 "diff_u"       : 1.0000,
                 "diff_v"       : 0.5000,
                 "dt"           : 1.0000,
-                "iterations"   : 12000
+                "iterations"   : 15000
             },
             {
                 "display_name" : "Coven's Delirium",
@@ -146,6 +148,51 @@ def seed_configs() -> bool:
         db.session.rollback()
         raise e
 
+def seed_enigma() -> bool:
+    """
+    Acertijo de cumpleaños de la boba :b
+    """
+    try:
+        if db.session.query(EnigmaQuest).count() > 0: return False
+
+        brat_palette : Optional[ColorPalette] = (
+            db.session
+                .query(ColorPalette)
+                .filter_by(name="brat")
+                .first()
+        )
+        if not brat_palette: return False
+
+        carmilla_config : Optional[ConfigTuring] = (
+            db.session
+                .query(ConfigTuring)
+                .filter_by(display_name="Carmilla's Labyrinth")
+                .first()
+        )
+        if not carmilla_config: return False
+
+        unlock_ts : datetime = datetime(
+            2026, 9, 30, 0, 0, 0,
+            tzinfo = ZoneInfo("America/Mexico_City")
+        )
+
+        quest : EnigmaQuest = EnigmaQuest(
+            unlocked_at         = unlock_ts,
+            is_active           = True,
+            hint_img_filename   = "enigma22.png",
+            hint_img_hash       = "f1015e41deb3e2648eaa60b7b223eea69bc7c62a7f776a5f23b3e01315870c2b",
+            hint_img_config_id  = carmilla_config.id_config,
+            hint_img_palette_id = brat_palette.id_palette,
+        )
+        db.session.add(quest)
+        db.session.commit()
+
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        raise e
+
 def seed_db() -> bool:
     """
     Llena los valores por defecto en la base de datos.
@@ -153,9 +200,9 @@ def seed_db() -> bool:
     try:
         palettes_seeded : bool = seed_palettes()
         configs_seeded  : bool = seed_configs()
+        enigma_seeded   : bool = seed_enigma()
 
-        if palettes_seeded or configs_seeded: return True
-        return False
+        return all([palettes_seeded, configs_seeded, enigma_seeded])
 
     except Exception as e:
         print(f"[!]{Colors.RED} UNEXPECTED ERROR SEEDING DB: {Colors.RESET}{e}")
