@@ -15,10 +15,10 @@
      class="w-full flex flex-col gap-4"
      data-quest-api-url="{{ url_for('enigma.api_get_enigma22_quest') }}"
      data-verify-api-url="{{ url_for('enigma.api_verify_enigma22_solution', id_artifact=0) }}"
-     data-hint-stream-url="{{ url_for('enigma.api_stream_hint_enigma22') }}"
+     data-hint-stream-api-url="{{ url_for('enigma.api_stream_hint_enigma22') }}"
      data-gallery-api-url="{{ url_for('vault.api_get_vault_gallery') }}"
-     data-palettes-api-url="{{ url_for('compendium.api_get_palettes') }}"
-     data-studio-url="{{ url_for('studio.studio') }}">
+     data-thumb-stream-api-url="{{ url_for('vault.api_stream_thumbnail_image', artifact_hash='PLACEHOLDER') }}"
+     data-palettes-api-url="{{ url_for('compendium.api_get_palettes') }}">
 
     <!-- HEADER -->
     <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b
@@ -64,7 +64,7 @@
                     </div>
                     <span id="mirror-spectrum-badge"
                           class="vamp-badge vamp-badge-crimson-dark text-[0.65rem]">
-                        BRAT Spectrum
+                        <!-- TS -->
                     </span>
                 </div>
 
@@ -91,28 +91,28 @@
                     <div class="grid grid-cols-2 gap-2.5 font-mono text-xs">
                         <div class="flex flex-col">
                             <span class="text-vespera-boneSilent text-[0.62rem] uppercase">Feed Rate (F)</span>
-                            <span id="target-feed-rate" class="text-vespera-parchment font-bold">0.0545</span>
+                            <span id="target-feed-rate" class="text-vespera-parchment font-bold"><!-- TS --></span>
                         </div>
                         <div class="flex flex-col">
                             <span class="text-vespera-boneSilent text-[0.62rem] uppercase">Kill Rate (K)</span>
-                            <span id="target-kill-rate" class="text-vespera-parchment font-bold">0.0620</span>
+                            <span id="target-kill-rate" class="text-vespera-parchment font-bold"><!-- TS --></span>
                         </div>
                         <div class="flex flex-col">
                             <span class="text-vespera-boneSilent text-[0.62rem] uppercase">Diffusion Rates (Du & Dv)</span>
-                            <span id="target-du-dv" class="text-vespera-silver font-bold">1.0000 • 0.500</span>
+                            <span id="target-du-dv" class="text-vespera-silver font-bold"><!-- TS --></span>
                         </div>
                         <div class="flex flex-col">
                             <span class="text-vespera-boneSilent text-[0.62rem] uppercase">Iterations & dt</span>
-                            <span id="target-iter-dt" class="text-vespera-silver font-bold">15000 • 1.00</span>
+                            <span id="target-iter-dt" class="text-vespera-silver font-bold"><!-- TS --></span>
                         </div>
                     </div>
 
                     <div class="flex flex-col pt-2 border-t border-vespera-obsidian font-mono text-[0.65rem]">
-                        <span class="text-vespera-silver uppercase">Target Rune:</span>
+                        <span class="text-vespera-silver uppercase">Target Rune</span>
                         <span id="target-hash-display"
                               class="text-vespera-parchment font-mono text-[0.68rem] truncate mt-0.5"
-                              title="dae9b40991a3683e97bf21e9664a884cfd3fb962fc444e976c31c10f8094ac90">
-                            dae9b40991a3683e97bf21e9664a884cfd3fb962fc444e976c31c10f8094ac90
+                              title="">
+                            <!-- TS -->
                         </span>
                     </div>
                 </div>
@@ -227,7 +227,6 @@
                         </label>
                         <select id="altar-artifact-select"
                                 class="vamp-select text-xs py-2 px-3">
-                            <option value="">Choose an artifact to offer...</option>
                             <!-- TS -->
                         </select>
                     </div>
@@ -273,7 +272,7 @@
 
             <!-- Victory Sanctuary -->
             <div id="victory-sanctuary-card"
-                 class="filigree-card p-6 border rounded-vespera
+                 class="filigree-card p-6 border rounded-vespera hidden
                         shadow-ambient flex flex-col gap-4 relative overflow-hidden victory-glow">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>

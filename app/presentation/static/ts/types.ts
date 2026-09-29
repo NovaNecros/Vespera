@@ -292,6 +292,37 @@ export interface PaletteMutationPayload
     stops        : PaletteStopPayload[];
 }
 
+export interface EnigmaQuestData
+{
+    id_quest            : number;
+    alias               : string;
+    unlocked_at         : string            | null;
+    is_active           : boolean;
+    is_solved           : boolean;
+    hint_img_filename   : string;
+    hint_img_hash       : string;
+    hint_img_config_id  : string;
+    hint_img_palette_id : number;
+    solution_id         : number            | null;
+    solution_hash       : string            | null;
+    solved_at           : string            | null;
+    solution_artifact   : SynthesisArtifact | null;
+    hint_img_config     : ConfigTuring      | null;
+    hint_img_palette    : ColorPalette      | null;
+}
+
+export interface EnigmaVerifyData
+{
+    is_solved          : boolean;
+    id_artifact        : number;
+    artifact_alias?    : string;
+    artifact_hash?     : string;
+    secret_key?        : string;
+    solved_at?         : string;
+    solution_artifact? : SynthesisArtifact;
+    target_hash?       : string;
+}
+
 
 // --- PARTIAL ELEMENT CONTRACTS ---
 export type AlertType = "danger" | "error" | "warning" | "success" | "info";

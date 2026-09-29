@@ -32,7 +32,7 @@ def api_get_enigma22_quest() -> dict[str, Any]:
     """
     return service.get_enigma22_quest()
 
-@enigma_bp.route("/api/verify/22/<int:id_artifact>", methods=["POST"])
+@enigma_bp.route("/api/verify/22/artifact/<int:id_artifact>", methods=["POST"])
 @api_standard_endpoint
 def api_verify_enigma22_solution(id_artifact : int) -> dict[str, Any]:
     """
