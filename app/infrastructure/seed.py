@@ -177,6 +177,7 @@ def seed_enigma() -> bool:
         )
 
         quest : EnigmaQuest = EnigmaQuest(
+            alias               = "CUM22",
             unlocked_at         = unlock_ts,
             is_active           = True,
             hint_img_filename   = "enigma22.png",

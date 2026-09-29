@@ -229,8 +229,9 @@ class EnigmaQuest(db.Model):
     __tablename__ : str = "enigma_quest"
 
     id_quest            = db.Column(db.Integer,     primary_key=True, autoincrement=True)
+    alias               = db.Column(db.String(128), nullable=False,   index=True)
     unlocked_at         = db.Column(db.DateTime,    nullable=True)
-    is_active           = db.Column(db.Boolean,    nullable=False,   default=False)
+    is_active           = db.Column(db.Boolean,     nullable=False,   default=False)
     hint_img_filename   = db.Column(db.String(255), nullable=False)
     hint_img_hash       = db.Column(db.String(64),  nullable=True,    index=True)
     hint_img_config_id  = db.Column(db.Integer,     db.ForeignKey("config_turing.id_config", ondelete="RESTRICT"),        nullable=False)
@@ -246,6 +247,7 @@ class EnigmaQuest(db.Model):
     def to_dict(self : EnigmaQuest) -> dict[str, Any]:
         return {
             "id_quest"            : self.id_quest,
+            "alias"               : self.alias,
             "unlocked_at"         : self.unlocked_at.isoformat() if self.unlocked_at           else None,
             "is_active"           : self.is_active,
             "hint_img_filename"   : self.hint_img_filename,

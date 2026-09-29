@@ -23,7 +23,7 @@ class PaletteService:
 
     _lut_cache : dict[int, np.ndarray] = {}
 
-    def __init__(self : PaletteService, verbose : bool = True) -> None:
+    def __init__(self : PaletteService, verbose : bool = False) -> None:
         self.verbose             : bool                      = verbose
         self.interpolation_model : PaletteInterpolationModel = PaletteInterpolationModel()
 

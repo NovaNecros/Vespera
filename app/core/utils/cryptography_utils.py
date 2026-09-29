@@ -16,6 +16,19 @@ def compute_bytes_sha256(data : bytes) -> str:
     except Exception as e:
         raise e
 
+def compute_bytes_sha512(data : bytes) -> str:
+    """
+    Calcula el hash SHA-512 de una secuencia de bytes.
+    :param data : Contenido en bytes.
+    :return     : Cadena de 128 caracteres hex.
+    """
+    try:
+        hasher = hashlib.sha512()
+        hasher.update(data)
+        return hasher.hexdigest()
+    except Exception as e:
+        raise e
+
 def compute_file_sha256(file_path : Path, chunk_size : int = 65536) -> str:
     """
     Calcular el hash SHA-256 de un archivo en disco por bloques.
@@ -71,5 +84,18 @@ def compute_artifact_hash(
     try:
         composite_signature : str = f"IMG:{image_hash}|PAR:{params_hash}|SEED:{seed}"
         return compute_bytes_sha256(composite_signature.encode("utf-8"))
+    except Exception as e:
+        raise e
+
+def compute_solution_sha512(source_hash : str, quest_alias : str) -> str:
+    """
+    Calcula el hash SHA-512 compuesto con el hash SHA-256 de la solución al enigma + el alias del enigma.
+    :param source_hash : Hash de la imagen solución al enigma.
+    :param quest_alias : Nombre del enigma.
+    :return            : Hash SHA-512 compuesto de la solución.
+    """
+    try:
+        raw_signature : str = f"IMG:{source_hash}|QUEST:{quest_alias}"
+        return compute_bytes_sha512(raw_signature.encode("utf-8"))
     except Exception as e:
         raise e
