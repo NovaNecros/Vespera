@@ -49,8 +49,18 @@
         </a>
     </div>
 
-    <!-- :p -->
-    <div class="hidden md:flex items-center gap-2">
+    <div class="hidden md:flex items-center gap-4">
+        <!-- Por si se incendia tu compu xd -->
+        <button id="toggle-smoke-btn" type="button"
+                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5 border border-vespera-obsidian
+                       flex items-center gap-1.5"
+                title="Toggle ambient smoke">
+            <i id="toggle-smoke-icon" class="fa-solid fa-pause-circle text-vespera-silver"></i>
+            <span class="hidden lg:inline text-[0.7rem]">
+                Smoke
+            </span>
+        </button>
+        <!-- :p -->
         <span class="vamp-badge vamp-badge-crimson-bright font-mono text-xs">
             <i class="fa-solid fa-heart-pulse mr-1 text-vespera-crimsonBright animate-pulse"></i>
             Version 22.3009

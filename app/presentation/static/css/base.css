@@ -386,7 +386,7 @@ header
 
 .vamp-input::placeholder
 {
-    color   : var(--vespera-bone-silent);
+    color   : var(--vespera-silver);
     opacity : 0.6;
 }
 

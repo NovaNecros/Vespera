@@ -184,7 +184,7 @@ class SynthesisFrame(db.Model):
     frame_index = db.Column(db.Integer,    nullable=False)
     iteration   = db.Column(db.Integer,    nullable=False)
     frame_hash  = db.Column(db.String(64), nullable=False, index=True)
-    created_at  = db.Column(db.DateTime,   nullable=False, default=db.func.now())
+    created_at  = db.Column(db.DateTime,   nullable=False, default=db.func.now(), index=True)
 
     artifact = db.relationship("SynthesisArtifact", back_populates="frames")
 

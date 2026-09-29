@@ -127,10 +127,10 @@ export async function apiFetch<T = any>(url : string, options? : RequestInit) : 
 
         if(!response.ok || !result.success)
         {
-            const errorMsg : string = result.error || `HTTP Error ${response.status}`;
+            console.error(result.error || `HTTP Error ${response.status}`);
             (window as any).showAlertModal?.({
                 title   : "Invocation Failed",
-                message : errorMsg,
+                message : response.status === 409 ? "This alias is already taken, love." : "The incantation has failed.",
                 type    : "danger"
             });
         }
@@ -139,12 +139,13 @@ export async function apiFetch<T = any>(url : string, options? : RequestInit) : 
     }
     catch(error : any)
     {
-        const errorMsg : string = error?.message || "An unexpected alchemical failure occurred.";
         (window as any).showAlertModal?.({
             title   : "Invocation Failed",
-            message : errorMsg,
+            message : "An unexpected curse has prevented the action from completing",
             type    : "danger"
         });
+        const errorMsg : string = error?.message || "An unexpected alchemical failure occurred.";
+        console.error(errorMsg);
         return {
             success     : false,
             error       : errorMsg,

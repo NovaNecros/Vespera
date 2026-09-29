@@ -16,6 +16,9 @@ class SpectraService:
     def __init__(self : SpectraService, verbose : bool = False) -> None:
         self.palette_service : PaletteService = PaletteService(verbose)
 
+    def get_palette_by_name(self : SpectraService, pal_name : str) -> dict[str, Any]:
+        return self.palette_service.get_palette_by_name(pal_name)
+
     def get_palettes(self : SpectraService) -> dict[str, Any]:
         return self.palette_service.get_palettes()
 

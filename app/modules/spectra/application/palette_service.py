@@ -62,6 +62,35 @@ class PaletteService:
         return True
 
     # --- CRUDs ---
+    @staticmethod
+    def get_palette_by_name(pal_name : str) -> dict[str, Any]:
+        """
+        Recupera una paleta de colores a partir de su nombre exacto en la base de datos.
+        :param  pal_name : Valor de la columna name (no display_name).
+        :return          : Datos de la paleta de colores.
+        """
+        try:
+            palette : Optional[ColorPalette] = (
+                db.session
+                    .query(ColorPalette)
+                    .options(db.joinedload(ColorPalette.stops))
+                    .filter_by(name = pal_name)
+                    .first()
+            )
+            if not palette: return {
+                "success"     : False,
+                "error"       : f"Palette '{pal_name}' not found.",
+                "status_code" : 404
+            }
+
+            return {
+                "success"     : True,
+                "data"        : palette.to_dict(),
+                "status_code" : 200
+            }
+        except Exception as e:
+            raise e
+
     def get_palettes(self : PaletteService) -> dict[str, Any]:
         """
         Recupera el catálogo de paletas de colores de la DB.

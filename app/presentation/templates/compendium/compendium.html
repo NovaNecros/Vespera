@@ -22,7 +22,7 @@
 
     <!-- HEADER -->
     <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border-b
-                   border-vespera-obsidian pb-3">
+                   border-vespera-obsidian pb-2 mb-2">
         <div class="flex flex-col items-start justify-between gap-0">
             <div class="flex items-center">
                 <h3 class="font-ornate text-2xl md:text-3xl text-vespera-crimsonDark font-bold tracking-wider mb-0">
@@ -201,9 +201,20 @@
                                        class="font-cinzel text-xs text-vespera-parchment">
                                     Spectrum Inscription Title
                                 </label>
-                                <input id="spectrum-display-name-input" type="text"
-                                       placeholder="e.g. Sanguis Nocturna..."
-                                       class="vamp-input text-xs py-1.5">
+                                <div class="relative w-full">
+                                    <i class="fa-solid fa-feather absolute left-3.5 top-1/2 -translate-y-1/2
+                                          text-vespera-crimson text-xs">
+                                    </i>
+                                    <input id="spectrum-display-name-input" type="text"
+                                           placeholder="e.g. Sanguis Nocturna..."
+                                           class="vamp-input pl-9 pr-8 text-xs py-2 w-full border
+                                           border-vespera-obsidian focus:border-vespera-silver">
+                                    <button id="clear-name-btn" type="button"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-vespera-boneSilent text-xs hidden
+                                                   hover:text-vespera-parchment hover:rotate-90 transition-all duration-200">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="flex flex-col gap-1 flex-grow">
                                 <label for="spectrum-notes-input"
@@ -218,17 +229,11 @@
                         </div>
 
                          <!-- Action Controls -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-vespera-obsidian">
+                        <div class="grid grid-cols-1 pt-1 border-t border-vespera-obsidian">
                             <button id="save-spectrum-btn" type="button"
                                     class="vamp-btn vamp-btn-crimson w-full py-2 text-xs font-bold tracking-widest">
                                 <i class="fa-solid fa-feather mr-1.5"></i>
                                 Inscribe Spectrum
-                            </button>
-                            <button id="branch-spectrum-btn" type="button"
-                                    class="vamp-btn vamp-btn-silver w-full py-2 text-xs font-bold tracking-widest
-                                           disabled:opacity-30 disabled:pointer-events-none">
-                                <i class="fa-solid fa-code-branch mr-1.5"></i>
-                                Branch Variant
                             </button>
                         </div>
                     </div>
@@ -271,6 +276,11 @@
                                    placeholder="Filter the compendium..."
                                    class="vamp-input pl-8 text-xs py-1.5 w-full">
                         </label>
+                        <button id="clear-search-btn" type="button"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-vespera-boneSilent text-xs hidden
+                                   hover:text-vespera-parchment hover:rotate-90 transition-all duration-200">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     </div>
 
                     <div class="flex items-center justify-between gap-2">

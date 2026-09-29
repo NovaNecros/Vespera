@@ -767,9 +767,33 @@ interface SmokeVortex
         if(!covered) wakeSmoke();
     }
 
+    // Toggle On/Off
+    let isSmokeDisabled : boolean = localStorage.getItem("vespera_smoke_paused") === "true";
+    function toggleSmoke(forcedState? : boolean) : boolean
+    {
+        isSmokeDisabled = forcedState !== undefined ? forcedState : !isSmokeDisabled;
+        localStorage.setItem("vespera_smoke_paused", isSmokeDisabled ? "true" : "false");
+
+        if(isSmokeDisabled)
+        {
+            if(frameHandle !== 0)
+            {
+                cancelAnimationFrame(frameHandle);
+                frameHandle = 0;
+            }
+            if(ctx) ctx.clearRect(0, 0, width, height);
+        }
+        else
+        {
+            wakeSmoke();
+        }
+
+        return isSmokeDisabled;
+    }
+
     function wakeSmoke() : void
     {
-        if(frameHandle !== 0) return;
+        if(isSmokeDisabled || frameHandle !== 0) return;
         lastNow     = 0;
         frameHandle = requestAnimationFrame(renderSmoke);
     }
@@ -777,7 +801,7 @@ interface SmokeVortex
     function renderSmoke(now : number) : void
     {
         frameHandle = 0;
-        if(!ctx) return;
+        if(isSmokeDisabled || !ctx) return;
         if(pendingResize) applyResize(ctx);
 
         const elapsed : number = lastNow === 0 ? 0 : (now - lastNow) * 0.001;
@@ -821,4 +845,7 @@ interface SmokeVortex
         syncVeils();
         wakeSmoke();
     });
+
+    (window as any).vesperaToggleSmoke   = toggleSmoke;
+    (window as any).vesperaIsSmokePaused = () : boolean => isSmokeDisabled;
 })();

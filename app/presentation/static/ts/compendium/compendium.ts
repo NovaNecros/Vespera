@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     const ribbonTrack         : HTMLElement         | null = document.getElementById("gradient-ribbon-track");
     const deleteStopBtn       : HTMLButtonElement   | null = document.getElementById("delete-stop-btn")             as HTMLButtonElement;
 
+    // Stops
     const stopColorPicker     : HTMLInputElement    | null = document.getElementById("stop-color-picker")           as HTMLInputElement;
     const stopHexInput        : HTMLInputElement    | null = document.getElementById("stop-hex-input")              as HTMLInputElement;
     const stopPosInput        : HTMLInputElement    | null = document.getElementById("stop-position-input")         as HTMLInputElement;
@@ -77,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
     // Form & Actions
     const displayNameInput    : HTMLInputElement    | null = document.getElementById("spectrum-display-name-input") as HTMLInputElement;
+    const clearNameBtn        : HTMLButtonElement   | null = document.getElementById("clear-name-btn")              as HTMLButtonElement;
     const userNotesInput      : HTMLTextAreaElement | null = document.getElementById("spectrum-notes-input")        as HTMLTextAreaElement;
     const saveSpectrumBtn     : HTMLButtonElement   | null = document.getElementById("save-spectrum-btn")           as HTMLButtonElement;
     const branchSpectrumBtn   : HTMLButtonElement   | null = document.getElementById("branch-spectrum-btn")         as HTMLButtonElement;
@@ -86,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     // Browser
     const spectraTotalBadge   : HTMLElement         | null = document.getElementById("spectra-total-badge");
     const spectraSearchInput  : HTMLInputElement    | null = document.getElementById("spectra-search-input")        as HTMLInputElement;
+    const clearSearchBtn      : HTMLButtonElement   | null = document.getElementById("clear-search-btn")            as HTMLButtonElement;
     const filterFavSpectraBtn : HTMLButtonElement   | null = document.getElementById("filter-fav-spectra-btn")      as HTMLButtonElement;
     const sortSpectraSelect   : HTMLSelectElement   | null = document.getElementById("sort-spectra-select")         as HTMLSelectElement;
     const sortDirBtn          : HTMLButtonElement   | null = document.getElementById("sort-direction-btn")          as HTMLButtonElement;
@@ -183,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         if(ribbonTrack) ribbonTrack.style.background = generateCSSGradient(state.stops);
         state.activeLut = buildPaletteLut(state.stops as PaletteStop[]);
         mirror.setPaletteLut(state.activeLut);
+        displayNameInput?.dispatchEvent(new Event("input"));
     }
 
     function updateActiveStopUI() : void
@@ -772,12 +776,36 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
         spectraSearchInput?.addEventListener("input", () =>
         {
+            const q : string = spectraSearchInput.value.trim();
+            if(clearSearchBtn)
+            {
+                if(!q)
+                {
+                    clearSearchBtn.classList.add("hidden");
+                    clearSearchBtn.disabled = true;
+                }
+                else
+                {
+                    clearSearchBtn.classList.remove("hidden");
+                    clearSearchBtn.disabled = false;
+                }
+            }
+
             if(searchDebounceTimer) clearTimeout(searchDebounceTimer);
             searchDebounceTimer = setTimeout(() =>
             {
                 state.searchQuery = spectraSearchInput.value.trim();
                 renderSpectraGrid();
             }, 250);
+        });
+
+        clearSearchBtn?.addEventListener("click", () =>
+        {
+            if(spectraSearchInput) spectraSearchInput.value = "";
+            clearSearchBtn.classList.add("hidden");
+            clearSearchBtn.disabled = true;
+            state.searchQuery       = "";
+            renderSpectraGrid();
         });
 
         filterFavSpectraBtn?.addEventListener("click", () =>
@@ -805,6 +833,31 @@ document.addEventListener("DOMContentLoaded", () : void =>
                 );
             }
             renderSpectraGrid();
+        });
+
+        displayNameInput?.addEventListener("input", () =>
+        {
+            const name : string = displayNameInput.value;
+            if(clearNameBtn)
+            {
+                if(name)
+                {
+                    clearNameBtn.disabled = false;
+                    clearNameBtn.classList.remove("hidden");
+                }
+                else
+                {
+                    clearNameBtn.classList.add("hidden");
+                    clearNameBtn.disabled = true;
+                }
+            }
+        });
+
+        clearNameBtn?.addEventListener("click", () =>
+        {
+            if(displayNameInput) displayNameInput.value = "";
+            clearNameBtn.classList.add("hidden");
+            clearNameBtn.disabled = true;
         });
     }
 

@@ -10,7 +10,7 @@
 
 {% block content %}
 <div id="studio-main-container"
-     class="w-full flex flex-col gap-3"
+     class="w-full flex-grow flex flex-col justify-between gap-3 min-h-0 pb-4"
      data-generate-api-url="{{ url_for('studio.api_generate_pattern') }}"
      data-commit-api-url="{{ url_for('studio.api_commit_pattern') }}"
      data-create-rel-api-url="{{ url_for('vault.api_create_artifact_palette_rel', id_artifact=0, id_palette=0) }}"
@@ -20,7 +20,7 @@
      data-hydrate-api-url="{{ url_for('vault.api_get_hydration_bundle', id_artifact=0) }}"
      data-enigma-api-url="{{ url_for('enigma.api_stream_hint_enigma22') }}">
 
-    <header class="flex items-center justify-between gap-3 border-b border-vespera-obsidian pb-2 mb-2">
+    <header class="flex items-center justify-between gap-3 border-b border-vespera-obsidian pb-2 mb-2 shrink-0">
         <div class="flex flex-col items-start justify-between gap-0">
             <h3 class="font-ornate text-2xl md:text-3xl text-vespera-crimsonDark font-bold tracking-wider mb-0">
                 The Studio
@@ -38,20 +38,20 @@
         </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 xl:gap-5 items-stretch">
+    <div class="grid grid-cols-1 lg:grid-cols-12 xl:gap-5 items-stretch flex-grow min-h-0">
         <!-- Source -->
-        <div class="lg:col-span-4 flex flex-col h-full">
+        <div class="lg:col-span-4 flex flex-col h-full min-h-0">
             <form id="synthesis-form"
-                  class="flex flex-col gap-3.5 h-full">
+                  class="flex flex-col gap-3.5 h-full flex-grow min-h-0">
                 <!-- Upload zone -->
                 <div class="filigree-card p-4 border border-vespera-obsidian
-                            rounded-vespera shadow-ambient flex-grow flex flex-col">
+                            rounded-vespera shadow-ambient flex-grow flex flex-col h-full min-h-0">
                     <div class="filigree-corner-tl"></div>
                     <div class="filigree-corner-tr"></div>
                     <div class="filigree-corner-bl"></div>
                     <div class="filigree-corner-br"></div>
 
-                    <div class="flex items-center justify-between mb-2.5">
+                    <div class="flex items-center justify-between mb-2 pb-2 border-b border-vespera-obsidian shrink-0">
                         <span class="font-cinzel text-xs font-bold text-vespera-silver uppercase tracking-wider">
                             <i class="fa-solid fa-image mr-1.5"></i>
                             Source Pictogram
@@ -67,7 +67,7 @@
                          class="vamp-dropzone relative flex-grow flex flex-col items-center justify-center
                                 p-4 border-2 border-dashed border-vespera-obsidian/50 rounded-sm
                                 hover:border-vespera-obsidian transition-all duration-300 cursor-pointer
-                                text-center group min-h-[140px]">
+                                text-center group min-h-0 my-auto">
                         <input id="source-file-input" type="file" name="file"
                                accept="image/png, image/jpeg, image/webp" class="hidden">
                         <input id="source-image-id-input" type="hidden"
@@ -77,10 +77,10 @@
 
                         <!-- Initial load view -->
                         <div id="dropzone-prompt"
-                             class="flex flex-col items-center gap-1.5">
-                            <div class="w-10 h-10 rounded-full border border-vespera-obsidian
+                             class="flex flex-col items-center gap-2 my-auto">
+                            <div class="w-14 h-14 rounded-full border border-vespera-obsidian
                                         flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-cloud-arrow-up text-vespera-crimsonBright text-lg"></i>
+                                <i class="fa-solid fa-cloud-arrow-up text-vespera-crimsonBright text-2xl"></i>
                             </div>
                             <span class="font-cinzel text-sm text-vespera-parchment font-bold mt-1">
                                 Ingest Catalyst Pictogram
@@ -89,15 +89,16 @@
 
                         <!-- Preview -->
                         <div id="dropzone-preview-container"
-                             class="hidden flex-col items-center justify-between gap-2 w-full h-full flex-grow">
-                            <div class="relative w-full flex-grow rounded
-                                        border border-vespera-obsidian shadow-md">
+                             class="hidden flex-col items-center justify-between gap-2 w-full
+                                    h-full flex-grow min-h-0">
+                            <div class="relative w-full flex-grow rounded flex items-center justify-center min-h-0
+                                        overflow-hidden border border-vespera-obsidian shadow-md">
                                 <img id="source-preview-img" src="" alt="Catalyst Preview"
-                                     class="w-full h-full object-contain mx-auto">
+                                     class="w-full h-full max-h-[520px] object-contain mx-auto">
                             </div>
-                            <div class="flex items-center justify-between w-full px-1">
+                            <div class="flex items-center justify-between w-full px-1 pt-1 shrink-0">
                                 <span id="source-filename-label"
-                                      class="font-mono text-xs text-vespera-silver truncate max-w-[140px]">
+                                      class="font-mono text-xs text-vespera-silver truncate max-w-[180px]">
                                     <!-- TS -->
                                 </span>
                                 <button id="remove-source-btn" type="button"
@@ -114,7 +115,7 @@
                 <!-- Synthesis Button -->
                 <button id="synthesize-btn" type="button"
                         class="vamp-btn vamp-btn-crimson w-full py-2.5 text-sm font-bold
-                               tracking-widest anim-candle-pulse hidden">
+                               tracking-widest anim-candle-pulse mt-3 shrink-0 hidden">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2 text-vespera-silverBright"></i>
                     Invoke Morphogenesis
                 </button>
@@ -124,13 +125,14 @@
         <!-- Canvas -->
         <div class="lg:col-span-5 flex flex-col gap-3 h-full">
             <div class="filigree-card p-4 border border-vespera-obsidian rounded-vespera
-                        shadow-ambient flex flex-col items-center justify-between h-full">
+                        shadow-ambient flex flex-col justify-between h-full flex-grow">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
-                <div class="w-full flex items-center justify-between border-b border-vespera-obsidian pb-2 mb-3">
+                <div class="w-full flex items-center justify-between border-b border-vespera-obsidian
+                            pb-2 mb-3 shrink-0">
                     <div class="flex items-center gap-2">
                         <span class="brand-sigil w-6 h-6 text-xs">
                             <i class="fa-solid fa-eye"></i>
@@ -147,12 +149,14 @@
                     </div>
                 </div>
 
-                {% include "partials/scrying_mirror.html" %}
+                <div class="flex flex-col items-center justify-center w-full flex-grow my-auto min-h-0">
+                    {% include "partials/scrying_mirror.html" %}
+                </div>
 
                 <!-- Artifact Metadata -->
                 <div id="artifact-metrics-bar"
                      class="w-full grid grid-cols-3 gap-2 mt-3 pt-2.5 border-t text-center
-                            border-vespera-obsidian font-mono text-[0.7rem] text-vespera-bone">
+                            border-vespera-obsidian font-mono text-[0.7rem] text-vespera-bone shrink-0">
                     <div class="flex flex-col">
                         <span class="text-vespera-bone uppercase text-[0.6rem]">
                             Artifact ID
@@ -184,9 +188,10 @@
                 </div>
 
                 <div id="commit-container"
-                     class="w-full mt-3 hidden">
+                     class="w-full mt-2.5 shrink-0 hidden">
                     <button id="commit-btn" type="button"
-                            class="vamp-btn vamp-btn-silver w-full py-2 text-xs font-bold tracking-widest border border-vespera-silver hover:border-vespera-crimsonBright">
+                            class="vamp-btn vamp-btn-silver w-full py-2 text-xs font-bold tracking-widest border
+                                   border-vespera-silver hover:border-vespera-crimsonBright">
                         <i class="fa-solid fa-feather mr-2 text-vespera-crimsonBright"></i>
                         Seal into The Vault
                     </button>
@@ -195,9 +200,9 @@
         </div>
 
         <!-- Settings -->
-        <div class="lg:col-span-3 flex flex-col gap-3 h-full">
+        <div class="lg:col-span-3 flex flex-col justify-between gap-3.5 h-full min-h-0 flex-grow">
             <div class="filigree-card p-4 border border-vespera-obsidian
-                    rounded-vespera shadow-ambient flex flex-col gap-2">
+                    rounded-vespera shadow-ambient flex flex-col gap-2 shrink-0">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
@@ -343,14 +348,14 @@
 
             <!-- Notes -->
             <div class="filigree-card p-4 border border-vespera-obsidian rounded-vespera
-                        shadow-ambient flex-grow flex flex-col gap-2">
+                        shadow-ambient flex-grow flex flex-col justify-between gap-2 min-h-0">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
                 <label for="user-notes-input"
-                       class="font-cinzel text-xs text-vespera-parchment">
+                       class="font-cinzel text-xs text-vespera-parchment shrink-0">
                     <i class="fa-solid fa-feather-pointed mr-1.5"></i>
                     Grimoire Inscription
                 </label>

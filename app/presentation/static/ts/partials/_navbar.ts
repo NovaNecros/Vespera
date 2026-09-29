@@ -2,6 +2,31 @@
 
 (function() : void
 {
+    // --- VARIABLES ---
+    const toggleSmokeBtn   : HTMLButtonElement | null = document.getElementById("toggle-smoke-btn")   as HTMLButtonElement;
+    const toggleSmokeIcon  : HTMLElement       | null = document.getElementById("toggle-smoke-icon")  as HTMLElement;
+
+    // --- FUNCTIONS ---
+    function updateSmokeBtnIcon(isPaused : boolean) : void
+    {
+        if(!toggleSmokeBtn || !toggleSmokeIcon) return;
+        if(isPaused) toggleSmokeIcon.className    = "fa-solid fa-play-circle text-vespera-silver";
+        else toggleSmokeIcon.className            = "fa-solid fa-pause-circle text-vespera-silver";
+    }
+    const initiallyPaused : boolean = localStorage.getItem("vespera_smoke_paused") === "true";
+    updateSmokeBtnIcon(initiallyPaused);
+
+    // --- LISTENERS ---
+    toggleSmokeBtn?.addEventListener("click", () : void =>
+    {
+        if(typeof (window as any).vesperaToggleSmoke === "function")
+        {
+            const isNowPassed : boolean = (window as any).vesperaToggleSmoke();
+            updateSmokeBtnIcon(isNowPassed);
+        }
+    });
+
+    // --- INITIALIZATION ---
     function initNavbar() : void
     {
         const currentPath : string = window.location.pathname;

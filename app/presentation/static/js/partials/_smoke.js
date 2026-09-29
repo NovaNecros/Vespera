@@ -576,15 +576,32 @@
         if (!covered)
             wakeSmoke();
     }
+    let isSmokeDisabled = localStorage.getItem("vespera_smoke_paused") === "true";
+    function toggleSmoke(forcedState) {
+        isSmokeDisabled = forcedState !== undefined ? forcedState : !isSmokeDisabled;
+        localStorage.setItem("vespera_smoke_paused", isSmokeDisabled ? "true" : "false");
+        if (isSmokeDisabled) {
+            if (frameHandle !== 0) {
+                cancelAnimationFrame(frameHandle);
+                frameHandle = 0;
+            }
+            if (ctx)
+                ctx.clearRect(0, 0, width, height);
+        }
+        else {
+            wakeSmoke();
+        }
+        return isSmokeDisabled;
+    }
     function wakeSmoke() {
-        if (frameHandle !== 0)
+        if (isSmokeDisabled || frameHandle !== 0)
             return;
         lastNow = 0;
         frameHandle = requestAnimationFrame(renderSmoke);
     }
     function renderSmoke(now) {
         frameHandle = 0;
-        if (!ctx)
+        if (isSmokeDisabled || !ctx)
             return;
         if (pendingResize)
             applyResize(ctx);
@@ -616,5 +633,7 @@
         syncVeils();
         wakeSmoke();
     });
+    window.vesperaToggleSmoke = toggleSmoke;
+    window.vesperaIsSmokePaused = () => isSmokeDisabled;
 })();
 export {};

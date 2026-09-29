@@ -161,6 +161,12 @@ export interface HydrationBundle
     frame_count        : number;
 }
 
+export interface ArtifactSearchPayload
+{
+    search : string;
+    limit  : number;
+}
+
 export interface VaultGalleryPayload
 {
     id_palette      : number | null;

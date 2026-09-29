@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const modDistributeBtn = document.getElementById("mod-distribute-btn");
     const modShiftBtn = document.getElementById("mod-shift-btn");
     const displayNameInput = document.getElementById("spectrum-display-name-input");
+    const clearNameBtn = document.getElementById("clear-name-btn");
     const userNotesInput = document.getElementById("spectrum-notes-input");
     const saveSpectrumBtn = document.getElementById("save-spectrum-btn");
     const branchSpectrumBtn = document.getElementById("branch-spectrum-btn");
@@ -30,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetAltarBtn = document.getElementById("reset-altar-btn");
     const spectraTotalBadge = document.getElementById("spectra-total-badge");
     const spectraSearchInput = document.getElementById("spectra-search-input");
+    const clearSearchBtn = document.getElementById("clear-search-btn");
     const filterFavSpectraBtn = document.getElementById("filter-fav-spectra-btn");
     const sortSpectraSelect = document.getElementById("sort-spectra-select");
     const sortDirBtn = document.getElementById("sort-direction-btn");
@@ -105,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ribbonTrack.style.background = generateCSSGradient(state.stops);
         state.activeLut = buildPaletteLut(state.stops);
         mirror.setPaletteLut(state.activeLut);
+        displayNameInput?.dispatchEvent(new Event("input"));
     }
     function updateActiveStopUI() {
         const activeStop = state.stops[state.selectedStopIndex];
@@ -587,12 +590,31 @@ document.addEventListener("DOMContentLoaded", () => {
         newSpectrumBtn?.addEventListener("click", resetAltarToDefault);
         resetAltarBtn?.addEventListener("click", resetAltarToDefault);
         spectraSearchInput?.addEventListener("input", () => {
+            const q = spectraSearchInput.value.trim();
+            if (clearSearchBtn) {
+                if (!q) {
+                    clearSearchBtn.classList.add("hidden");
+                    clearSearchBtn.disabled = true;
+                }
+                else {
+                    clearSearchBtn.classList.remove("hidden");
+                    clearSearchBtn.disabled = false;
+                }
+            }
             if (searchDebounceTimer)
                 clearTimeout(searchDebounceTimer);
             searchDebounceTimer = setTimeout(() => {
                 state.searchQuery = spectraSearchInput.value.trim();
                 renderSpectraGrid();
             }, 250);
+        });
+        clearSearchBtn?.addEventListener("click", () => {
+            if (spectraSearchInput)
+                spectraSearchInput.value = "";
+            clearSearchBtn.classList.add("hidden");
+            clearSearchBtn.disabled = true;
+            state.searchQuery = "";
+            renderSpectraGrid();
         });
         filterFavSpectraBtn?.addEventListener("click", () => {
             state.filterFavorites = !state.filterFavorites;
@@ -612,6 +634,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     "fa-solid fa-arrow-down-wide-short");
             }
             renderSpectraGrid();
+        });
+        displayNameInput?.addEventListener("input", () => {
+            const name = displayNameInput.value;
+            if (clearNameBtn) {
+                if (name) {
+                    clearNameBtn.disabled = false;
+                    clearNameBtn.classList.remove("hidden");
+                }
+                else {
+                    clearNameBtn.classList.add("hidden");
+                    clearNameBtn.disabled = true;
+                }
+            }
+        });
+        clearNameBtn?.addEventListener("click", () => {
+            if (displayNameInput)
+                displayNameInput.value = "";
+            clearNameBtn.classList.add("hidden");
+            clearNameBtn.disabled = true;
         });
     }
     async function initCompendium() {

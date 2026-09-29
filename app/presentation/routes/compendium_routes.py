@@ -22,6 +22,16 @@ def compendium() -> str:
 
 
 # --- APIs ---
+@compendium_bp.route("/api/palette/name/<string:name>", methods=["GET"])
+@api_standard_endpoint
+def api_get_palette_by_name(name : str) -> dict[str, Any]:
+    """
+    Endpoint para recuperar una paleta de colores a partir de su nombre exacto.
+    :param  name : Nombre exacto de la paleta.
+    :return      : Datos de la paleta de colores.
+    """
+    return service.get_palette_by_name(name)
+
 @compendium_bp.route("/api/palettes", methods=["GET"])
 @api_standard_endpoint
 def api_get_palettes() -> dict[str, Any]:

@@ -34,6 +34,15 @@ def api_get_vault_gallery() -> dict[str, Any]:
     """
     return service.get_vault_gallery(request.get_json(silent=True) or {})
 
+@vault_bp.route("/api/artifacts/unique", methods=["GET", "POST"])
+@api_standard_endpoint
+def api_get_unique_artifacts() -> dict[str, Any]:
+    """
+    Endpoint para obtener los patrones únicos en escala de grises.
+    :return : Información de los patrones únicos en la DB.
+    """
+    return service.get_unique_artifacts(request.get_json(silent=True) or {})
+
 @vault_bp.route("/api/artifact/<int:id_artifact>", methods=["GET"])
 @api_standard_endpoint
 def api_get_artifact(id_artifact : int) -> dict[str, Any]:

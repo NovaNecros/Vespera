@@ -36,6 +36,9 @@ class TuringService:
     def get_vault_gallery(self : TuringService, params : dict[str, Any]) -> dict[str, Any]:
         return self.vault_service.get_vault_gallery(params=params)
 
+    def get_unique_artifacts(self : TuringService, params : dict[str, Any]) -> dict[str, Any]:
+        return self.vault_service.get_unique_artifacts(params=params)
+
     def get_artifact_detail(self : TuringService, id_artifact : int) -> dict[str, Any]:
         return self.vault_service.get_artifact_detail(id_artifact=id_artifact)
 

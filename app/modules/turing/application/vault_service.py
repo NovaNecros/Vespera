@@ -157,6 +157,57 @@ class VaultService:
             raise e
 
     @staticmethod
+    def get_unique_artifacts(params : dict[str, Any]) -> dict[str, Any]:
+        """
+        Recupera una lista de patrones en escala de grises únicos.
+        :param params : Consulta 'search' y límite de resultados 'limit'
+        :return       : Lista de artefactos en la DB.
+        """
+        try:
+            search_query : Optional[str] = normalize_text(params["search"]) if params.get("search") else None
+            limit        : int           = max(1, min(100, params.get("limit", 10)))
+
+            query = (
+                db.session
+                    .query(SynthesisArtifact)
+                    .options(
+                        db.joinedload(SynthesisArtifact.source_image),
+                        db.joinedload(SynthesisArtifact.turing_config),
+                        db.joinedload(SynthesisArtifact.palette_rels)
+                            .joinedload(RelArtifactPalette.palette)
+                    )
+            )
+
+            if search_query:
+                search_term : str = f"%{search_query}%"
+                query = (
+                    query
+                        .join(SourceImage, SourceImage.id_source_image == SynthesisArtifact.id_source_image)
+                        .filter(
+                            SynthesisArtifact.alias.ilike(search_term)         |
+                            SynthesisArtifact.artifact_hash.ilike(search_term) |
+                            SourceImage.alias.ilike(search_term)
+                        )
+                )
+
+            artifacts : list[SynthesisArtifact] = (
+                query
+                    .order_by(db.desc(SynthesisArtifact.created_at))
+                    .limit(limit)
+                    .all()
+            )
+
+            res : list[dict[str, Any]] = [art.to_dict() for art in artifacts]
+
+            return {
+                "success"     : True,
+                "data"        : res,
+                "status_code" : 200
+            }
+        except Exception as e:
+            raise e
+
+    @staticmethod
     def get_artifact_detail(id_artifact : int) -> dict[str, Any]:
         """
         Obtiene el registro de la DB de un patrón de Turing y de sus patrones derivados.

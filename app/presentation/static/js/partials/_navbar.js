@@ -1,5 +1,23 @@
 "use strict";
 (function () {
+    const toggleSmokeBtn = document.getElementById("toggle-smoke-btn");
+    const toggleSmokeIcon = document.getElementById("toggle-smoke-icon");
+    function updateSmokeBtnIcon(isPaused) {
+        if (!toggleSmokeBtn || !toggleSmokeIcon)
+            return;
+        if (isPaused)
+            toggleSmokeIcon.className = "fa-solid fa-play-circle text-vespera-silver";
+        else
+            toggleSmokeIcon.className = "fa-solid fa-pause-circle text-vespera-silver";
+    }
+    const initiallyPaused = localStorage.getItem("vespera_smoke_paused") === "true";
+    updateSmokeBtnIcon(initiallyPaused);
+    toggleSmokeBtn?.addEventListener("click", () => {
+        if (typeof window.vesperaToggleSmoke === "function") {
+            const isNowPassed = window.vesperaToggleSmoke();
+            updateSmokeBtnIcon(isNowPassed);
+        }
+    });
     function initNavbar() {
         const currentPath = window.location.pathname;
         const tabs = document.querySelectorAll(".module-tab");

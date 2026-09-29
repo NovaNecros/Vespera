@@ -86,22 +86,23 @@ export async function apiFetch(url, options) {
         const response = await fetch(url, options);
         const result = await response.json();
         if (!response.ok || !result.success) {
-            const errorMsg = result.error || `HTTP Error ${response.status}`;
+            console.error(result.error || `HTTP Error ${response.status}`);
             window.showAlertModal?.({
                 title: "Invocation Failed",
-                message: errorMsg,
+                message: response.status === 409 ? "This alias is already taken, love." : "The incantation has failed.",
                 type: "danger"
             });
         }
         return result;
     }
     catch (error) {
-        const errorMsg = error?.message || "An unexpected alchemical failure occurred.";
         window.showAlertModal?.({
             title: "Invocation Failed",
-            message: errorMsg,
+            message: "An unexpected curse has prevented the action from completing",
             type: "danger"
         });
+        const errorMsg = error?.message || "An unexpected alchemical failure occurred.";
+        console.error(errorMsg);
         return {
             success: false,
             error: errorMsg,
