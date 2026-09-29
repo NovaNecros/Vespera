@@ -15,10 +15,13 @@
             if (target === "studio" && currentPath.startsWith("/studio")) {
                 tab.classList.add("active");
             }
-            else if (target === "cript" && currentPath.startsWith("/vault/cript")) {
+            else if (target === "vault" && currentPath.startsWith("/vault")) {
                 tab.classList.add("active");
             }
-            else if (target === "vault" && (currentPath === "/vault" || currentPath.startsWith("/vault/"))) {
+            else if (target == "compendium" && currentPath.startsWith("/compendium")) {
+                tab.classList.add("active");
+            }
+            else if (target === "enigma" && currentPath.startsWith("/enigma/22")) {
                 tab.classList.add("active");
             }
         });

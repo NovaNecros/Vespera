@@ -13,7 +13,7 @@ enigma_bp : Blueprint      = Blueprint("enigma", __name__, url_prefix="/enigma")
 service   : EnigmasService = EnigmasService(verbose=True)
 
 # --- TEMPLATES ---
-@enigma_bp.route("/")
+@enigma_bp.route("/22")
 @template_endpoint
 def enigma22() -> str:
     """
@@ -23,7 +23,7 @@ def enigma22() -> str:
     return render_template("enigmas/enigma22.html")
 
 # --- APIs ---
-@enigma_bp.route("/api/quest/enigma/22", methods=["GET"])
+@enigma_bp.route("/api/quest/22", methods=["GET"])
 @api_standard_endpoint
 def api_get_enigma22_quest() -> dict[str, Any]:
     """
@@ -32,7 +32,7 @@ def api_get_enigma22_quest() -> dict[str, Any]:
     """
     return service.get_enigma22_quest()
 
-@enigma_bp.route("/api/verify/enigma/22/<int:id_artifact>", methods=["POST"])
+@enigma_bp.route("/api/verify/22/<int:id_artifact>", methods=["POST"])
 @api_standard_endpoint
 def api_verify_enigma22_solution(id_artifact : int) -> dict[str, Any]:
     """
@@ -42,7 +42,7 @@ def api_verify_enigma22_solution(id_artifact : int) -> dict[str, Any]:
     return service.verify_solution(id_artifact)
 
 # --- STREAMING APIs ---
-@enigma_bp.route("/api/stream/hint/enigma/22", methods=["GET"])
+@enigma_bp.route("/api/stream/hint/22", methods=["GET"])
 @api_stream_endpoint(mimetype="image/png")
 def api_stream_hint_enigma22() -> Path:
     return Directories.ENIGMAS_DIR / "enigma22.png"

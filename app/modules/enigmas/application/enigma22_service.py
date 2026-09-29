@@ -105,7 +105,7 @@ class Enigma22Service:
             if not artifact:
                 print(f"[!]{Colors.RED} ARTIFACT #{id_artifact} NOT FOUND IN THE VAULT")
                 return {
-                    "success"     : True,
+                    "success"     : False,
                     "error"       : f"Artifact #{id_artifact} not found in The Vault",
                     "status_code" : 404
                 }

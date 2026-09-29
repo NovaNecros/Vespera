@@ -188,7 +188,7 @@ export class ScryingMirror {
         if (this.scrubber)
             this.scrubber.value = index.toString();
         if (this.frameLabel)
-            this.frameLabel.textContent = `Frame ${index} / ${this.frames.length}`;
+            this.frameLabel.textContent = `Frame ${index} / ${this.frames.length - 1}`;
         const iterStep = this.iterations[index];
         if (this.iterationLabel && iterStep !== undefined && iterStep !== null) {
             this.iterationLabel.textContent = `Step ${iterStep.toLocaleString()}`;

@@ -20,6 +20,13 @@
     <!-- Modules -->
     <div id="vespera-navmenu"
          class="modules-container flex h-full gap-1">
+        <a class="module-tab {% if request.path.startswith('/enigma/22') %}active{% endif %}"
+           href="{{ url_for('enigma.enigma22') }}"
+           data-target="enigma">
+            <i class="fa-solid fa-lock mr-2 text-vespera-silver"></i>
+            <span>The Enigma</span>
+        </a>
+
         <a class="module-tab {% if request.path.startswith('/studio') %}active{% endif %}"
            href="{{ url_for('studio.studio') }}"
            data-target="studio">
@@ -39,13 +46,6 @@
            data-target="compendium">
             <i class="fa-solid fa-palette mr-2 text-vespera-silver"></i>
             <span>The Compendium</span>
-        </a>
-
-        <a class="module-tab opacity-50 cursor-not-allowed"
-           href="#"
-           title="The seal remains unbroken">
-            <i class="fa-solid fa-lock mr-2 text-vespera-silver"></i>
-            <span>The Enigma</span>
         </a>
     </div>
 

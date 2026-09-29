@@ -502,6 +502,13 @@ header
     border-color     : rgba(159, 165, 181, 0.40);
 }
 
+.vamp-badge-amethyst
+{
+    background-color : rgba(126, 38, 153, 0.10);
+    color            : var(--vespera-amethyst);
+    border-color     : var(--vespera-amethyst);
+}
+
 /* Dropzones */
 .vamp-dropzone
 {

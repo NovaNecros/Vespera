@@ -256,7 +256,7 @@ export class ScryingMirror
 
         this.currentFrame                               = index;
         if(this.scrubber)   this.scrubber.value         = index.toString();
-        if(this.frameLabel) this.frameLabel.textContent = `Frame ${index} / ${this.frames.length}`;
+        if(this.frameLabel) this.frameLabel.textContent = `Frame ${index} / ${this.frames.length - 1}`;
 
         const iterStep : number | undefined = this.iterations[index];
         if(this.iterationLabel && iterStep !== undefined && iterStep !== null)

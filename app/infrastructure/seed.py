@@ -181,7 +181,7 @@ def seed_enigma() -> bool:
             unlocked_at         = unlock_ts,
             is_active           = True,
             hint_img_filename   = "enigma22.png",
-            hint_img_hash       = "f1015e41deb3e2648eaa60b7b223eea69bc7c62a7f776a5f23b3e01315870c2b",
+            hint_img_hash       = "dae9b40991a3683e97bf21e9664a884cfd3fb962fc444e976c31c10f8094ac90",
             hint_img_config_id  = carmilla_config.id_config,
             hint_img_palette_id = brat_palette.id_palette,
         )

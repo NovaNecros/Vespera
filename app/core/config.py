@@ -15,7 +15,7 @@ class ServerSettings:
     """
     HOST                 : str  = "0.0.0.0"
     PORT                 : int  = 3009
-    DEBUG                : bool = False
+    DEBUG                : bool = True
     MAX_CONTENT_LENGTH   : int  = 256 * 1024 * 1024
     MAX_FORM_MEMORY_SIZE : int  = 256 * 1024 * 1024
 

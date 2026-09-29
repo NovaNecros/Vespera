@@ -1,1 +1,72 @@
 /* Vespera/app/presentation/static/css/enigmas/enigma22.css */
+
+/* Instructions */
+.enigma-scroll-body
+{
+    position    : relative;
+    padding     : 0.25rem 0;
+    line-height : 1.75;
+}
+
+.enigma-scroll-body p
+{
+    text-indent : 1.25rem;
+}
+
+
+/* Preview */
+#selected-artifact-preview
+{
+    animation  : fadeInAltar 0.25s cubic-bezier(0.25, 0.80, 0.25, 1.00) forwards;
+    box-shadow : inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes fadeInAltar
+{
+    from
+    {
+        opacity   : 0;
+        transform : translateY(4px);
+    }
+    to
+    {
+        opacity   : 1;
+        transform : translateY(0);
+    }
+}
+
+/* Victory Sanctuary */
+.victory-glow
+{
+    border-color : var(--vespera-amethyst) !important;
+    box-shadow   : 0 0 35px rgba(126, 38, 153, 0.50), inset 0 0 25px rgba(56, 12, 66, 0.40) !important;
+    animation    : victoryPulse 3s infinite ease-in-out;
+}
+
+@keyframes victoryPulse
+{
+    0%, 100%
+    {
+        box-shadow : 0 0 30px rgba(126, 38, 153, 0.40), inset 0 0 20px rgba(56, 12, 66, 0.30);
+    }
+    50%
+    {
+        box-shadow : 0 0 55px rgba(152, 56, 184, 0.70), inset 0 0 35px rgba(126, 38, 153, 0.50);
+    }
+}
+
+/* Target Hash */
+#target-hash-display
+{
+    user-select : all;
+}
+
+/* Scrying Mirror */
+.scrying-mirror-mini .scrying-mirror-stage-wrapper
+{
+    max-width    : 380px;
+    max-height   : 380px;
+    aspect-ratio : 1 / 1;
+    margin       : 0 auto;
+    box-shadow   : inset 0 0 35px rgba(0, 0, 0, 0.95), 0 0 15px rgba(126, 38, 153, 0.30);
+}
