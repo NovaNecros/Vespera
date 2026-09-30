@@ -12,7 +12,13 @@
     }
     const initiallyPaused = localStorage.getItem("vespera_smoke_paused") === "true";
     updateSmokeBtnIcon(initiallyPaused);
-    toggleSmokeBtn?.addEventListener("click", () => {
+    toggleSmokeBtn?.addEventListener("click", (event) => {
+        if (event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            window.location.href = "/empty";
+            return;
+        }
         if (typeof window.vesperaToggleSmoke === "function") {
             const isNowPassed = window.vesperaToggleSmoke();
             updateSmokeBtnIcon(isNowPassed);

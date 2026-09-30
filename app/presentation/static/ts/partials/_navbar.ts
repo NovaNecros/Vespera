@@ -17,8 +17,17 @@
     updateSmokeBtnIcon(initiallyPaused);
 
     // --- LISTENERS ---
-    toggleSmokeBtn?.addEventListener("click", () : void =>
+    toggleSmokeBtn?.addEventListener("click", (event : MouseEvent) : void =>
     {
+        // Easter Egg
+        if(event.shiftKey)
+        {
+            event.preventDefault();
+            event.stopPropagation();
+            window.location.href = "/empty";
+            return;
+        }
+
         if(typeof (window as any).vesperaToggleSmoke === "function")
         {
             const isNowPassed : boolean = (window as any).vesperaToggleSmoke();

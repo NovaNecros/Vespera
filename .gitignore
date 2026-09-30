@@ -12,9 +12,7 @@ vespera_structure.txt
 vespera_diagram.txt
 
 # Data
-data/
-inputs/
-outputs/
+outputs
 vespera.db
 vespera.db-shm
 vespera.db-wal

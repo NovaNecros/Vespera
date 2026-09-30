@@ -10,7 +10,7 @@ from app.infrastructure.files_repo import FileRepository
 from app.modules.turing.services import TuringService
 
 vault_bp : Blueprint     = Blueprint("vault", __name__, url_prefix="/vault")
-service  : TuringService = TuringService(verbose=True)
+service  : TuringService = TuringService(verbose=False)
 
 # --- TEMPLATES ---
 @vault_bp.route("/")

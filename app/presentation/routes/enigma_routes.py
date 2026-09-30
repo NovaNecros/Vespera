@@ -10,7 +10,7 @@ from app.core.utils.decorators import api_stream_endpoint, template_endpoint, ap
 from app.modules.enigmas.services import EnigmasService
 
 enigma_bp : Blueprint      = Blueprint("enigma", __name__, url_prefix="/enigma")
-service   : EnigmasService = EnigmasService(verbose=True)
+service   : EnigmasService = EnigmasService(verbose=False)
 
 # --- TEMPLATES ---
 @enigma_bp.route("/22")

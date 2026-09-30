@@ -301,7 +301,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     type: "info",
                     icon: "fa-gem",
                     cancelText: "Unlock The Secret",
-                    onConfirm: () => { victoryCard?.scrollIntoView({ behavior: "smooth" }); },
                     onCancel: () => { victoryCard?.scrollIntoView({ behavior: "smooth" }); },
                 });
             }

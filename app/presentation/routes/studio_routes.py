@@ -8,7 +8,7 @@ from app.core.utils.decorators import api_standard_endpoint, template_endpoint
 from app.modules.turing.services import TuringService
 
 studio_bp : Blueprint     = Blueprint("studio", __name__, url_prefix="/studio")
-service   : TuringService = TuringService(verbose=True)
+service   : TuringService = TuringService(verbose=False)
 
 # --- TEMPLATES ---
 @studio_bp.route("/")
