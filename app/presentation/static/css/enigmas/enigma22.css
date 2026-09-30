@@ -78,6 +78,11 @@
     }
 }
 
+#copy-rune-icon
+{
+    transition : all 0.25s ease-in-out;
+}
+
 /* Target Hash */
 #target-hash-display
 {

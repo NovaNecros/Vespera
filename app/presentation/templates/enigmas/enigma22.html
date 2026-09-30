@@ -12,7 +12,7 @@
 
 {% block content %}
 <div id="enigma22-main-container"
-     class="w-full flex flex-col gap-3"
+     class="w-full flex-grow flex flex-col justify-between gap-3 min-h-0 mb-4"
      data-artifacts-api-url="{{ url_for('vault.api_get_unique_artifacts') }}"
      data-brat-palette-api-url="{{ url_for('compendium.api_get_palette_by_name', name='brat') }}"
      data-quest-api-url="{{ url_for('enigma.api_get_enigma22_quest') }}"
@@ -23,7 +23,7 @@
 
     <!-- HEADER -->
     <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b
-                   border-vespera-obsidian pb-2 mb-2">
+                   border-vespera-obsidian pb-2 mb-2 shrink-0">
         <div class="flex flex-col items-start justify-between gap-0">
             <div class="flex items-center">
                 <h3 class="font-ornate text-2xl md:text-3xl text-vespera-crimsonDark font-bold tracking-wider mb-0">
@@ -44,18 +44,18 @@
         </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div class="lg:col-span-5 flex flex-col h-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 xl:gap-5 items-stretch flex-grow min-h-0">
+        <div class="lg:col-span-5 flex flex-col h-full min-h-0">
             <div id="left-chamber-card"
-                 class="filigree-card p-5 border border-vespera-obsidian rounded-vespera
-                        shadow-ambient flex flex-col justify-between flex flex-col gap-4 h-full flex-grow">
+                 class="filigree-card p-5 border border-vespera-obsidian rounded-vespera shadow-ambient
+                        flex flex-col justify-between h-full flex-grow min-h-0">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
                 <!-- Subheader -->
-                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2">
+                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2 shrink-0">
                     <div class="flex items-center gap-2">
                         <span class="brand-sigil w-6 h-6 text-xs">
                             <i id="left-header-icon" class="fa-solid fa-eye"></i>
@@ -73,7 +73,7 @@
 
                 <!-- Scrying Mirror -->
                 <div id="scrying-mirror-container"
-                     class="flex flex-col items-center justify-center w-full flex-grow my-auto
+                     class="flex flex-col items-center justify-center w-full flex-grow my-auto min-h-0
                             scrying-mirror-mini animation-controls-hidden">
                     {% include "partials/scrying_mirror.html" %}
                 </div>
@@ -81,11 +81,15 @@
                 <!-- Secret Image Viewport -->
                 <div id="victory-catalyst-container"
                      class="hidden flex-col items-center justify-center w-full p-2 bg-vespera-obsidian/40
-                            border border-vespera-obsidian rounded-sm overflow-hidden flex-grow my-auto">
-                    <img id="victory-catalyst-img" src="" alt="Sacred Catalyst of Origin"
-                         class="w-full max-h-[460px] object-contain rounded shadow-ambient">
+                            border border-vespera-obsidian rounded-sm overflow-hidden flex-grow my-auto min-h-0">
+                    <div class="relative w-full flex-grow rounded overflow-hidden
+                                flex items-center justify-center min-h-0">
+                        <img id="victory-catalyst-img" src="" alt="Sacred Catalyst of Origin"
+                             class="w-full h-full max-h-[540px] 2xl:max-h-[620px] object-contain
+                                    rounded shadow-ambient mx-auto rounded">
+                    </div>
                     <div class="w-full flex items-center justify-between pt-2 mt-2 border-t
-                                border-vespera-obsidian font-mono text-xs">
+                                border-vespera-obsidian font-mono text-xs shrink-0">
                         <span class="font-cinzel text-vespera-parchment font-bold">
                             Catalyst of Origin
                         </span>
@@ -99,7 +103,7 @@
                 <!-- Target Formula -->
                 <div id="target-formula-panel"
                      class="p-3.5 bg-vespera-surface/60 border border-vespera-obsidian rounded-sm
-                            flex flex-col gap-2 mt-auto">
+                            flex flex-col gap-2 mt-auto shrink-0">
                     <div class="flex items-center justify-between border-b border-vespera-obsidian pb-1.5">
                         <span class="font-cinzel text-xs text-vespera-silver font-bold uppercase tracking-wider">
                             <i class="fa-solid fa-sliders mr-1.5 text-vespera-crimson"></i>
@@ -142,7 +146,7 @@
             </div>
         </div>
 
-        <div class="lg:col-span-7 flex flex-col gap-4 h-full justify-between">
+        <div class="lg:col-span-7 flex flex-col gap-4 h-full min-h-0 justify-between">
             <!-- Briefing Scroll -->
             <div id="quest-briefing-card"
                  class="filigree-card p-5 border border-vespera-obsidian rounded-vespera
@@ -219,13 +223,13 @@
             <!-- The Offering Altar -->
             <div id="offering-altar-card"
                  class="filigree-card p-5 border border-vespera-obsidian rounded-vespera
-                        shadow-ambient flex flex-col justify-between flex-grow gap-4">
+                        shadow-ambient flex flex-col justify-between flex-grow gap-4 min-h-0">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
-                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2">
+                <div class="flex items-center justify-between border-b border-vespera-obsidian pb-2 shrink-0">
                     <div class="flex items-center gap-2">
                         <span class="brand-sigil w-6 h-6 text-xs">
                             <i class="fa-solid fa-ankh"></i>
@@ -242,15 +246,17 @@
                     </a>
                 </div>
 
-                <div class="flex flex-col justify-between flex-grow gap-3">
-                    <div class="flex flex-col gap-1.5 relative">
+                <div class="flex flex-col justify-between flex-grow gap-3 min-h-0">
+                    <div class="flex flex-col gap-1.5 relative shrink-0">
                         <label for="altar-artifact-search"
                                class="font-cinzel text-xs text-vespera-parchment font-bold">
                             Search & Select Sealed Artifacts
                         </label>
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
                             <div class="sm:col-span-6 relative">
-                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-vespera-silver text-xs"></i>
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2
+                                          text-vespera-silver text-xs">
+                                </i>
                                 <input id="altar-artifact-search" type="text"
                                        placeholder="Filter by alias or rune..."
                                        class="vamp-input pl-8 text-xs py-2 w-full"
@@ -319,14 +325,14 @@
 
             <!-- Victory Sanctuary -->
             <div id="victory-sanctuary-card"
-                 class="filigree-card p-6 border rounded-vespera hidden
-                        shadow-ambient flex flex-col gap-4 relative overflow-hidden victory-glow h-full">
+                 class="filigree-card p-6 border rounded-vespera hidden overflow-hidden relative shadow-ambient
+                        flex flex-col justify-between gap-4 h-full flex-grow min-h-0">
                 <div class="filigree-corner-tl"></div>
                 <div class="filigree-corner-tr"></div>
                 <div class="filigree-corner-bl"></div>
                 <div class="filigree-corner-br"></div>
 
-                <div class="flex items-center justify-between border-b border-vespera-amethyst/50 pb-2.5">
+                <div class="flex items-center justify-between border-b border-vespera-amethyst/50 pb-2.5 shrink-0">
                     <div class="flex items-center gap-2">
                         <span class="brand-sigil w-7 h-7 text-sm bg-vespera-amethyst text-vespera-white
                                      flex items-center justify-center shadow-lg shadow-glow-amethyst">
@@ -338,25 +344,8 @@
                         </span>
                     </div>
                     <span class="vamp-badge vamp-badge-amethyst text-xs px-2.5 py-0.5 shadow-glow-amethyst">
-                        Resonance Achieved
+                        The Secret Unveiled
                     </span>
-                </div>
-
-                <div class="p-4 bg-vespera-surface/60 border border-vespera-amethyst/40 rounded-sm
-                            flex flex-col gap-2.5">
-                    <div class="font-cinzel text-xl text-vespera-silver font-bold uppercase tracking-wider
-                                 flex items-center gap-4">
-                        <i class="fa-solid fa-certificate text-vespera-violetGlow"></i>
-                        <span class="text-xs mt-1">Secret Rune Awarded</span>
-                    </div>
-                    <div class="p-2.5 bg-vespera-obsidian border border-vespera-obsidian rounded font-mono
-                                text-[0.72rem] text-vespera-parchment break-all select-all">
-                        <span id="victory-secret-key"><!-- TS --></span>
-                    </div>
-                    <div class="flex items-center justify-between font-mono text-[0.68rem] text-vespera-silver pt-1">
-                        <span id="victory-solved-date"><!--TS --></span>
-                        <span id="victory-solved-artifact"><!--TS--></span>
-                    </div>
                 </div>
 
                 <div class="p-4 bg-vespera-amethystDark/20 border border-vespera-amethyst/40 rounded-sm flex flex-col
@@ -368,6 +357,47 @@
                         You have unraveled The Enigma. You may now claim
                         <span class="text-vespera-amethystDark font-cinzel">The Treasure</span>.
                     </p>
+                </div>
+
+                <div class="p-4 bg-vespera-surface/60 border border-vespera-amethyst/40 rounded-sm
+                            flex flex-col gap-2.5 my-auto">
+                    <div class="flex items-center justify-between pb-1.5">
+                        <div class="font-cinzel text-xl text-vespera-silver font-bold uppercase tracking-wider
+                                     flex items-center gap-4">
+                            <i class="fa-solid fa-certificate text-vespera-violetGlow"></i>
+                            <span class="text-xs mt-1">Secret Rune Awarded</span>
+                        </div>
+                        <button id="copy-secret-rune-btn" type="button"
+                                class="vamp-btn vamp-btn-ghost text-xs py-1 px-2.5 border border-vespera-obsidian
+                                       flex items-center gap-1.5 hover:border-vespera-violetGlow transition-all"
+                                title="Copy Secret Rune">
+                            <i id="copy-rune-icon" class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-2.5 bg-vespera-obsidian border border-vespera-obsidian rounded font-mono
+                                text-[0.72rem] text-vespera-parchment break-all select-all">
+                        <span id="victory-secret-key"><!-- TS --></span>
+                    </div>
+
+                    <div class="flex items-center justify-between font-mono text-[0.68rem] text-vespera-silver pt-1">
+                        <span id="victory-solved-date"><!--TS --></span>
+                        <span id="victory-solved-artifact"><!--TS--></span>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-vespera-obsidian mt-auto shrink-0">
+                    <a id="claim-treasure-btn"
+                       href="https://forms.gle/6zoaaQdRREH1CrNPA"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="vamp-btn vamp-btn-amethyst w-full py-3 text-xs font-bold tracking-widest
+                              text-center no-underline shadow-glow-amethyst flex items-center justify-center gap-4">
+                        <!-- El ícono de tesoro es de paga xd -->
+                        <i class="fa-solid fa-gift"></i>
+                        <span>Open The Treasury</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[0.7rem] ml-1 text-vespera-silver"></i>
+                    </a>
                 </div>
             </div>
         </div>

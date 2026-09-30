@@ -1,4 +1,4 @@
-import { apiFetch, buildPaletteLut } from "../base.js";
+import { apiFetch, buildPaletteLut, truncateHash } from "../base.js";
 import { ScryingMirror } from "../partials/scrying_mirror.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("enigma22-main-container");
@@ -43,7 +43,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const victorySecretKey = document.getElementById("victory-secret-key");
     const victorySolvedDate = document.getElementById("victory-solved-date");
     const victorySolvedArt = document.getElementById("victory-solved-artifact");
+    const copySecretRuneBtn = document.getElementById("copy-secret-rune-btn");
+    const copyRuneIcon = document.getElementById("copy-rune-icon");
     let searchDebounceTimer = null;
+    let copyResetTimer = null;
     function getDefaultState() {
         return {
             questData: null,
@@ -69,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         mirrorContainer?.classList.add("hidden");
         mirrorSpectrumBadge?.classList.add("hidden");
         if (leftHeaderIcon)
-            leftHeaderIcon.className = "fa-solid fa-image text-vespera-amethyst";
+            leftHeaderIcon.className = "fa-solid fa-image text-vespera-parchment";
         if (leftHeaderTitle)
             leftHeaderTitle.textContent = "The Sacred Catalyst";
         const solvedArtifact = quest.solution_artifact;
@@ -175,6 +178,25 @@ document.addEventListener("DOMContentLoaded", () => {
         if (submitOfferingBtn && !state.isSolved)
             submitOfferingBtn.disabled = false;
     }
+    async function copyRuneToClipboard() {
+        const runeText = victorySecretKey?.textContent?.trim() || "";
+        if (!runeText || runeText === "--")
+            return;
+        try {
+            await navigator.clipboard.writeText(runeText);
+            if (copyRuneIcon)
+                copyRuneIcon.className = "fa-solid fa-check text-vespera-violetGlow";
+            if (copyResetTimer)
+                clearTimeout(copyResetTimer);
+            copyResetTimer = window.setTimeout(() => {
+                if (copyRuneIcon)
+                    copyRuneIcon.className = "fa-solid fa-copy";
+            }, 2000);
+        }
+        catch (error) {
+            console.error("Could not copy secret rune to clipboard:", error);
+        }
+    }
     async function loadBratPalette() {
         const res = await apiFetch(bratPaletteApiUrl);
         if (!res.success || !res.data) {
@@ -232,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         res.data.forEach((item) => {
             bufferHTML.push(`
             <option value="${item.id_artifact}">
-                ${item.alias} (#${item.id_artifact}) • ${item.artifact_hash}
+                ${item.alias} (#${item.id_artifact}) • ${truncateHash(item.artifact_hash, 6)}
             </option>`);
         });
         artifactSelect.innerHTML = bufferHTML.join("");
@@ -339,6 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
             handleArtifactSelection(selectedVal);
         });
         submitOfferingBtn?.addEventListener("click", submitOffering);
+        copySecretRuneBtn?.addEventListener("click", copyRuneToClipboard);
     }
     async function initEnigma() {
         await Promise.all([

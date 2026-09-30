@@ -311,7 +311,25 @@ header
     color        : var(--vespera-white);
 }
 
-.vamp-btn-crimson:active
+.vamp-btn-amethyst
+{
+    background : linear-gradient(135deg, var(--vespera-amethyst-dark) 0%, var(--vespera-amethyst) 100%);
+    color      : var(--vespera-parchment);
+    border     : 1px solid var(--vespera-violet-glow);
+    box-shadow : 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.vamp-btn-amethyst:hover
+{
+    background   : linear-gradient(135deg, var(--vespera-amethyst) 0%, var(--vespera-violet-glow) 50%, var(--vespera-amethyst-dark) 100%);
+    border-color : var(--vespera-violet-glow);
+    box-shadow   : var(--vespera-glow-amethyst);
+    transform    : translateY(-2px);
+    color        : var(--vespera-white);
+}
+
+.vamp-btn-crimson:active,
+.vamp-btn-amethyst:active
 {
     transform  : translateY(0);
     box-shadow : 0 2px 6px rgba(0, 0, 0, 0.7);
