@@ -351,16 +351,12 @@ class SynthesisService:
             user_notes     : Optional[str] = str(params["user_notes"]).strip() if params.get("user_notes")         else None
             parent_id      : Optional[int] = int(params["parent_artifact_id"]) if params.get("parent_artifact_id") else None
 
-            cached_source_id : Optional[int]         = cached.get("id_source_image")
-            source_rec       : Optional[SourceImage] = None
-
-            if cached_source_id:
-                source_rec : Optional[SourceImage] = (
-                    db.session
-                        .query(SourceImage)
-                        .filter_by(id_source_image=cached_source_id)
-                        .first()
-                )
+            source_rec : Optional[SourceImage] = (
+                db.session
+                    .query(SourceImage)
+                    .filter_by(sha265_hash=cached["src_hash"])
+                    .first()
+            )
 
             if not source_rec:
                 source_rec : SourceImage = self._get_or_create_source_image(cached["file_bytes"], cached["alias"])

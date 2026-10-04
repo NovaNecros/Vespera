@@ -42,7 +42,7 @@ class VaultService:
                 else None
             )
 
-            raw_config       : Any  = params.get("id_cofig")
+            raw_config       : Any  = params.get("id_config")
             is_custom_config : bool = str(raw_config).strip().lower() == "custom"
 
             id_config : Optional[int] = (

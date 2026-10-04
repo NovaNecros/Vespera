@@ -8,11 +8,15 @@
 venv/
 
 # Documentación
+documentation/screenshots/
+documentation/diagram.png
 vespera_structure.txt
 vespera_diagram.txt
+vespera_guia_abi.*
 
 # Data
 outputs
+original_*
 vespera.db
 vespera.db-shm
 vespera.db-wal
