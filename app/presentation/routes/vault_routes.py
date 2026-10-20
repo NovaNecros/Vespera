@@ -4,6 +4,7 @@ from typing import Any
 from pathlib import Path
 
 from flask import Blueprint, render_template, request, abort, send_file, Response
+from werkzeug.exceptions import HTTPException
 
 from app.core.utils.decorators import api_standard_endpoint, template_endpoint, api_stream_endpoint
 from app.infrastructure.files_repo import FileRepository
@@ -184,6 +185,8 @@ def api_download_artifact_manifestation(id_rel : int) -> tuple[Response, int]:
             as_attachment = True,
             download_name = payload["download_name"]
         ), res.get("status_code", 200)
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         print(f"[!] Unexpected error streaming colored artifact: {e}")
         import traceback

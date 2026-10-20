@@ -87,7 +87,7 @@ Two virtual chemicals share a grid. The substrate $u$ is fed in and diffuses qui
 \frac{\partial v}{\partial t} = D_v \nabla^2 v + u v^2 - (F + k)\,v
 ```
 
-Vespera integrates the equations on a 1 024 × 1 024 torus with explicit Euler steps ($\Delta t = 1$) and a 3 × 3 Laplacian kernel (weights 0.05 · 0.20 · 0.05 / 0.20 · −1 · 0.20 / 0.05 · 0.20 · 0.05), clipping both fields to $[0, 1]$ after every step. With these weights the scheme is stable while $\Delta t \cdot D \le 1.25$.
+Vespera integrates the equations on a 1 024 × 1 024 torus with explicit Euler steps ($\Delta t = 1$) and a 3 × 3 Laplacian kernel (weights 0.05 · 0.20 · 0.05 / 0.20 · −1 · 0.20 / 0.05 · 0.20 · 0.05), clipping both fields to $[0, 1]$ after every step. With these weights the scheme is stable while $\Delta t \cdot D \le 1.25$. The Studio's sliders can still exceed it (KI-13).
 
 ### Seeding from a photograph
 
@@ -116,7 +116,7 @@ v_0 = 0.35\,\ell + \varepsilon, \qquad u_0 = 1 - 0.30\,\ell, \qquad F(x, y) = F\
 
 ### Color without re-simulating
 
-Every artifact is stored once, in grayscale. A palette is a list of stops that becomes a 256-entry look-up table by linear interpolation, and coloring a pattern is a single indexing operation, so switching palettes is instant. The browser does it on a canvas for previews, and the server does it with NumPy for downloads.
+Every artifact is stored once, in grayscale. A palette is a list of stops that becomes a 256-entry look-up table by linear interpolation (the end colors extend beyond the outermost stops), and coloring a pattern is a single indexing operation, so switching palettes is instant. The browser does it on a canvas for previews, and the server does it with NumPy for downloads; both use the same algorithm and rounding, so a preview and its download are identical pixel for pixel.
 
 ### Runes
 
@@ -144,7 +144,7 @@ python3.14 run.py
 Then open **<http://localhost:3009>**. The first start creates `data/vespera.db` and seeds the system palettes, the three presets and the enigma. A Carmilla's Labyrinth synthesis takes about three minutes on the author's machine; progress is shown in the terminal.
 
 > [!NOTE]
-> The server listens on all network interfaces (`0.0.0.0`) and has no authentication. Use it on a network you trust, or change `ServerSettings.HOST` to `127.0.0.1`.
+> The server listens only on `127.0.0.1` and has no authentication. To reach it from another device, change `ServerSettings.HOST` to `0.0.0.0`, and only on a network you trust.
 
 ## Architecture
 
@@ -162,7 +162,7 @@ flowchart TB
     end
     subgraph host["Python 3.14 process"]
         direction LR
-        flask["<b>Flask application</b><br/>Werkzeug server · 0.0.0.0:3009<br/>5 blueprints · Jinja2 templates"]
+        flask["<b>Flask application</b><br/>Werkzeug server · 127.0.0.1:3009<br/>5 blueprints · Jinja2 templates"]
         db[("<b>SQLite</b><br/>data/vespera.db<br/>WAL mode")]
         fs[("<b>File store</b><br/>data/inputs<br/>data/outputs")]
         flask -- "SQLAlchemy ORM" --> db
@@ -482,7 +482,8 @@ Settings are class attributes in [`app/core/config.py`](app/core/config.py).
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `ServerSettings.HOST` / `PORT` | `0.0.0.0` / `3009` | Bind address and port |
+| `ServerSettings.HOST` / `PORT` | `127.0.0.1` / `3009` | Bind address and port |
+| `CacheSettings.EPHEMERAL_MAX_ENTRIES` / `EPHEMERAL_TTL_SECONDS` | `6` / `7200` | Unsealed syntheses kept in memory, and for how long |
 | `ServerSettings.DEBUG` | `False` | Flask debug mode |
 | `ServerSettings.MAX_CONTENT_LENGTH` | 256 MB | Upload limit |
 | `DBSettings.DB_PATH` | `data/vespera.db` | SQLite file |
@@ -512,27 +513,40 @@ There is no automated test suite yet. A proposed `pytest` plan is in the [techni
 
 ## Known issues
 
-These were found while verifying the release for the technical reference. See its chapter 15 for evidence and suggested fixes. KI-02 (reverse-order seals could link an artifact to the wrong catalyst) and KI-08 (uploaded photographs were not git-ignored) have since been fixed.
+These were found while verifying the release for the technical reference. See its chapter 15 for the evidence.
 
-| ID | Issue |
-|---|---|
-| KI-01 | The Vault's formula filter is ignored (`id_cofig` typo in `vault_service.py`). |
-| KI-03 | A duplicate palette name returns 500 instead of 409. |
-| KI-04 | A missing streamed file returns 500 instead of 404. |
-| KI-05 | Deleting a palette silently deletes its manifestations. |
-| KI-06 | Unsealed results stay in memory until the server restarts. |
-| KI-07 | The server is reachable from the local network without authentication. |
-| KI-09 | Dates are stored as naive UTC and shown as local time. |
+| ID | Issue | Resolution |
+|---|---|---|
+| KI-01 | The Vault's formula filter was ignored (`id_cofig` typo in `vault_service.py`). | Fixed: reads `id_config`. |
+| KI-02 | Reverse-order seals could link an artifact to the wrong catalyst. | Fixed: the catalyst is looked up by its SHA-256 at seal time (the lookup's `sha265_hash` typo, which made every seal fail, is also fixed). |
+| KI-03 | A duplicate palette name returned 500 instead of 409. | Fixed: the name is checked before the flush. |
+| KI-04 | A missing streamed or downloaded file returned 500 instead of 404. | Fixed: `HTTPException` is re-raised before the generic handler. |
+| KI-05 | Deleting a palette silently deleted its manifestations. | Fixed: refused with 409 while manifestations exist; the ORM no longer cascades. |
+| KI-06 | Unsealed results stayed in memory until the server restarted. | Fixed: bounded by count and TTL, and the Studio's previous unsealed result is released once a new synthesis succeeds, so a failed synthesis leaves it sealable. Unsealed results are still lost on restart. |
+| KI-07 | The server was reachable from the local network without authentication. | Fixed: binds to `127.0.0.1` by default. |
+| KI-08 | Uploaded photographs were not git-ignored. | Fixed: `original_*` in `.gitignore`. |
+| KI-09 | Dates were stored as naive UTC and shown as local time. | Fixed: datetimes are read back as UTC-aware and serialized with `+00:00`. |
+| KI-10 | Preview colors could differ from downloaded PNGs. | Fixed: browser and server build the LUT with the same algorithm and half-up rounding. Palettes whose end stops are not at 0 and 1 were also extrapolated in the preview; the end colors now extend. |
+| KI-11 | Aliases and palette names were inserted into `innerHTML` unescaped. | Fixed: escaped with `escapeHTML()`; alert messages are plain text unless `isHtml` is set. |
+| KI-12 | The quest's `unlocked_at` and `is_active` are stored but never checked. | Open. |
+| KI-13 | The UI allows unstable coefficient combinations (Δt · D > 1.25). | Open. |
+| KI-14 | Abandoned syntheses leave catalyst PNGs on disk with no database row. | Open. |
+| KI-15 | Toggle endpoints answer 201; one message said "source image" for an artifact. | Fixed: the message names the artifact. Toggles keep 201 by convention: every successful write to the database answers 201. |
+| KI-16 | No automated tests. | Open. |
+| KI-17 | Styling depends on the Tailwind Play CDN. | Open. |
 
 ## Roadmap
 
 - [x] Fix KI-02 (catalyst lookup at seal time) and KI-08 (`original_*` in `.gitignore`)
-- [ ] Fix the remaining known issues, starting with KI-01, KI-05 and KI-07
-- [ ] Add a `pytest` suite and a CI workflow
+- [x] Fix KI-01, KI-03 to KI-07 and KI-09
+- [x] Fix KI-10, KI-11 and KI-15
+- [ ] Fix KI-12 (enforce the quest's lock) and KI-13 (refuse unstable formulas)
+- [ ] Fix KI-14 (orphaned catalyst files), after checking the change against the Enigma's proof
+- [ ] Add a `pytest` suite and a CI workflow (KI-16)
 - [ ] More presets from Pearson's (F, k) map
 - [ ] More palette modifiers (random, partial shifts)
 - [ ] Run syntheses in a background worker with progress reporting
-- [ ] Bundle Tailwind, fonts and icons for offline use
+- [ ] Bundle Tailwind, fonts and icons for offline use (KI-17)
 
 ## Contributing
 
@@ -540,7 +554,7 @@ Collaborators are welcome. Create a branch from `main`, keep to the conventions 
 
 ## Documentation
 
-- **Technical reference** (`docs/Vespera_Technical_Reference.docx`): requirements, architecture (C4), class, ER, sequence and state diagrams, data dictionary, algorithms and numerical stability, full API specification, UI design system, security and privacy, performance, operations, verification results, known issues and project history.
+- **Technical reference** (`docs/Vespera_Technical_Reference.docx`, revision 1.1): requirements, architecture (C4), class, ER, sequence and state diagrams, data dictionary, algorithms and numerical stability, full API specification, UI design system, security and privacy, performance, operations, verification results, known issues and project history.
 - **User guide** (Spanish): the original guide that accompanied the gift.
 
 ## Acknowledgements
@@ -553,6 +567,6 @@ Collaborators are welcome. Create a branch from `main`, keep to the conventions 
 
 ## License
 
-No license has been chosen yet, so all rights are reserved by the author. If you want others to reuse the code, add a `LICENSE` file.
+Vespera is released under the [BSD 3-Clause License](LICENSE).
 
 <p align="center"><sub>Made with care in September 2026.</sub></p>

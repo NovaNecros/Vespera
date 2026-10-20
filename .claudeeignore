@@ -1,0 +1,17 @@
+/Vespera/.claudeeignore
+
+# ==========================================
+# CLAUDE DESKTOP READ-ONLY & SECURITY CODES
+# ==========================================
+
+*.log
+*.tmp
+*.bak
+venv/
+.git/
+data/
+documentation/
+.env*
+
+# READ-ONLY INSTRUCTIONS
+- Instruction: "You are strictly operating in a READ-ONLY environment for this folder. You are permitted to execute read_file and list_directory, but you must completely refuse any instructions to call write_file, edit_file, or delete_file. You may only ever edit the files inside the docs/ folder or README.md."

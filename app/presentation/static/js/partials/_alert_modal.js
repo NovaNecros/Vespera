@@ -53,7 +53,7 @@
         const title = options.title || "Vespera Grimoire";
         const message = options.message || "";
         const type = options.type || "danger";
-        const isHtml = options.isHtml !== undefined ? options.isHtml : true;
+        const isHtml = options.isHtml !== undefined ? options.isHtml : false;
         const iconCls = options.icon || defaultIconMap[type] || "fa-triangle-exclamation";
         if (titleEl)
             titleEl.textContent = title;

@@ -82,7 +82,7 @@ import { AlertModalOptions, AlertType } from "../types.js";
         const title   : string    = options.title   || "Vespera Grimoire";
         const message : string    = options.message || "";
         const type    : AlertType = options.type    || "danger";
-        const isHtml  : boolean   = options.isHtml  !== undefined ? options.isHtml : true;
+        const isHtml  : boolean   = options.isHtml  !== undefined ? options.isHtml : false;
         const iconCls : string    = options.icon    || defaultIconMap[type]  || "fa-triangle-exclamation";
 
         if(titleEl) titleEl.textContent = title;

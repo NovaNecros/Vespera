@@ -89,6 +89,8 @@ def api_stream_endpoint(mimetype : str = "image/png") -> Callable:
                 if file_path is None or not isinstance(file_path, Path) or not file_path.exists():
                     abort(404)
                 return send_file(str(file_path), mimetype=mimetype), 200
+            except HTTPException as http_ex:
+                raise http_ex
             except Exception as e:
                 print(f"[!]{Colors.RED} Unexpected error streaming file with controller {f.__name__}{Colors.RESET}: {e}")
                 traceback.print_exc()

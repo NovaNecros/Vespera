@@ -15,9 +15,8 @@ import
 } from "../types.js";
 import
 {
-    apiFetch,
-    truncateHash,
-    formatBytes,
+    apiFetch,        escapeHTML,
+    truncateHash,    formatBytes,
     buildPaletteLut, applyPalette
 } from "../base.js";
 import { ScryingMirror } from "../partials/scrying_mirror.js";
@@ -166,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
         ];
         res.data.forEach((pal : ColorPalette) =>
         {
-            bufferHTML.push(`<option value="${pal.id_palette.toString()}">${pal.display_name}</option>`);
+            bufferHTML.push(`<option value="${pal.id_palette.toString()}">${escapeHTML(pal.display_name)}</option>`);
         });
         filterPaletteSel.innerHTML = bufferHTML.join("");
     }
@@ -187,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
          {
             bufferHTML.push(`
                 <option value="${cfg.id_config.toString()}">
-                    ${cfg.display_name || "Formula #" + cfg.id_config}
+                    ${escapeHTML(cfg.display_name || "Formula #" + cfg.id_config)}
                 </option>
             `);
          });
@@ -498,8 +497,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
 
             const configBadgeHTML : string = (item.config && item.config.is_system && item.config.display_name ? `
                 <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5 truncate max-w-[130px]"
-                      title="${item.config.display_name}">
-                    ${item.config.display_name}
+                      title="${escapeHTML(item.config.display_name)}">
+                    ${escapeHTML(item.config.display_name)}
                 </span>
             ` : "");
 
@@ -527,7 +526,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                                 <i class="fa-solid fa-eye"></i>
                             </button>
                             <a href="${cardDownloadUrl}"
-                               download="${downloadFilename}"
+                               download="${escapeHTML(downloadFilename)}"
                                class="vault-quick-action-btn action-download-manifest no-underline"
                                title="Download Manifestation">
                                 <i class="fa-solid fa-download"></i>   
@@ -547,8 +546,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                          data-artifact-id="${item.id_artifact}">
                         <div class="flex flex-col pointer-events-none">
                             <span class="font-cinzel text-xs text-vespera-parchment font-bold truncate"
-                                  title="${item.alias}">
-                                ${item.alias}      
+                                  title="${escapeHTML(item.alias)}">
+                                ${escapeHTML(item.alias)}      
                             </span>
                             <span class="font-mono text-[0.65rem] text-vespera-silver truncate"
                                   title="${item.artifact_hash}">
@@ -559,7 +558,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                         <div class="flex items-center justify-between gap-1 flex-wrap pt-1 border-t
                                     border-vespera-obsidian font-mono text[0.65rem] pointer-events-none">
                             <span class="vamp-badge vamp-badge-silver text-[0.6rem] px-1.5 py-0.5">
-                                ${state.viewMonochrome ? 'Monochrome' : (item.palette?.display_name || "Monochrome")}
+                                ${state.viewMonochrome ? 'Monochrome' : escapeHTML(item.palette?.display_name) || "Monochrome"}
                             </span>
                             ${configBadgeHTML}
                             
@@ -753,14 +752,16 @@ document.addEventListener("DOMContentLoaded", () : void =>
             const dateStr : string = src.created_at ? new Date(src.created_at).toLocaleDateString() : "-";
             const sizeStr : string = formatBytes(src.file_size_bytes);
 
-            const downloadFilename : string = src.alias.match(/\.(png|jpg|jpeg|webp)$/i) ?
-                src.alias : `${src.alias}.png`;
+            const downloadFilename : string = (
+                src.alias.match(/\.(png|jpg|jpeg|webp)$/i) ?
+                src.alias : `${src.alias}.png`
+            );
 
             bufferHTML.push(`
             <div class="vault-source-card"
                  data-source-id="${src.id_source_image}">
                 <div class="vault-source-thumb-wrapper">
-                    <img src="${src.source_stream_url}" alt="${src.alias}"
+                    <img src="${src.source_stream_url}" alt="${escapeHTML(src.alias)}"
                          class="vault-source-thumb-img" loading="lazy">
                     <div class="vault-source-thumb-overlay">
                         <button type="button" data-source-id="${src.id_source_image}"
@@ -768,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                                 title="View Derived Artifacts (${src.artifact_count})">
                             <i class="fa-solid fa-gem"></i>        
                         </button>
-                        <a href="${src.source_stream_url}" download="${downloadFilename}"
+                        <a href="${src.source_stream_url}" download="${escapeHTML(downloadFilename)}"
                            class="vault-quick-action-btn action-download-src no-underline"
                            title="Download Catalyst Image">
                             <i class="fa-solid fa-download"></i>   
@@ -777,7 +778,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
                                 class="vault-quick-action-btn action-purge-src hover:!bg-vespera-crimson"
                                 data-source-id="${src.id_source_image}"
                                 data-source-count="${src.artifact_count}"
-                                data-source-alias="${src.alias}">
+                                data-source-alias="${escapeHTML(src.alias)}">
                             <i class="fa-solid fa-trash-can"></i>        
                         </button>
                     </div>
@@ -787,13 +788,13 @@ document.addEventListener("DOMContentLoaded", () : void =>
                         <div class="flex items-center justify-between">
                             <span class="source-alias-label font-cinzel text-xs text-vespera-parchment font-bold 
                                          truncate max-w-[170px]"
-                                  title="${src.alias}">
-                                ${src.alias}      
+                                  title="${escapeHTML(src.alias)}">
+                                ${escapeHTML(src.alias)}      
                             </span>
                             <button type="button"
                                     class="action-rename-src text-vespera-silver hover:text-vespera-parchment
                                            text-xs transition-colors"
-                                    data-source-id="${src.id_source_image}" data-source-alias="${src.alias}">
+                                    data-source-id="${src.id_source_image}" data-source-alias="${escapeHTML(src.alias)}">
                                 <i class="fa-solid fa-feather"></i>
                             </button>
                         </div>

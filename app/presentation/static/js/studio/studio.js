@@ -1,4 +1,4 @@
-import { apiFetch, truncateHash, buildPaletteLut } from "../base.js";
+import { apiFetch, truncateHash, buildPaletteLut, escapeHTML } from "../base.js";
 import { hideLoadingOverlay, showLoadingOverlay } from "../partials/_overlay.js";
 import { ScryingMirror } from "../partials/scrying_mirror.js";
 document.addEventListener("DOMContentLoaded", () => {
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
             bufferHTML.push(`
                 <option value="${pal.id_palette}"
                         ${isSelected ? "selected" : ""}>
-                    ${pal.display_name}
+                    ${escapeHTML(pal.display_name)}
                 </option>
             `);
         });
@@ -385,6 +385,8 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.append("source_image_id", sourceIdInput.value);
         if (parentIdInput?.value)
             formData.append("parent_artifact_id", parentIdInput.value);
+        if (state.currentArtifactHash)
+            formData.append("previous_artifact_hash", state.currentArtifactHash);
         if (!feedSlider?.value || !killSlider?.value ||
             !diffUSlider?.value || !diffVSlider?.value ||
             !iterSlider?.value || !dtSlider?.value || !paletteSelect?.value) {

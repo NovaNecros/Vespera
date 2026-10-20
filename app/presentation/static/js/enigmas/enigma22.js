@@ -1,4 +1,4 @@
-import { apiFetch, buildPaletteLut, truncateHash } from "../base.js";
+import { apiFetch, buildPaletteLut, escapeHTML, truncateHash } from "../base.js";
 import { ScryingMirror } from "../partials/scrying_mirror.js";
 document.addEventListener("DOMContentLoaded", () => {
     const mainContainer = document.getElementById("enigma22-main-container");
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
                  data-artifact-id="${item.id_artifact}">
                 <div class="flex flex-col truncate">
                     <span class="font-cinzel text-xs text-vespera-parchment font-bold truncate">
-                        ${item.alias}
+                        ${escapeHTML(item.alias)}
                     </span>
                     <span class="font-mono text-[0.65rem] text-vespera-silver truncate">
                         #${item.id_artifact} • ${item.artifact_hash}
@@ -254,7 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         res.data.forEach((item) => {
             bufferHTML.push(`
             <option value="${item.id_artifact}">
-                ${item.alias} (#${item.id_artifact}) • ${truncateHash(item.artifact_hash, 6)}
+                ${escapeHTML(item.alias)} (#${item.id_artifact}) • ${truncateHash(item.artifact_hash, 6)}
             </option>`);
         });
         artifactSelect.innerHTML = bufferHTML.join("");

@@ -87,9 +87,10 @@ export async function apiFetch(url, options) {
         const result = await response.json();
         if (!response.ok || !result.success) {
             console.error(result.error || `HTTP Error ${response.status}`);
+            const conflictMsg = (result.error || "").replace(/^Controller \w+ error: /, "");
             window.showAlertModal?.({
                 title: "Invocation Failed",
-                message: response.status === 409 ? "This alias is already taken, love." : "The incantation has failed.",
+                message: response.status === 409 ? (conflictMsg || "This alias is already taken, love.") : "The incantation has failed.",
                 type: "danger"
             });
         }
@@ -109,6 +110,16 @@ export async function apiFetch(url, options) {
             status_code: 500
         };
     }
+}
+export function escapeHTML(text) {
+    if (text === null || text === undefined)
+        return "";
+    return String(text).trim()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 export function formatBytes(bytes) {
     if (bytes === 0)
@@ -145,8 +156,10 @@ export function rgbToHex(color) {
 export function buildPaletteLut(stops) {
     const lut = new Uint8ClampedArray(256 * 3);
     const sortedStops = [...stops].sort((a, b) => a.stop_position - b.stop_position);
+    const firstPos = sortedStops[0].stop_position;
+    const lastPos = sortedStops[sortedStops.length - 1].stop_position;
     for (let i = 0; i < 256; ++i) {
-        const t = i / 255.0;
+        const t = Math.min(Math.max(i / 255.0, firstPos), lastPos);
         let lower = sortedStops[0];
         let upper = sortedStops[sortedStops.length - 1];
         for (let s = 0; s < sortedStops.length - 1; ++s) {
@@ -158,9 +171,9 @@ export function buildPaletteLut(stops) {
         }
         const range = upper.stop_position - lower.stop_position;
         const factor = range === 0 ? 0 : (t - lower.stop_position) / range;
-        lut[i * 3] = Math.round(lower.r + (upper.r - lower.r) * factor);
-        lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
-        lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+        lut[i * 3] = Math.floor(lower.r + (upper.r - lower.r) * factor + 0.5);
+        lut[i * 3 + 1] = Math.floor(lower.g + (upper.g - lower.g) * factor + 0.5);
+        lut[i * 3 + 2] = Math.floor(lower.b + (upper.b - lower.b) * factor + 0.5);
     }
     return lut;
 }
@@ -175,6 +188,7 @@ window.getVesperaPalette = getVesperaPalette;
 window.openModalWithTransition = openModalWithTransition;
 window.closeModalWithTransition = closeModalWithTransition;
 window.apiFetch = apiFetch;
+window.escapeHTML = escapeHTML;
 window.formatBytes = formatBytes;
 window.truncateHash = truncateHash;
 window.hexToRgb = hexToRgb;

@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.extensions import db
 from app.core.config import Colors
 from app.core.utils.text_utils import sanitize_filename, normalize_text
-from app.infrastructure.models import ColorPalette, PaletteStop
+from app.infrastructure.models import ColorPalette, PaletteStop, RelArtifactPalette
 from app.modules.spectra.domain.palette_interpolation import PaletteInterpolationModel
 
 class PaletteService:
@@ -174,6 +174,18 @@ class PaletteService:
                 f"{sanitize_filename(display_name)}_{int(perf_counter() * 1000) % 100000}"
                 if display_name else f"spectrum_{int(perf_counter() * 1000)}"
             )
+
+            existing_palette : Optional[ColorPalette] = (
+                db.session
+                    .query(ColorPalette)
+                    .filter_by(display_name=display_name)
+                    .first()
+            )
+            if existing_palette: return {
+                "success"     : False,
+                "error"       : f"The name '{display_name}' is already taken, love. Please try another one.",
+                "status_code" : 409
+            }
 
             palette : ColorPalette = ColorPalette(
                 name         = slug,
@@ -383,6 +395,18 @@ class PaletteService:
                     "error"       : "Mala abi. No borres las paletas del sistema >:(",
                     "status_code" : 403
                 }
+
+            bound_count : int = (
+                db.session
+                    .query(RelArtifactPalette)
+                    .filter_by(id_palette=id_palette)
+                    .count()
+            )
+            if bound_count > 0: return {
+                "success"     : False,
+                "error"       : f"Spectrum {palette.display_name} is bound to {bound_count} manifestation{'s' if bound_count != 1 else ''}. Purge {'them' if bound_count != 1 else 'it'} in The Vault first, love.",
+                "status_code" : 409
+            }
 
             palette_name : str = palette.display_name
 

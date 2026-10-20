@@ -9,7 +9,7 @@ import
 } from "../types.js";
 import
 {
-    apiFetch,
+    apiFetch, escapeHTML,
     buildPaletteLut,
     hexToRgb, rgbToHex
 } from "../base.js";
@@ -427,8 +427,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                     <div class="spectrum-card-header">
                         <div class="flex flex-col truncate pointer-events-none">
                             <span class="font-cinzel text-xs text-vespera-parchment font-bold truncate"
-                                  title="${pal.display_name}">
-                                ${pal.display_name}
+                                  title="${escapeHTML(pal.display_name)}">
+                                ${escapeHTML(pal.display_name)}
                             </span>
                             <span class="font-mono text-[0.65rem] text-vespera-silver truncate">
                                 #${pal.id_palette} • ${pal.stops.length} Nodes
@@ -458,8 +458,8 @@ document.addEventListener("DOMContentLoaded", () : void =>
                                         class="text-xs text-vespera-crimson hover:text-vespera-crimsonBright
                                                p-1 action-purge-spectrum"
                                         data-palette-id="${pal.id_palette}"
-                                        data-palette-name="${pal.display_name}"
-                                        title="Purge ${pal.display_name}">
+                                        data-palette-name="${escapeHTML(pal.display_name)}"
+                                        title="Purge ${escapeHTML(pal.display_name)}">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             ` : ""}
@@ -702,7 +702,7 @@ document.addEventListener("DOMContentLoaded", () : void =>
     {
         (window as any).showAlertModal({
             title       : "Purge Spectrum",
-            message     : `Are you certain you wish to banish ${name}? All bound artifacts will be preserved in grayscale.`,
+            message     : `Are you certain you wish to banish ${name}? A spectrum still bound to manifestations cannot be purged until they are released in The Vault.`,
             type        : "info",
             icon        : "fa-skull-crossbones",
             confirmText : "Purge",

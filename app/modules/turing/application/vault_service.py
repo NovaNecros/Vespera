@@ -830,7 +830,7 @@ class VaultService:
             )
             if remaining_manifestations > 0: return {
                 "success"     : False,
-                "error"       : f"Requested source image with ID #{id_artifact} has {remaining_manifestations} associated manifestations.",
+                "error"       : f"Requested artifact with ID #{id_artifact} has {remaining_manifestations} associated manifestations.",
                 "status_code" : 409
             }
 

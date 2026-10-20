@@ -13,7 +13,7 @@ class ServerSettings:
     """
     Configuración del servidor web local.
     """
-    HOST                 : str  = "0.0.0.0"
+    HOST                 : str  = "127.0.0.1"
     PORT                 : int  = 3009
     DEBUG                : bool = False
     MAX_CONTENT_LENGTH   : int  = 256 * 1024 * 1024
@@ -84,6 +84,13 @@ class TuringSettings:
     DEFAULT_WIDTH             : int   = 1024
     DEFAULT_HEIGHT            : int   = 1024
     MAX_IMAGE_DIMENSION       : int   = 2048
+
+class CacheSettings:
+    """
+    Límites de la memoria caché para imágenes sin sellar.
+    """
+    EPHEMERAL_MAX_ENTRIES : int = 6
+    EPHEMERAL_TTL_SECONDS : int = 7200
 
 class Colors:
     """

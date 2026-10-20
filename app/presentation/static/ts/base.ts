@@ -128,9 +128,10 @@ export async function apiFetch<T = any>(url : string, options? : RequestInit) : 
         if(!response.ok || !result.success)
         {
             console.error(result.error || `HTTP Error ${response.status}`);
+            const conflictMsg : string = (result.error || "").replace(/^Controller \w+ error: /, "");
             (window as any).showAlertModal?.({
                 title   : "Invocation Failed",
-                message : response.status === 409 ? "This alias is already taken, love." : "The incantation has failed.",
+                message : response.status === 409 ? (conflictMsg || "This alias is already taken, love.") : "The incantation has failed.",
                 type    : "danger"
             });
         }
@@ -155,7 +156,18 @@ export async function apiFetch<T = any>(url : string, options? : RequestInit) : 
 }
 
 
-// --- UTILS ---
+// --- Text Utils ---
+export function escapeHTML(text : string | null | undefined) : string
+{
+    if(text === null || text === undefined) return "";
+    return String(text).trim()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 export function formatBytes(bytes : number) : string
 {
     if(bytes === 0) return "0 Bytes";
@@ -202,12 +214,14 @@ export function rgbToHex(color : RGBColor) : string
 
 export function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
 {
-    const lut : Uint8ClampedArray = new Uint8ClampedArray(256 * 3);
-    const sortedStops : PaletteStop[] = [...stops].sort((a, b) => a.stop_position - b.stop_position);
+    const lut         : Uint8ClampedArray = new Uint8ClampedArray(256 * 3);
+    const sortedStops : PaletteStop[]     = [...stops].sort((a, b) => a.stop_position - b.stop_position);
+    const firstPos    : number            = sortedStops[0].stop_position;
+    const lastPos     : number            = sortedStops[sortedStops.length - 1].stop_position;
 
     for(let i : number = 0; i < 256; ++i)
     {
-        const t : number = i / 255.0;
+        const t : number = Math.min(Math.max(i / 255.0, firstPos), lastPos);
         let lower : PaletteStop = sortedStops[0];
         let upper : PaletteStop = sortedStops[sortedStops.length - 1];
 
@@ -224,9 +238,9 @@ export function buildPaletteLut(stops : PaletteStop[]) : Uint8ClampedArray
         const range  : number = upper.stop_position - lower.stop_position;
         const factor : number = range === 0 ? 0 : (t - lower.stop_position) / range;
 
-        lut[i * 3]     = Math.round(lower.r + (upper.r - lower.r) * factor);
-        lut[i * 3 + 1] = Math.round(lower.g + (upper.g - lower.g) * factor);
-        lut[i * 3 + 2] = Math.round(lower.b + (upper.b - lower.b) * factor);
+        lut[i * 3]     = Math.floor(lower.r + (upper.r - lower.r) * factor + 0.5);
+        lut[i * 3 + 1] = Math.floor(lower.g + (upper.g - lower.g) * factor + 0.5);
+        lut[i * 3 + 2] = Math.floor(lower.b + (upper.b - lower.b) * factor + 0.5);
     }
 
     return lut;
@@ -246,6 +260,7 @@ export function applyPalette(data : Uint8ClampedArray, lut : Uint8ClampedArray) 
 (window as any).openModalWithTransition  = openModalWithTransition;
 (window as any).closeModalWithTransition = closeModalWithTransition;
 (window as any).apiFetch                 = apiFetch;
+(window as any).escapeHTML               = escapeHTML;
 (window as any).formatBytes              = formatBytes;
 (window as any).truncateHash             = truncateHash;
 (window as any).hexToRgb                 = hexToRgb;

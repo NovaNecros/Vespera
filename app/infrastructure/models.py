@@ -2,9 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Optional
 
 from app.core.extensions import db
+
+# TIMEZONE HELPER
+class UTCDateTime(db.TypeDecorator):
+    """
+    DateTime para que isoformat() para guardar la hora en UTC y que el buscador haga la conversión a hora de Tontuca.
+    """
+    impl     : type[db.DateTime] = db.DateTime
+    cache_ok : bool              = True
+
+    def process_bind_param(self : UTCDateTime, value : Optional[datetime], dialect : db.Dialect) -> Optional[datetime]:
+        if value is None or value.tzinfo is None: return value
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+    def process_result_value(self : UTCDateTime, value : Optional[datetime], dialect : db.Dialect) -> Optional[datetime]:
+        if value is None: return None
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 class ColorPalette(db.Model):
     """
@@ -19,11 +36,11 @@ class ColorPalette(db.Model):
     is_favorite       = db.Column(db.Boolean,      nullable=False,   default=False)
     user_notes        = db.Column(db.String(1024), nullable=True)
     id_parent_palette = db.Column(db.Integer,      db.ForeignKey("color_palette.id_palette", ondelete="SET NULL"), nullable=True)
-    created_at        = db.Column(db.DateTime,     nullable=False,   default=db.func.now(), index=True)
+    created_at        = db.Column(UTCDateTime,     nullable=False,   default=db.func.now(), index=True)
 
     parent_palette = db.relationship("ColorPalette", remote_side=[id_palette], backref=db.backref("derived_palettes", lazy=True))
     stops          = db.relationship("PaletteStop", back_populates="palette", cascade="all, delete-orphan", order_by="PaletteStop.stop_position.asc()", lazy=True)
-    artifact_rels  = db.relationship("RelArtifactPalette", back_populates="palette", cascade="all, delete-orphan", lazy=True)
+    artifact_rels  = db.relationship("RelArtifactPalette", back_populates="palette", passive_deletes="all", lazy=True)
 
     def to_dict(self : ColorPalette) -> dict[str, Any]:
         return {
@@ -81,7 +98,7 @@ class SourceImage(db.Model):
     width           = db.Column(db.Integer,     nullable=False)
     height          = db.Column(db.Integer,     nullable=False)
     file_size_bytes = db.Column(db.Integer,     nullable=False)
-    created_at      = db.Column(db.DateTime,    nullable=False,   default=db.func.now(), index=True)
+    created_at      = db.Column(UTCDateTime,    nullable=False,   default=db.func.now(), index=True)
 
     artifacts = db.relationship("SynthesisArtifact", back_populates="source_image", lazy=True)
 
@@ -112,7 +129,7 @@ class ConfigTuring(db.Model):
     diff_v        = db.Column(db.Numeric(8,6), nullable=False)
     dt            = db.Column(db.Numeric(6,4), nullable=False)
     iterations    = db.Column(db.Integer,      nullable=False)
-    created_at    = db.Column(db.DateTime,     nullable=False,   default=db.func.now(), index=True)
+    created_at    = db.Column(UTCDateTime,     nullable=False,   default=db.func.now(), index=True)
 
     artifacts = db.relationship("SynthesisArtifact", back_populates="turing_config", lazy=True)
 
@@ -147,7 +164,7 @@ class SynthesisArtifact(db.Model):
     execution_time     = db.Column(db.Numeric(14,6), nullable=False)
     is_favorite        = db.Column(db.Boolean,       nullable=False, default=False)
     user_notes         = db.Column(db.String(1024),  nullable=True)
-    created_at         = db.Column(db.DateTime,      nullable=False, default=db.func.now(),          index=True)
+    created_at         = db.Column(UTCDateTime,      nullable=False, default=db.func.now(),          index=True)
 
     source_image    = db.relationship("SourceImage", foreign_keys=[id_source_image], back_populates="artifacts")
     turing_config   = db.relationship("ConfigTuring", foreign_keys=[id_config], back_populates="artifacts")
@@ -184,7 +201,7 @@ class SynthesisFrame(db.Model):
     frame_index = db.Column(db.Integer,    nullable=False)
     iteration   = db.Column(db.Integer,    nullable=False)
     frame_hash  = db.Column(db.String(64), nullable=False, index=True)
-    created_at  = db.Column(db.DateTime,   nullable=False, default=db.func.now(), index=True)
+    created_at  = db.Column(UTCDateTime,   nullable=False, default=db.func.now(), index=True)
 
     artifact = db.relationship("SynthesisArtifact", back_populates="frames")
 
@@ -207,7 +224,7 @@ class RelArtifactPalette(db.Model):
     id_rel      = db.Column(db.Integer,  primary_key=True, autoincrement=True)
     id_artifact = db.Column(db.Integer,  db.ForeignKey("synthesis_artifact.id_artifact", ondelete="CASCADE"),  nullable=False, index=True)
     id_palette  = db.Column(db.Integer,  db.ForeignKey("color_palette.id_palette",       ondelete="RESTRICT"), nullable=False, index=True)
-    created_at  = db.Column(db.DateTime, nullable=False,   default=db.func.now(), index=True)
+    created_at  = db.Column(UTCDateTime, nullable=False,   default=db.func.now(), index=True)
 
     artifact = db.relationship("SynthesisArtifact", back_populates="palette_rels")
     palette  = db.relationship("ColorPalette",      back_populates="artifact_rels")
@@ -230,7 +247,7 @@ class EnigmaQuest(db.Model):
 
     id_quest            = db.Column(db.Integer,     primary_key=True, autoincrement=True)
     alias               = db.Column(db.String(128), nullable=False,   index=True)
-    unlocked_at         = db.Column(db.DateTime,    nullable=True)
+    unlocked_at         = db.Column(UTCDateTime,    nullable=True)
     is_active           = db.Column(db.Boolean,     nullable=False,   default=False)
     hint_img_filename   = db.Column(db.String(255), nullable=False)
     hint_img_hash       = db.Column(db.String(64),  nullable=True,    index=True)
@@ -238,7 +255,7 @@ class EnigmaQuest(db.Model):
     hint_img_palette_id = db.Column(db.Integer,     db.ForeignKey("color_palette.id_palette", ondelete="RESTRICT"),       nullable=False)
     solution_id         = db.Column(db.Integer,     db.ForeignKey("synthesis_artifact.id_artifact", ondelete="SET NULL"), nullable=True)
     solution_hash       = db.Column(db.String(128), nullable=True,    index=True) # SHA-512
-    solved_at           = db.Column(db.DateTime,    nullable=True)
+    solved_at           = db.Column(UTCDateTime,    nullable=True)
 
     solution_artifact = db.relationship("SynthesisArtifact", foreign_keys=[solution_id])
     hint_img_config   = db.relationship("ConfigTuring",      foreign_keys=[hint_img_config_id])

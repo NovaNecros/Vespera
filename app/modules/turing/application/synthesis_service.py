@@ -6,14 +6,16 @@ from io import BytesIO
 from typing import Any, Optional, Union
 from pathlib import Path
 import traceback
-from time import perf_counter
+from collections import OrderedDict
+from threading import Lock
+from time import perf_counter, monotonic
 from PIL import Image
 
 from werkzeug.datastructures import FileStorage
 from sqlalchemy.exc import IntegrityError
 
 from app.core.extensions import db
-from app.core.config import TuringSettings, RNGSettings, Colors
+from app.core.config import TuringSettings, RNGSettings, CacheSettings, Colors
 from app.core.utils.cryptography_utils import compute_bytes_sha256, compute_params_hash, compute_artifact_hash
 from app.core.utils.image_utils import is_image
 from app.core.utils.text_utils import normalize_text
@@ -30,10 +32,36 @@ class SynthesisService:
     """
 
     # Caché para sostener las imágenes generadas para preview antes de guardarlas
-    _ephemeral_cache : dict[str, dict[str, Any]] = {}
+    _ephemeral_cache : OrderedDict[str, dict[str, Any]] = OrderedDict()
+    _cache_lock      : Lock                             = Lock()
 
     def __init__(self : SynthesisService, verbose : bool = False) -> None:
         self.verbose : bool = verbose
+
+    # --- CACHE ---
+    @classmethod
+    def _prune_ephemeral_cache(cls : type[SynthesisService]) -> int:
+        """
+        Libera la última síntesis en la misma página, las expiradas por TTL y las más antiguas cuando se desea crear una nueva imagen.
+        :return           : Número de espacios liberados.
+        """
+        now     : float     = monotonic()
+        evicted : list[str] = []
+
+        with cls._cache_lock:
+            for cached_hash, entry in list(cls._ephemeral_cache.items()):
+                if now - entry["cached_at"] > CacheSettings.EPHEMERAL_TTL_SECONDS:
+                    cls._ephemeral_cache.pop(cached_hash, None)
+                    evicted.append(cached_hash)
+
+            while len(cls._ephemeral_cache) >= CacheSettings.EPHEMERAL_MAX_ENTRIES:
+                oldest_hash, _ = cls._ephemeral_cache.popitem(last=False)
+                evicted.append(oldest_hash)
+
+        if evicted:
+            print(f"[*]{Colors.YELLOW} EVICTED {len(evicted)} UNSEALED ARTIFACTS FROM CACHE ({len(cls._ephemeral_cache)} REMAIN){Colors.RESET}")
+
+        return len(evicted)
 
     # --- CONFIGS ---
     @staticmethod
@@ -177,6 +205,9 @@ class SynthesisService:
                     "status_code" : 403
                 }
 
+            previous_hash : Optional[str] = str(params["previous_artifact_hash"]).strip() if params.get("previous_artifact_hash") else None
+            self._prune_ephemeral_cache()
+
             is_image_res    : dict[str, Any]  = is_image(source_image)
             file_bytes      : Optional[bytes] = source_image.read()            if is_image_res.get("is_image")  else None
             source_image_id : Optional[int]   = int(params["source_image_id"]) if params.get("source_image_id") else None
@@ -261,7 +292,8 @@ class SynthesisService:
 
             execution_time : float = round(perf_counter() - start_time, 6)
 
-            self._ephemeral_cache[artifact_hash] = {
+            cache_entry : dict[str, Any] = {
+                "cached_at"       : monotonic(),
                 "file_bytes"      : file_bytes,
                 "id_source_image" : source_rec.id_source_image,
                 "alias"           : alias,
@@ -282,6 +314,12 @@ class SynthesisService:
                     "seed"       : seed
                 }
             }
+
+            with self._cache_lock:
+                self._ephemeral_cache[artifact_hash] = cache_entry
+                self._ephemeral_cache.move_to_end(artifact_hash)
+                if previous_hash and previous_hash != artifact_hash:
+                    self._ephemeral_cache.pop(str(previous_hash or ""), None)
 
             return {
                 "success"     : True,
@@ -325,8 +363,9 @@ class SynthesisService:
         :return       : Estado de éxito de la operación.
         """
         try:
-            artifact_hash : str = str(params.get("artifact_hash", "")).strip()
-            if not artifact_hash or artifact_hash not in self._ephemeral_cache:
+            artifact_hash : str                      = str(params.get("artifact_hash", "")).strip()
+            cached        : Optional[dict[str, Any]] = self._ephemeral_cache.get(artifact_hash) if artifact_hash else None
+            if not cached:
                 existing_artifact : Optional[SynthesisArtifact] = (
                     db.session
                         .query(SynthesisArtifact)
@@ -344,7 +383,6 @@ class SynthesisService:
                     "error"       : f"No uncommited artifact found with rune {artifact_hash}. Please invoke a reaction first.",
                     "status_code" : 404
                 }
-            cached : dict[str, Any] = self._ephemeral_cache[artifact_hash]
 
             raw_palette_id : Any           = params.get("id_palette", cached["params"].get("id_palette", 0))
             id_palette     : int           = int(raw_palette_id) if raw_palette_id is not None else 0
@@ -354,7 +392,7 @@ class SynthesisService:
             source_rec : Optional[SourceImage] = (
                 db.session
                     .query(SourceImage)
-                    .filter_by(sha265_hash=cached["src_hash"])
+                    .filter_by(sha256_hash=cached["src_hash"])
                     .first()
             )
 
@@ -437,7 +475,7 @@ class SynthesisService:
                 }
 
             # Limpiar Caché
-            del self._ephemeral_cache[artifact_hash]
+            self._ephemeral_cache.pop(artifact_hash, None)
 
             if self.verbose:
                 print(f"[OK]{Colors.GREEN} ARTIFACT #{artifact.id_artifact} SEALED IN VAULT WITH {len(cached['frame_pils'])} FRAMES.{Colors.RESET}")
