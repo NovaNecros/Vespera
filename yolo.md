@@ -1,1 +1,0 @@
-speedrun del achievement yolo
